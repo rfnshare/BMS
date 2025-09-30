@@ -5,6 +5,8 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, RenterOTP
 from rest_framework.permissions import AllowAny
+from rest_framework.decorators import api_view, permission_classes
+
 
 class RequestOTP(APIView):
     permission_classes = [AllowAny]
@@ -42,3 +44,27 @@ class VerifyOTP(APIView):
             "access": str(refresh.access_token),
             "refresh": str(refresh)
         })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def detect_role(request):
+    username_or_phone = request.data.get('username')
+    if not username_or_phone:
+        return Response({"error": "Username or phone is required"}, status=400)
+
+    try:
+        # Try to find user by username or phone number
+        user = User.objects.get(username=username_or_phone)
+    except User.DoesNotExist:
+        try:
+            user = User.objects.get(phone_number=username_or_phone)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+    if user.is_renter:
+        role = "renter"
+    else:
+        role = "staff"  # superadmin or manager
+
+    return Response({"role": role})
