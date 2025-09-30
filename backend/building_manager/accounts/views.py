@@ -4,8 +4,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, RenterOTP
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
+
+from .serializers import UserSerializer
 
 
 class RequestOTP(APIView):
@@ -68,3 +70,28 @@ def detect_role(request):
         role = "staff"  # superadmin or manager
 
     return Response({"role": role})
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def me(request):
+    serializer = UserSerializer(request.user)
+    return Response(serializer.data)
+
+class LogoutView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        """
+        Logout by blacklisting the refresh token.
+        Requires Authorization: Bearer <access_token> header
+        and refresh token in the body.
+        """
+        try:
+            refresh_token = request.data["refresh"]
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({"detail": "Logout successful"}, status=status.HTTP_205_RESET_CONTENT)
+        except KeyError:
+            return Response({"detail": "Refresh token missing"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
