@@ -8,6 +8,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 
 from .serializers import UserSerializer
+from .services import send_otp_whatsapp
 
 
 class RequestOTP(APIView):
@@ -16,12 +17,23 @@ class RequestOTP(APIView):
     def post(self, request):
         phone_or_email = request.data.get("phone_or_email")
         try:
+            # Get the user by username, ensure it's a renter
             user = User.objects.get(username=phone_or_email, is_renter=True)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        RenterOTP.generate_otp(user)
+        # Generate OTP
+        otp_instance = RenterOTP.generate_otp(user)
+        otp_code = otp_instance.code
+
+        # Use the phone field of the user, not username
+        if not user.phone_number:
+            return Response({"error": "User does not have a phone number"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # send_otp_whatsapp(user.phone_number, otp_code)
+
         return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
+
 
 
 class VerifyOTP(APIView):
