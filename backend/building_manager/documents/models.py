@@ -10,7 +10,7 @@ class UnitDocument(models.Model):
         ("other", "Other")
     ]
 
-    unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name="documents")
+    unit = models.ForeignKey("buildings.Unit", related_name="documents", on_delete=models.CASCADE)
     file = models.FileField(upload_to="documents/units/%Y/%m/")
     doc_type = models.CharField(max_length=50, choices=DOC_TYPES)
     uploaded_at = models.DateTimeField(auto_now_add=True)
