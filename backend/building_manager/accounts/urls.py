@@ -1,8 +1,11 @@
 # building_manager/accounts/urls.py
 from django.urls import path
 from .views import RequestOTP, VerifyOTP, detect_role, me, LogoutView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
+    path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("request-otp/", RequestOTP.as_view(), name="request-otp"),
     path("verify-otp/", VerifyOTP.as_view(), name="verify-otp"),
     path("detect-role/", detect_role, name="detect-role"),

@@ -8,7 +8,7 @@ class UnitDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = UnitDocument
         fields = ['id', 'unit', 'doc_type', 'file', 'uploaded_at']
-        read_only_fields = ['id', 'uploaded_at', 'unit']
+        read_only_fields = ['id', 'uploaded_at']
 
     def validate_file(self, file):
         validate_file_size(file, max_size_mb=10)  # Max 10MB
