@@ -23,3 +23,6 @@ out/
 # OS
 .DS_Store
 Thumbs.db
+
+backend/building_manager/media
+backend/building_manager/staticfiles

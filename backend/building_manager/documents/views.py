@@ -3,8 +3,8 @@ from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 
-from .models import UnitDocument
-from .serializers import UnitDocumentSerializer
+from .models import UnitDocument, RenterDocument
+from .serializers import UnitDocumentSerializer, RenterDocumentSerializer
 from permissions.custom_permissions import IsStaffOrReadOnlyForRenter
 from common.pagination import CustomPagination
 
@@ -28,3 +28,14 @@ class UnitDocumentViewSet(viewsets.ModelViewSet):
     filterset_fields = ['unit', 'doc_type']
     search_fields = ['doc_type']
     ordering_fields = ['id', 'uploaded_at', 'doc_type']
+
+
+class RenterDocumentViewSet(viewsets.ModelViewSet):
+    queryset = RenterDocument.objects.all()
+    serializer_class = RenterDocumentSerializer
+    permission_classes = [IsAuthenticated, IsStaffOrReadOnlyForRenter]
+
+    def perform_create(self, serializer):
+        # link document to renter based on request data
+        renter_id = self.request.data.get("renter")
+        serializer.save(renter_id=renter_id)
