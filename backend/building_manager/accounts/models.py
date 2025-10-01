@@ -5,6 +5,9 @@ from django.utils import timezone
 from datetime import timedelta
 import random
 
+from common.models import BaseAuditModel
+
+
 class User(AbstractUser):
     # Roles
     is_superadmin = models.BooleanField(default=False)
@@ -16,7 +19,7 @@ class User(AbstractUser):
         return self.username
 
 
-class RenterOTP(models.Model):
+class RenterOTP(BaseAuditModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={"is_renter": True})
     code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)

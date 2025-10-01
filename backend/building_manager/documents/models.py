@@ -1,9 +1,9 @@
 from django.db import models
 from buildings.models import Unit
-
+from common.models import BaseAuditModel
 
 # Create your models here.
-class UnitDocument(models.Model):
+class UnitDocument(BaseAuditModel):
     DOC_TYPES = [
         ("electricity_meter", "Electricity Meter"),
         ("gas_meter", "Gas Meter"),

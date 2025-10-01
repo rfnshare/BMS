@@ -1,8 +1,8 @@
 # building_manager/buildings/models.py
 from django.db import models
+from common.models import BaseAuditModel
 
-
-class Floor(models.Model):
+class Floor(BaseAuditModel):
     name = models.CharField(max_length=50, unique=True)
     number = models.IntegerField(help_text="Floor number (0 = Ground, 1 = 1st Floor, etc.)")
     description = models.TextField(blank=True, null=True)
@@ -17,7 +17,7 @@ class Floor(models.Model):
 
 
 
-class Unit(models.Model):
+class Unit(BaseAuditModel):
     UNIT_TYPES = [
         ("residential", "Residential"),
         ("shop", "Shop")

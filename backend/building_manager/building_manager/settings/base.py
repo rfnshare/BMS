@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "whitenoise.runserver_nostatic",
     "storages",
+    "drf_spectacular",
 
     # Local apps (fix paths)
     "accounts",
@@ -56,6 +57,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "common.logging.APILoggingMiddleware"
 ]
 
 ROOT_URLCONF = "building_manager.urls"
@@ -140,8 +142,15 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": int(os.getenv("DRF_PAGE_SIZE", 25)),
+    "DEFAULT_PAGINATION_CLASS": "common.pagination.CustomPagination",
+    "PAGE_SIZE": int(os.getenv("DRF_PAGE_SIZE", 10)),
+    "DEFAULT_FILTER_BACKENDS": [
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+        "django_filters.rest_framework.DjangoFilterBackend",
+    ],
+    "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"
 }
 
 # Simple JWT: lifetimes configured via env
