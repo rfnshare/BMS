@@ -1,9 +1,8 @@
 // pages/_app.tsx
-import 'bootstrap/dist/css/bootstrap.min.css';
-// import '../globals.css'; // optional for your custom CSS
-import type { AppProps } from 'next/app';
+import type { AppProps } from "next/app";
+import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function MyApp({ Component, pageProps }: AppProps) {
   return <Component {...pageProps} />;
 }

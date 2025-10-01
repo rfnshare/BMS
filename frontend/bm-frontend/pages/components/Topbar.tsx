@@ -1,6 +1,17 @@
 import { Navbar, Container, Nav, NavDropdown } from "react-bootstrap";
+import { useRouter } from "next/router";
 
-export default function Topbar() {
+export default function Topbar({ userName }: { userName: string }) {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    // Clear tokens
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    // Redirect to login
+    router.push("/login");
+  };
+
   return (
     <Navbar bg="light" expand="lg" className="shadow-sm px-3">
       <Container fluid>
@@ -9,11 +20,11 @@ export default function Topbar() {
         </Navbar.Brand>
 
         <Nav className="ms-auto">
-          <NavDropdown title="Admin" id="profile-dropdown" align="end">
-            <NavDropdown.Item href="#">Profile</NavDropdown.Item>
+          <NavDropdown title={userName} id="profile-dropdown" align="end">
+            <NavDropdown.Item href="/profile">Profile</NavDropdown.Item>
             <NavDropdown.Item href="#">Settings</NavDropdown.Item>
             <NavDropdown.Divider />
-            <NavDropdown.Item href="#">Logout</NavDropdown.Item>
+            <NavDropdown.Item onClick={handleLogout}>Logout</NavDropdown.Item>
           </NavDropdown>
         </Nav>
       </Container>

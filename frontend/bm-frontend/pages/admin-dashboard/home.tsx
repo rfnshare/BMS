@@ -1,8 +1,9 @@
 ﻿import Layout from '../components/Layout';
+import withAuth from "../../utils/withAuth";
 
 const menuItems = [
   { name: 'Home', path: '/admin-dashboard/home', icon: 'bi-house' },
-  { name: 'Units', path: '/admin-dashboard/units', icon: 'bi-grid' },
+  { name: 'Units', path: '/admin-dashboard/units', icon: 'bi-building' },
   { name: 'Renters', path: '/admin-dashboard/renters', icon: 'bi-people' },
   { name: 'Leases', path: '/admin-dashboard/leases', icon: 'bi-file-text' },
   { name: 'Invoices', path: '/admin-dashboard/invoices', icon: 'bi-receipt' },
@@ -14,8 +15,8 @@ const menuItems = [
 export default function Page() {
   return (
     <Layout menuItems={menuItems}>
-      <h1 className='h3 mb-3'>Placeholder Page</h1>
-      <div className='p-3 bg-white rounded shadow-sm'>
+      <h1 className='mb-4'>Placeholder Page</h1>
+      <div className='p-4 bg-white rounded shadow-sm'>
         Content for C:\Users\afaroque\PycharmProjects\BM\frontend\bm-frontend\pages\admin-dashboard\home.tsx
       </div>
     </Layout>
