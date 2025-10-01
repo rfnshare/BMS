@@ -1,0 +1,1515 @@
+openapi: 3.0.3
+info:
+  title: Building Management API
+  version: 1.0.0
+  description: API documentation for Building Management System
+paths:
+  /api/accounts/detect-role/:
+    post:
+      operationId: api_accounts_detect_role_create
+      description: Detects if a user is renter or staff
+      summary: Detect user role
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DetectRoleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DetectRoleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DetectRoleRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+          description: ''
+        '404':
+          description: User not found
+  /api/accounts/logout/:
+    post:
+      operationId: api_accounts_logout_create
+      description: Blacklists the refresh token and logs the user out
+      summary: Logout user
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '205':
+          description: Logout successful
+  /api/accounts/me/:
+    get:
+      operationId: api_accounts_me_retrieve
+      description: Returns the authenticated user's details
+      summary: Get current user info
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/accounts/request-otp/:
+    post:
+      operationId: api_accounts_request_otp_create
+      description: Send OTP to renter's registered phone number
+      summary: Request OTP
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTPRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OTPRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OTPRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: OTP sent successfully
+  /api/accounts/token/:
+    post:
+      operationId: api_accounts_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/accounts/token/refresh/:
+    post:
+      operationId: api_accounts_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/accounts/verify-otp/:
+    post:
+      operationId: api_accounts_verify_otp_create
+      description: Verify the OTP and return access & refresh tokens
+      summary: Verify OTP
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTPVerifyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OTPVerifyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OTPVerifyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+          description: ''
+        '400':
+          description: Invalid OTP
+  /api/buildings/floors/:
+    get:
+      operationId: api_buildings_floors_list
+      description: ViewSet for managing floors.
+      parameters:
+      - in: query
+        name: name
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Floors
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFloorList'
+          description: ''
+    post:
+      operationId: api_buildings_floors_create
+      description: ViewSet for managing floors.
+      tags:
+      - Floors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FloorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FloorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FloorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Floor'
+          description: ''
+  /api/buildings/floors/{id}/:
+    get:
+      operationId: api_buildings_floors_retrieve
+      description: ViewSet for managing floors.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this floor.
+        required: true
+      tags:
+      - Floors
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Floor'
+          description: ''
+    put:
+      operationId: api_buildings_floors_update
+      description: ViewSet for managing floors.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this floor.
+        required: true
+      tags:
+      - Floors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FloorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FloorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FloorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Floor'
+          description: ''
+    patch:
+      operationId: api_buildings_floors_partial_update
+      description: ViewSet for managing floors.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this floor.
+        required: true
+      tags:
+      - Floors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFloorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFloorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFloorRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Floor'
+          description: ''
+    delete:
+      operationId: api_buildings_floors_destroy
+      description: ViewSet for managing floors.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this floor.
+        required: true
+      tags:
+      - Floors
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/buildings/units/:
+    get:
+      operationId: api_buildings_units_list
+      description: ViewSet for managing units and their documents.
+      parameters:
+      - in: query
+        name: floor
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - maintenance
+          - occupied
+          - vacant
+        description: |-
+          * `vacant` - Vacant
+          * `occupied` - Occupied
+          * `maintenance` - Maintenance
+      - in: query
+        name: unit_type
+        schema:
+          type: string
+          enum:
+          - residential
+          - shop
+        description: |-
+          * `residential` - Residential
+          * `shop` - Shop
+      tags:
+      - Units
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUnitList'
+          description: ''
+    post:
+      operationId: api_buildings_units_create
+      description: ViewSet for managing units and their documents.
+      tags:
+      - Units
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UnitRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UnitRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+          description: ''
+  /api/buildings/units/{id}/:
+    get:
+      operationId: api_buildings_units_retrieve
+      description: ViewSet for managing units and their documents.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit.
+        required: true
+      tags:
+      - Units
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+          description: ''
+    put:
+      operationId: api_buildings_units_update
+      description: ViewSet for managing units and their documents.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit.
+        required: true
+      tags:
+      - Units
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UnitRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UnitRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+          description: ''
+    patch:
+      operationId: api_buildings_units_partial_update
+      description: ViewSet for managing units and their documents.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit.
+        required: true
+      tags:
+      - Units
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUnitRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUnitRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUnitRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+          description: ''
+    delete:
+      operationId: api_buildings_units_destroy
+      description: ViewSet for managing units and their documents.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit.
+        required: true
+      tags:
+      - Units
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/buildings/units/{id}/delete_document/{doc_id}/:
+    delete:
+      operationId: api_buildings_units_delete_document_destroy
+      description: Deletes a specific document attached to the unit.
+      summary: Delete a unit document
+      parameters:
+      - in: path
+        name: doc_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit.
+        required: true
+      tags:
+      - Units
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Document deleted
+        '404':
+          description: Document not found
+  /api/buildings/units/{id}/documents/:
+    get:
+      operationId: api_buildings_units_documents_list
+      description: Returns all documents attached to the selected unit.
+      summary: List documents for a unit
+      parameters:
+      - in: query
+        name: floor
+        schema:
+          type: integer
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit.
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - maintenance
+          - occupied
+          - vacant
+        description: |-
+          * `vacant` - Vacant
+          * `occupied` - Occupied
+          * `maintenance` - Maintenance
+      - in: query
+        name: unit_type
+        schema:
+          type: string
+          enum:
+          - residential
+          - shop
+        description: |-
+          * `residential` - Residential
+          * `shop` - Shop
+      tags:
+      - Units
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUnitDocumentList'
+          description: ''
+  /api/buildings/units/{id}/update_document/{doc_id}/:
+    put:
+      operationId: api_buildings_units_update_document_update
+      description: Update metadata or file of a specific document attached to the
+        unit.
+      summary: Update a unit document
+      parameters:
+      - in: path
+        name: doc_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit.
+        required: true
+      tags:
+      - Units
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitDocument'
+          description: ''
+        '404':
+          description: Document not found
+  /api/buildings/units/{id}/upload_document/:
+    post:
+      operationId: api_buildings_units_upload_document_create
+      description: Attach a document to the selected unit.
+      summary: Upload a document
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit.
+        required: true
+      tags:
+      - Units
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitDocument'
+          description: ''
+  /api/unit-documents/:
+    get:
+      operationId: api_unit_documents_list
+      description: |-
+        ViewSet for managing Unit Documents.
+        Supports CRUD operations with filters, search, and pagination.
+      parameters:
+      - in: query
+        name: doc_type
+        schema:
+          type: string
+          enum:
+          - electricity_meter
+          - gas_meter
+          - other
+        description: |-
+          * `electricity_meter` - Electricity Meter
+          * `gas_meter` - Gas Meter
+          * `other` - Other
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: unit
+        schema:
+          type: integer
+      tags:
+      - Unit Documents
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUnitDocumentList'
+          description: ''
+    post:
+      operationId: api_unit_documents_create
+      description: |-
+        ViewSet for managing Unit Documents.
+        Supports CRUD operations with filters, search, and pagination.
+      tags:
+      - Unit Documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitDocument'
+          description: ''
+  /api/unit-documents/{id}/:
+    get:
+      operationId: api_unit_documents_retrieve
+      description: |-
+        ViewSet for managing Unit Documents.
+        Supports CRUD operations with filters, search, and pagination.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit document.
+        required: true
+      tags:
+      - Unit Documents
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitDocument'
+          description: ''
+    put:
+      operationId: api_unit_documents_update
+      description: |-
+        ViewSet for managing Unit Documents.
+        Supports CRUD operations with filters, search, and pagination.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit document.
+        required: true
+      tags:
+      - Unit Documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UnitDocumentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitDocument'
+          description: ''
+    patch:
+      operationId: api_unit_documents_partial_update
+      description: |-
+        ViewSet for managing Unit Documents.
+        Supports CRUD operations with filters, search, and pagination.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit document.
+        required: true
+      tags:
+      - Unit Documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUnitDocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUnitDocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUnitDocumentRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitDocument'
+          description: ''
+    delete:
+      operationId: api_unit_documents_destroy
+      description: |-
+        ViewSet for managing Unit Documents.
+        Supports CRUD operations with filters, search, and pagination.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this unit document.
+        required: true
+      tags:
+      - Unit Documents
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    DetectRoleRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+      required:
+      - username
+    DocTypeEnum:
+      enum:
+      - electricity_meter
+      - gas_meter
+      - other
+      type: string
+      description: |-
+        * `electricity_meter` - Electricity Meter
+        * `gas_meter` - Gas Meter
+        * `other` - Other
+    Floor:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        is_deleted:
+          type: boolean
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        name:
+          type: string
+          maxLength: 50
+        number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Floor number (0 = Ground, 1 = 1st Floor, etc.)
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: integer
+          nullable: true
+        updated_by:
+          type: integer
+          nullable: true
+        deleted_by:
+          type: integer
+          nullable: true
+      required:
+      - created_at
+      - id
+      - name
+      - number
+      - updated_at
+    FloorRequest:
+      type: object
+      properties:
+        is_deleted:
+          type: boolean
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Floor number (0 = Ground, 1 = 1st Floor, etc.)
+        description:
+          type: string
+          nullable: true
+        created_by:
+          type: integer
+          nullable: true
+        updated_by:
+          type: integer
+          nullable: true
+        deleted_by:
+          type: integer
+          nullable: true
+      required:
+      - name
+      - number
+    OTPRequestRequest:
+      type: object
+      properties:
+        phone_or_email:
+          type: string
+          minLength: 1
+      required:
+      - phone_or_email
+    OTPVerifyRequest:
+      type: object
+      properties:
+        phone_or_email:
+          type: string
+          minLength: 1
+        otp:
+          type: string
+          minLength: 1
+      required:
+      - otp
+      - phone_or_email
+    PaginatedFloorList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Floor'
+    PaginatedUnitDocumentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitDocument'
+    PaginatedUnitList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Unit'
+    PatchedFloorRequest:
+      type: object
+      properties:
+        is_deleted:
+          type: boolean
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Floor number (0 = Ground, 1 = 1st Floor, etc.)
+        description:
+          type: string
+          nullable: true
+        created_by:
+          type: integer
+          nullable: true
+        updated_by:
+          type: integer
+          nullable: true
+        deleted_by:
+          type: integer
+          nullable: true
+    PatchedUnitDocumentRequest:
+      type: object
+      properties:
+        unit:
+          type: integer
+        doc_type:
+          $ref: '#/components/schemas/DocTypeEnum'
+        file:
+          type: string
+          format: binary
+    PatchedUnitRequest:
+      type: object
+      properties:
+        floor:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        unit_type:
+          $ref: '#/components/schemas/UnitTypeEnum'
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        monthly_rent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        security_deposit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        remarks:
+          type: string
+          nullable: true
+        prepaid_electricity_meter_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_electricity_old_meter_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_electricity_customer_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_meter_customer_code:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_meter_prepaid_code:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_meter_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_card_no:
+          type: string
+          nullable: true
+          maxLength: 50
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    RoleEnum:
+      enum:
+      - renter
+      - staff
+      type: string
+      description: |-
+        * `renter` - renter
+        * `staff` - staff
+    RoleResponse:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - role
+    StatusEnum:
+      enum:
+      - vacant
+      - occupied
+      - maintenance
+      type: string
+      description: |-
+        * `vacant` - Vacant
+        * `occupied` - Occupied
+        * `maintenance` - Maintenance
+    TokenObtainPair:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - refresh
+    TokenObtainPairRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+      required:
+      - access
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - refresh
+    TokenResponse:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    Unit:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        floor:
+          type: integer
+        name:
+          type: string
+          maxLength: 50
+        unit_type:
+          $ref: '#/components/schemas/UnitTypeEnum'
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        monthly_rent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        security_deposit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        remarks:
+          type: string
+          nullable: true
+        prepaid_electricity_meter_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_electricity_old_meter_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_electricity_customer_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_meter_customer_code:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_meter_prepaid_code:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_meter_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_card_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitDocument'
+          readOnly: true
+      required:
+      - documents
+      - floor
+      - id
+      - name
+      - status
+      - unit_type
+    UnitDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        unit:
+          type: integer
+        doc_type:
+          $ref: '#/components/schemas/DocTypeEnum'
+        file:
+          type: string
+          format: uri
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - doc_type
+      - file
+      - id
+      - uploaded_at
+    UnitDocumentRequest:
+      type: object
+      properties:
+        unit:
+          type: integer
+        doc_type:
+          $ref: '#/components/schemas/DocTypeEnum'
+        file:
+          type: string
+          format: binary
+      required:
+      - doc_type
+      - file
+    UnitRequest:
+      type: object
+      properties:
+        floor:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        unit_type:
+          $ref: '#/components/schemas/UnitTypeEnum'
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        monthly_rent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        security_deposit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        remarks:
+          type: string
+          nullable: true
+        prepaid_electricity_meter_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_electricity_old_meter_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_electricity_customer_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_meter_customer_code:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_meter_prepaid_code:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_meter_no:
+          type: string
+          nullable: true
+          maxLength: 50
+        prepaid_gas_card_no:
+          type: string
+          nullable: true
+          maxLength: 50
+      required:
+      - floor
+      - name
+      - status
+      - unit_type
+    UnitTypeEnum:
+      enum:
+      - residential
+      - shop
+      type: string
+      description: |-
+        * `residential` - Residential
+        * `shop` - Shop
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        role:
+          type: string
+          readOnly: true
+        is_superadmin:
+          type: boolean
+        is_manager:
+          type: boolean
+        is_renter:
+          type: boolean
+      required:
+      - id
+      - role
+      - username
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: Accounts
+  description: User and authentication endpoints
+- name: Buildings
+  description: Floors, Units, Documents management
+- name: Permissions
+  description: Role & Permission management

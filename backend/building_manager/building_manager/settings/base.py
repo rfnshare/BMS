@@ -159,7 +159,24 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", 7))),
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
-
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Building Management API',
+    'DESCRIPTION': 'API documentation for Building Management System',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+    },
+    'SORT_OPERATIONS': True,  # optional: sorts endpoints alphabetically
+    'COMPONENT_SPLIT_REQUEST': True,  # better request/response in schema
+    'TAGS': [
+        {'name': 'Accounts', 'description': 'User and authentication endpoints'},
+        # {'name': 'Buildings', 'description': 'Floors, Units, Documents management'},
+        # {'name': 'Permissions', 'description': 'Role & Permission management'},
+        # Add more apps as needed
+    ]
+}
 # CORS
 CORS_ALLOWED_ORIGINS = [u.strip() for u in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if u.strip()]
 CORS_ALLOW_CREDENTIALS = True

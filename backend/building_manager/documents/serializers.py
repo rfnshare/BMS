@@ -1,10 +1,13 @@
 from rest_framework import serializers
+
+from buildings.models import Unit
 from documents.models import UnitDocument
 from common.validators import validate_file_size
 from common.validators import validate_file_type
 
 
 class UnitDocumentSerializer(serializers.ModelSerializer):
+    unit = serializers.PrimaryKeyRelatedField(queryset=Unit.objects.all(), required=False)
     class Meta:
         model = UnitDocument
         fields = ['id', 'unit', 'doc_type', 'file', 'uploaded_at']
