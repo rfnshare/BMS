@@ -29,7 +29,7 @@ class UnitDocumentViewSet(viewsets.ModelViewSet):
     search_fields = ['doc_type']
     ordering_fields = ['id', 'uploaded_at', 'doc_type']
 
-
+@extend_schema(tags=["Renter Documents"])
 class RenterDocumentViewSet(viewsets.ModelViewSet):
     queryset = RenterDocument.objects.all()
     serializer_class = RenterDocumentSerializer

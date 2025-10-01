@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets, filters
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
@@ -7,6 +8,7 @@ from .models import Renter
 from .serializers import RenterSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 
+@extend_schema(tags=["Renters"])
 class RenterViewSet(viewsets.ModelViewSet):
     queryset = Renter.objects.all()
     serializer_class = RenterSerializer

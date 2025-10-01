@@ -1,7 +1,8 @@
 # building_manager/settings/base.py
-from pathlib import Path
 import os
 from datetime import timedelta
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Load .env (optional, useful for local dev)
@@ -172,9 +173,17 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,  # better request/response in schema
     'TAGS': [
         {'name': 'Accounts', 'description': 'User and authentication endpoints'},
-        # {'name': 'Buildings', 'description': 'Floors, Units, Documents management'},
-        # {'name': 'Permissions', 'description': 'Role & Permission management'},
-        # Add more apps as needed
+        [
+            {'name': 'Floors',
+             'description': 'Manage building floors including create, update, and delete operations.'},
+            {'name': 'Units',
+             'description': 'Manage residential or commercial units within floors, including status and rent details.'},
+            {'name': 'Unit Documents',
+             'description': 'Upload and manage documents related to individual units, such as meter scans.'},
+            {'name': 'Renters',
+             'description': 'Handle renter profiles, contact details, and identification documents.'},
+        ]
+
     ]
 }
 # CORS
