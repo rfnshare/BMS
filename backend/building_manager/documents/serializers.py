@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from buildings.models import Unit
-from documents.models import UnitDocument, RenterDocument
+from documents.models import UnitDocument, RenterDocument, LeaseDocument
 from common.validators import validate_file_size
 from common.validators import validate_file_type
 
@@ -24,3 +24,9 @@ class RenterDocumentSerializer(serializers.ModelSerializer):
         model = RenterDocument
         fields = ["id", "renter", "doc_type", "file", "uploaded_at"]
         read_only_fields = ["id", "uploaded_at", "renter"]
+
+class LeaseDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LeaseDocument
+        fields = ["id", "lease", "doc_type", "file", "uploaded_at"]
+        read_only_fields = ["id", "uploaded_at"]

@@ -41,3 +41,16 @@ def renter_nid_upload_path(instance, filename):
         f"user_{instance.user.id}",
         filename
     )
+
+def lease_document_upload_path(instance, filename):
+    """
+    Example: documents/leases/2025/10/lease_5/filename.pdf
+    """
+    from django.utils.timezone import now
+    return os.path.join(
+        "documents",
+        "leases",
+        now().strftime("%Y/%m"),
+        f"lease_{instance.lease.id}",
+        filename
+    )

@@ -3,8 +3,8 @@ from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 
-from .models import UnitDocument, RenterDocument
-from .serializers import UnitDocumentSerializer, RenterDocumentSerializer
+from .models import UnitDocument, RenterDocument, LeaseDocument
+from .serializers import UnitDocumentSerializer, RenterDocumentSerializer, LeaseDocumentSerializer
 from permissions.custom_permissions import IsStaffOrReadOnlyForRenter
 from common.pagination import CustomPagination
 
@@ -39,3 +39,15 @@ class RenterDocumentViewSet(viewsets.ModelViewSet):
         # link document to renter based on request data
         renter_id = self.request.data.get("renter")
         serializer.save(renter_id=renter_id)
+
+@extend_schema(tags=["Lease Documents"])
+class LeaseDocumentViewSet(viewsets.ModelViewSet):
+    queryset = LeaseDocument.objects.all().select_related("lease")
+    serializer_class = LeaseDocumentSerializer
+    permission_classes = [IsAuthenticated, IsStaffOrReadOnlyForRenter]
+    pagination_class = CustomPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ["lease", "doc_type"]
+    search_fields = ["lease__renter__full_name", "lease__unit__name"]
+    ordering_fields = ["uploaded_at", "id"]
+    ordering = ["-uploaded_at"]

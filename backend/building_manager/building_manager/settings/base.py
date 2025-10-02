@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     "invoices",
     "documents",
     "notifications",
+    "common",
+    "payments"
 ]
 
 # Middleware
