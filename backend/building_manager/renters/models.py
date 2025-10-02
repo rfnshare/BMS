@@ -32,6 +32,14 @@ class Renter(BaseAuditModel):
     spouse_phone = models.CharField(max_length=20, blank=True, null=True)
     nationality = models.CharField(max_length=100, blank=True, null=True)
 
+    class Status(models.TextChoices):
+        PROSPECTIVE = "prospective", "Prospective"
+        ACTIVE = "active", "Active"
+        FORMER = "former", "Former"
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PROSPECTIVE
+    )
+
     # Address
     present_address = models.TextField()
     permanent_address = models.TextField()
@@ -55,6 +63,17 @@ class Renter(BaseAuditModel):
 
     profile_pic = models.ImageField(upload_to=renter_profile_upload_path, blank=True, null=True)
     nid_scan = models.FileField(upload_to=renter_nid_upload_path, blank=True, null=True)
+
+    # ----------------------------
+    # Helper properties
+    # ----------------------------
+    @property
+    def is_active(self):
+        return self.status == self.Status.ACTIVE
+
+    @property
+    def is_former(self):
+        return self.status == self.Status.FORMER
 
     def __str__(self):
         return f"{self.full_name} ({self.user.username})"

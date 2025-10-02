@@ -9,6 +9,7 @@ User = get_user_model()
 
 class RenterSerializer(serializers.ModelSerializer):
     documents = RenterDocumentSerializer(many=True, read_only=True)
+    status = serializers.CharField(read_only=True)
 
     class Meta:
         model = Renter
@@ -32,8 +33,20 @@ class RenterSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "documents",
+            "status",
+            "is_active",
+            "is_former",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "status"]
+
+    is_active = serializers.SerializerMethodField()
+    is_former = serializers.SerializerMethodField()
+
+    def get_is_active(self, obj):
+        return obj.is_active
+
+    def get_is_former(self, obj):
+        return obj.is_former
 
     def create(self, validated_data):
         phone = validated_data.get("phone_number")
