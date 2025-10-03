@@ -1,44 +1,49 @@
 from decimal import Decimal
 from invoices.models import Invoice
 from django.db import transaction
-from django.utils.timezone import now
-
 from payments.models import Payment
-
 
 def apply_bulk_payment(lease, amount, method="cash", transaction_reference=None, notes=None):
     """
-    Allocate a payment amount to all unpaid invoices of a lease (oldest first).
-    Returns list of Payment objects created.
+    Allocate a payment amount to all unpaid/partially paid invoices of a lease (oldest first).
+    Returns:
+        - List of Payment objects created
+        - List of allocation details per invoice: {invoice_id, amount_applied, new_status}
     """
     if amount <= 0:
         raise ValueError("Payment amount must be positive.")
 
-    # Fetch unpaid or partially paid invoices
+    from django.db.models import Q
+
     invoices = Invoice.objects.filter(
-        lease=lease,
-    ).exclude(status="paid").order_by("due_date", "id")
+        lease=lease
+    ).exclude(
+        Q(status="paid") | Q(invoice_type__in=["security_deposit", "adjustment"])
+    ).order_by("invoice_date", "id")
+    # chronological order
 
     payments_created = []
+    allocation = []
     remaining_amount = Decimal(amount)
 
     with transaction.atomic():
         for invoice in invoices:
-            invoice_balance = invoice.amount - invoice.paid_amount
-
             if remaining_amount <= 0:
                 break
 
-            # Determine how much to pay on this invoice
+            invoice_balance = invoice.amount - invoice.paid_amount
+            if invoice_balance <= 0:
+                continue
+
             pay_amount = min(invoice_balance, remaining_amount)
 
-            # Create payment
             payment = Payment.objects.create(
                 invoice=invoice,
+                lease=lease,
                 amount=pay_amount,
                 method=method,
                 transaction_reference=transaction_reference,
-                notes=notes,
+                notes=notes or "",
             )
             payments_created.append(payment)
 
@@ -50,7 +55,17 @@ def apply_bulk_payment(lease, amount, method="cash", transaction_reference=None,
                 invoice.status = "partially_paid"
             invoice.save(update_fields=["paid_amount", "status"])
 
-            # Subtract paid amount from remaining
+            # Update lease deposit status if security deposit invoice fully paid
+            if invoice.invoice_type == "security_deposit" and lease.deposit_status != "paid":
+                lease.deposit_status = "paid"
+                lease.save(update_fields=["deposit_status"])
+
+            allocation.append({
+                "invoice_id": invoice.id,
+                "amount_applied": str(pay_amount),
+                "status": invoice.status
+            })
+
             remaining_amount -= pay_amount
 
-    return payments_created
+    return payments_created, allocation

@@ -34,7 +34,8 @@ class Invoice(BaseAuditModel):
 
     description = models.TextField(blank=True, null=True)
     reference_number = models.CharField(max_length=100, blank=True, null=True, unique=True)
-    invoice_number = models.CharField(max_length=100, blank=True, null=True, unique=True)  # ✅ newly added
+    invoice_number = models.CharField(max_length=100, blank=True, null=True, unique=True)
+    is_final = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-invoice_date", "-id"]

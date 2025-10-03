@@ -64,12 +64,15 @@ class BulkPaymentSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         lease = Lease.objects.get(id=validated_data["lease_id"])
-        payments = apply_bulk_payment(
+        payments, allocation = apply_bulk_payment(
             lease=lease,
             amount=validated_data["amount"],
             method=validated_data.get("method", "cash"),
             transaction_reference=validated_data.get("transaction_reference"),
             notes=validated_data.get("notes"),
         )
+        # Attach allocation info to the serializer instance for the view
+        self._allocation = allocation
         return payments
+
 

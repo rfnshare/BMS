@@ -12,15 +12,16 @@ class LeaseRentHistorySerializer(serializers.ModelSerializer):
 class LeaseSerializer(serializers.ModelSerializer):
     documents = LeaseDocumentSerializer(many=True, read_only=True)
     rent_history = LeaseRentHistorySerializer(many=True, read_only=True)
+    current_balance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     class Meta:
         model = Lease
         fields = [
             "id", "renter", "unit", "start_date", "end_date", "termination_date",
-            "rent_amount", "security_deposit", "deposit_status", "status",
+            "rent_amount", "security_deposit","deposit_status", "current_balance", "status",
             "electricity_card_given", "gas_card_given", "main_gate_key_given",
             "pocket_gate_key_given", "agreement_paper_given", "police_verification_done",
             "other_docs_given", "remarks", "documents", "rent_history", "agreement_file", "police_verification_file",
             "created_at", "updated_at"
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "deposit_status"]

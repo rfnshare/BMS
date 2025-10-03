@@ -31,7 +31,12 @@ class PaymentViewSet(viewsets.ModelViewSet):
         serializer = BulkPaymentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         payments = serializer.save()
+
+        # Access allocation info from serializer
+        allocation = getattr(serializer, "_allocation", [])
+
         return Response({
             "status": "success",
-            "payments_created": [p.id for p in payments]
+            "payments_created": [p.id for p in payments],
+            "allocation": allocation
         }, status=status.HTTP_201_CREATED)
