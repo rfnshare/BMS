@@ -1,14 +1,14 @@
 from decimal import Decimal
 
-from django.db import models
 from django.core.exceptions import ValidationError
-from django.db.models import Sum, Q
+from django.db import models
+from django.db.models import Sum
 from django.utils.timezone import now
 
-from common.models import BaseAuditModel
-from renters.models import Renter
 from buildings.models import Unit
+from common.models import BaseAuditModel
 from common.utils.storage import lease_document_upload_path
+from renters.models import Renter
 
 
 class Lease(BaseAuditModel):
@@ -74,37 +74,25 @@ class Lease(BaseAuditModel):
             if qs.exists():
                 raise ValidationError(f"Unit {self.unit.name} already has an active lease.")
 
-    from decimal import Decimal
-    from django.db.models import Sum
 
     @property
     def current_balance(self):
         """
-        Calculate current balance: total unpaid/partial/paid invoices minus payments.
-        - Excludes 'adjustment' invoices always.
-        - Excludes 'security_deposit' unless lease is terminated.
+        Calculate current balance:
+        - Active lease: sum all invoices except security deposit
+        - Terminated lease: use final settlement invoice only
         """
-        excluded_types = ["adjustment"]
+        if self.status == "terminated":
+            final_invoice = self.invoices.filter(is_final=True).first()
+            if final_invoice:
+                return max(final_invoice.amount - final_invoice.paid_amount, Decimal("0.00"))
+            return Decimal("0.00")  # fallback if no final invoice
 
-        if self.status != "terminated":
-            excluded_types.append("security_deposit")
-
-        invoices_qs = self.invoices.filter(
-            status__in=["unpaid", "partially_paid", "paid"]
-        ).exclude(
-            invoice_type__in=excluded_types
-        )
-
-        invoices_total = invoices_qs.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-        payments_total = invoices_qs.aggregate(total=Sum("payments__amount"))["total"] or Decimal("0.00")
-
-        return max(invoices_total - payments_total, Decimal("0.00"))
-
-    def __str__(self):
-        return f"Lease {self.id} | {self.renter.full_name} | {self.unit.name} | {self.status}"
-
-    def __str__(self):
-        return f"Lease {self.id} | {self.renter.full_name} | {self.unit.name} | {self.status}"
+        # Active lease: sum unpaid/partial invoices excluding security deposit
+        invoices_qs = self.invoices.filter(status__in=["unpaid", "partially_paid", "paid"]) \
+            .exclude(invoice_type="security_deposit")
+        total_balance = sum(max(inv.amount - inv.paid_amount, Decimal("0.00")) for inv in invoices_qs)
+        return total_balance
 
 
 class LeaseRentHistory(BaseAuditModel):

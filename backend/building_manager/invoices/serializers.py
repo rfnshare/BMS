@@ -21,7 +21,6 @@ class InvoiceSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "invoice_number",
-            "status",
             "invoice_date",
             "created_at",
             "updated_at"

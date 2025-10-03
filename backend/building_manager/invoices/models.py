@@ -24,7 +24,7 @@ class Invoice(BaseAuditModel):
     lease = models.ForeignKey(Lease, related_name="invoices", on_delete=models.CASCADE)
 
     invoice_type = models.CharField(max_length=50, choices=TYPE_CHOICES, default="rent")
-    invoice_date = models.DateField(auto_now_add=True)  # ✅ newly added
+    invoice_date = models.DateField(auto_now_add=True)
     due_date = models.DateField()
 
     amount = models.DecimalField(max_digits=12, decimal_places=2)

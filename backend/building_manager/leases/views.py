@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import transaction, models
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
@@ -12,6 +12,7 @@ from rest_framework.response import Response
 
 from common.pagination import CustomPagination
 from invoices.models import Invoice
+from payments.models import Payment
 from permissions.custom_permissions import IsStaffOrReadOnlyForRenter
 from .models import Lease, LeaseRentHistory
 from .serializers import LeaseSerializer, LeaseRentHistorySerializer
@@ -40,95 +41,82 @@ class LeaseViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             lease = self.get_object()
 
+            # Validate lease status
             if lease.status != "active":
                 return Response({
                     "status": "error",
                     "message": "Only active leases can be terminated."
-                }, status=status.HTTP_400_BAD_REQUEST)
+                }, status=400)
 
+            # Terminate lease
             lease.status = "terminated"
             lease.termination_date = timezone.now().date()
             lease.save(update_fields=["status", "termination_date"])
 
-            # Update unit status
+            # Update unit
             lease.unit.status = "vacant"
             lease.unit.save(update_fields=["status"])
 
-            # Update renter status if no active leases
+            # Update renter status if no other active leases
             renter = lease.renter
             if not renter.leases.filter(status="active").exists():
                 renter.status = renter.Status.FORMER
                 renter.save(update_fields=["status"])
 
-            # Financial calculations
-            current_balance = Decimal(lease.current_balance)
-            security_deposit = Decimal(lease.security_deposit)
-            deposit_status = lease.deposit_status
+            # --- Financial calculations ---
+
+            # 1️⃣ Sum unpaid/partial rent invoices (exclude security deposit & adjustments)
+            rent_invoices = lease.invoices.filter(
+                status__in=["unpaid", "partially_paid"],
+            ).exclude(invoice_type__in=["security_deposit", "adjustment"])
+
+            total_rent_due = rent_invoices.aggregate(
+                total=models.Sum(models.F("amount") - models.F("paid_amount"))
+            )["total"] or Decimal("0.00")
+
+            # 2️⃣ Paid security deposit
+            paid_deposit_amount = Invoice.objects.filter(
+                lease=lease,
+                invoice_type="security_deposit"
+            ).aggregate(total=models.Sum("paid_amount"))["total"] or Decimal("0.00")
+
+            total_rent_due = max(total_rent_due - paid_deposit_amount, Decimal("0.00"))
 
             created_invoices = []
 
-            # Handle security deposit if partially or fully paid
-            if deposit_status in ["paid", "pending"] and security_deposit > 0:
-                # Calculate remaining deposit
-                paid_deposit_amount = sum(
-                    p.amount for inv in lease.invoices.filter(invoice_type="security_deposit") for p in
-                    inv.payments.all()
-                )
-                remaining_deposit = max(security_deposit - paid_deposit_amount, Decimal("0.00"))
-
-                # Case 1: Deposit < balance → use deposit to offset
-                if remaining_deposit < current_balance:
-                    if current_balance - remaining_deposit > 0:
-                        final_invoice = Invoice.objects.create(
-                            lease=lease,
-                            invoice_type="adjustment",
-                            amount=current_balance - remaining_deposit,
-                            due_date=timezone.now().date(),
-                            status="unpaid",
-                            description=f"Final settlement after applying security deposit for Lease {lease.id}"
-                        )
-                        created_invoices.append(final_invoice)
-                    lease.deposit_status = "adjusted"
-
-                # Case 2: Deposit >= balance → refund remaining deposit if any
-                elif remaining_deposit >= current_balance:
-                    refund_amount = remaining_deposit - current_balance
-                    if refund_amount > 0:
-                        refund_invoice = Invoice.objects.create(
-                            lease=lease,
-                            invoice_type="adjustment",
-                            amount=refund_amount,
-                            due_date=timezone.now().date(),
-                            status="unpaid",
-                            description=f"Refund of security deposit for Lease {lease.id}"
-                        )
-                        created_invoices.append(refund_invoice)
-                    lease.deposit_status = "refunded" if refund_amount > 0 else "adjusted"
-
-                # Always create unpaid invoice for remaining deposit if partially paid
-                if deposit_status == "partially_paid" and remaining_deposit > 0:
-                    remaining_deposit_invoice = Invoice.objects.create(
-                        lease=lease,
-                        invoice_type="security_deposit",
-                        amount=remaining_deposit,
-                        due_date=timezone.now().date(),
-                        status="unpaid",
-                        description=f"Remaining security deposit for Lease {lease.id}"
-                    )
-                    created_invoices.append(remaining_deposit_invoice)
-
-            # No security deposit or unpaid → just generate final invoice if balance exists
-            elif current_balance > 0:
-                final_invoice = Invoice.objects.create(
+            # 3️⃣ Create consolidated adjustment invoice if tenant owes money
+            if total_rent_due > 0:
+                invoice = Invoice.objects.create(
                     lease=lease,
                     invoice_type="adjustment",
-                    amount=current_balance,
+                    amount=total_rent_due,
                     due_date=timezone.now().date(),
                     status="unpaid",
-                    description=f"Final settlement for Lease {lease.id}"
+                    description=f"Final settlement for Lease {lease.id} after applying security deposit",
+                    is_final=True,
                 )
-                created_invoices.append(final_invoice)
+                created_invoices.append(invoice)
                 lease.deposit_status = "adjusted"
+
+            # 4️⃣ Create refund invoice if deposit exceeds rent
+            elif paid_deposit_amount > 0:
+                refund_amount = paid_deposit_amount - sum(
+                    inv.amount - inv.paid_amount for inv in rent_invoices
+                )
+                if refund_amount > 0:
+                    refund_invoice = Invoice.objects.create(
+                        lease=lease,
+                        invoice_type="adjustment",
+                        amount=refund_amount,
+                        due_date=timezone.now().date(),
+                        status="unpaid",
+                        description=f"Refund of excess security deposit for Lease {lease.id}",
+                        is_final=True,
+                    )
+                    created_invoices.append(refund_invoice)
+                    lease.deposit_status = "refunded"
+                else:
+                    lease.deposit_status = "adjusted"
 
             lease.save(update_fields=["deposit_status"])
 
@@ -144,7 +132,7 @@ class LeaseViewSet(viewsets.ModelViewSet):
                         "status": inv.status,
                     } for inv in created_invoices
                 ]
-            }, status=status.HTTP_200_OK)
+            }, status=200)
 
 
 @extend_schema(tags=["Lease Rent History"])
