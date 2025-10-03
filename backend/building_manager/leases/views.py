@@ -1,4 +1,5 @@
 from rest_framework import viewsets, filters
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
@@ -21,6 +22,7 @@ class LeaseViewSet(viewsets.ModelViewSet):
     search_fields = ["renter__full_name", "unit__name"]
     ordering_fields = ["start_date", "end_date", "created_at"]
     ordering = ["-created_at"]
+    parser_classes = [MultiPartParser, FormParser]
 
     def perform_create(self, serializer):
         lease = serializer.save()

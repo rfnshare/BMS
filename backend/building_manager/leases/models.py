@@ -47,7 +47,11 @@ class Lease(BaseAuditModel):
     police_verification_done = models.BooleanField(default=False)
     other_docs_given = models.JSONField(blank=True, null=True)
 
+    agreement_file = models.FileField(upload_to=lease_document_upload_path, blank=True, null=True)
+    police_verification_file = models.FileField(upload_to=lease_document_upload_path, blank=True, null=True)
+
     remarks = models.TextField(blank=True, null=True)
+
 
     class Meta:
         constraints = [

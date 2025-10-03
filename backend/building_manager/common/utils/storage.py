@@ -51,6 +51,6 @@ def lease_document_upload_path(instance, filename):
         "documents",
         "leases",
         now().strftime("%Y/%m"),
-        f"lease_{instance.lease.id}",
+        f"lease_{instance.id}",
         filename
     )
