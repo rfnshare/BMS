@@ -23,14 +23,10 @@ class FloorViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     serializer_class = FloorSerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission]
     pagination_class = CustomPagination
-    filter_backends = [
-        DjangoFilterBackend,
-        filters.SearchFilter,
-        filters.OrderingFilter
-    ]
-    filterset_fields = ['name']
-    search_fields = ['name']
-    ordering_fields = ['id', 'created_at', 'name']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ["name"]
+    search_fields = ["name"]
+    ordering_fields = ["id", "created_at", "name"]
 
 
 @extend_schema(tags=["Units"])
