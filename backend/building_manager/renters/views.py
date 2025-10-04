@@ -1,7 +1,10 @@
 from drf_spectacular.utils import extend_schema
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, mixins, status
+from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
 from permissions.custom_permissions import IsStaffOrReadOnlyForRenter
 from common.pagination import CustomPagination
 from permissions.drf import RoleBasedPermission
@@ -37,9 +40,15 @@ class RenterViewSet(RenterAccessMixin, viewsets.ModelViewSet):
         else:
             return Renter.objects.none()
 
-class RenterProfileViewSet(RenterAccessMixin, viewsets.ModelViewSet):
-    serializer_class = RenterProfileSerializer
-    permission_classes = [IsAuthenticated, RoleBasedPermission]  # Renter can update their own profile
+    @action(detail=False, methods=["get", "patch"], url_path="me")
+    def me(self, request):
+        renter = Renter.objects.get(user=request.user)
+        if request.method == "GET":
+            serializer = RenterProfileSerializer(renter)
+            return Response(serializer.data)
 
-    def get_queryset(self):
-        return Renter.objects.filter(user=self.request.user)
+        if request.method == "PATCH":
+            serializer = RenterProfileSerializer(renter, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)

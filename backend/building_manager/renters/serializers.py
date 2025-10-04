@@ -73,5 +73,6 @@ class RenterSerializer(serializers.ModelSerializer):
 class RenterProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Renter
-        fields = ["full_name", "phone", "email", "profile_pic"]  # only allowed fields
-        read_only_fields = []
+        fields = ["full_name", "phone_number", "email", "profile_pic"]
+        read_only_fields = ["email"]  # email can't be changed if you want
+
