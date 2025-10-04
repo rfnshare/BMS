@@ -69,3 +69,9 @@ class RenterSerializer(serializers.ModelSerializer):
 
         renter = Renter.objects.create(user=user, **validated_data)
         return renter
+
+class RenterProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Renter
+        fields = ["full_name", "phone", "email", "profile_pic"]  # only allowed fields
+        read_only_fields = []

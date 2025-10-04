@@ -8,18 +8,20 @@ from rest_framework.response import Response
 from common.pagination import CustomPagination
 from documents.models import UnitDocument
 from permissions.custom_permissions import IsStaffOrReadOnlyForRenter
+from permissions.drf import RoleBasedPermission
+from permissions.mixins import RenterAccessMixin
 from .models import Floor, Unit
 from .serializers import FloorSerializer, UnitSerializer, UnitDocumentSerializer
 
 
 @extend_schema(tags=["Floors"])
-class FloorViewSet(viewsets.ModelViewSet):
+class FloorViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing floors.
     """
     queryset = Floor.objects.all()
     serializer_class = FloorSerializer
-    permission_classes = [IsAuthenticated, IsStaffOrReadOnlyForRenter]
+    permission_classes = [IsAuthenticated, RoleBasedPermission]
     pagination_class = CustomPagination
     filter_backends = [
         DjangoFilterBackend,
@@ -32,13 +34,13 @@ class FloorViewSet(viewsets.ModelViewSet):
 
 
 @extend_schema(tags=["Units"])
-class UnitViewSet(viewsets.ModelViewSet):
+class UnitViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing units and their documents.
     """
     queryset = Unit.objects.all()
     serializer_class = UnitSerializer
-    permission_classes = [IsAuthenticated, IsStaffOrReadOnlyForRenter]
+    permission_classes = [IsAuthenticated, RoleBasedPermission]
 
     filter_backends = [
         DjangoFilterBackend,

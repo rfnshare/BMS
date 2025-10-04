@@ -14,15 +14,17 @@ from common.pagination import CustomPagination
 from invoices.models import Invoice
 from payments.models import Payment
 from permissions.custom_permissions import IsStaffOrReadOnlyForRenter
+from permissions.drf import RoleBasedPermission
+from permissions.mixins import RenterAccessMixin
 from .models import Lease, LeaseRentHistory
 from .serializers import LeaseSerializer, LeaseRentHistorySerializer
 
 
 @extend_schema(tags=["Leases"])
-class LeaseViewSet(viewsets.ModelViewSet):
+class LeaseViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     queryset = Lease.objects.all().select_related("renter", "unit")
     serializer_class = LeaseSerializer
-    permission_classes = [IsAuthenticated, IsStaffOrReadOnlyForRenter]
+    permission_classes = [IsAuthenticated, RoleBasedPermission]
     pagination_class = CustomPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["status", "deposit_status", "renter", "unit"]
@@ -136,7 +138,7 @@ class LeaseViewSet(viewsets.ModelViewSet):
 
 
 @extend_schema(tags=["Lease Rent History"])
-class LeaseRentHistoryViewSet(viewsets.ModelViewSet):
+class LeaseRentHistoryViewSet(RenterAccessMixin,viewsets.ModelViewSet):
     queryset = LeaseRentHistory.objects.all()
     serializer_class = LeaseRentHistorySerializer
-    permission_classes = [IsAuthenticated, IsStaffOrReadOnlyForRenter]
+    permission_classes = [IsAuthenticated, RoleBasedPermission]

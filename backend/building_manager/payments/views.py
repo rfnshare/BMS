@@ -7,15 +7,17 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 
 from common.pagination import CustomPagination
+from permissions.drf import RoleBasedPermission
+from permissions.mixins import RenterAccessMixin
 from .models import Payment
 from .serializers import PaymentSerializer, BulkPaymentSerializer
 from permissions.custom_permissions import IsStaffOrReadOnlyForPayment
 
 @extend_schema(tags=["Payments"])
-class PaymentViewSet(viewsets.ModelViewSet):
+class PaymentViewSet(RenterAccessMixin,viewsets.ModelViewSet):
     queryset = Payment.objects.all().order_by("-payment_date", "-id")
     serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated, IsStaffOrReadOnlyForPayment]
+    permission_classes = [IsAuthenticated, RoleBasedPermission]
     pagination_class = CustomPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["method", "invoice", "lease"]

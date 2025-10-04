@@ -5,15 +5,17 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from common.pagination import CustomPagination
 from permissions.custom_permissions import IsStaffOrReadOnlyForRenter
+from permissions.drf import RoleBasedPermission
+from permissions.mixins import RenterAccessMixin
 from .models import Invoice
 from .serializers import InvoiceSerializer
 
 
 @extend_schema(tags=["Invoices"])
-class InvoiceViewSet(viewsets.ModelViewSet):
+class InvoiceViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     queryset = Invoice.objects.all().select_related("lease", "lease__renter", "lease__unit")
     serializer_class = InvoiceSerializer
-    permission_classes = [IsAuthenticated, IsStaffOrReadOnlyForRenter]
+    permission_classes = [IsAuthenticated, RoleBasedPermission]
     pagination_class = CustomPagination
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]

@@ -4,15 +4,17 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from permissions.custom_permissions import IsStaffOrReadOnlyForRenter
 from common.pagination import CustomPagination
+from permissions.drf import RoleBasedPermission
+from permissions.mixins import RenterAccessMixin
 from .models import Renter
-from .serializers import RenterSerializer
+from .serializers import RenterSerializer, RenterProfileSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 
 @extend_schema(tags=["Renters"])
-class RenterViewSet(viewsets.ModelViewSet):
+class RenterViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     queryset = Renter.objects.all()
     serializer_class = RenterSerializer
-    permission_classes = [IsAuthenticated, IsStaffOrReadOnlyForRenter]
+    permission_classes = [IsAuthenticated, RoleBasedPermission]
     pagination_class = CustomPagination
     parser_classes = [MultiPartParser, FormParser]
 
@@ -34,3 +36,10 @@ class RenterViewSet(viewsets.ModelViewSet):
             return Renter.objects.filter(user=user)
         else:
             return Renter.objects.none()
+
+class RenterProfileViewSet(RenterAccessMixin, viewsets.ModelViewSet):
+    serializer_class = RenterProfileSerializer
+    permission_classes = [IsAuthenticated, RoleBasedPermission]  # Renter can update their own profile
+
+    def get_queryset(self):
+        return Renter.objects.filter(user=self.request.user)
