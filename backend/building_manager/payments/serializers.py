@@ -1,4 +1,6 @@
 # payments/serializers.py
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from invoices.services import apply_bulk_payment
@@ -54,12 +56,42 @@ class BulkPaymentSerializer(serializers.Serializer):
         lease_id = data.get("lease_id")
         amount = data.get("amount")
 
-        if amount <= 0:
-            raise serializers.ValidationError("Payment amount must be positive.")
+        print("=== Bulk Payment Validation Start ===")
+        print(f"Lease ID: {lease_id}, Payment Amount: {amount}")
 
-        if not Lease.objects.filter(id=lease_id).exists():
+        try:
+            lease = Lease.objects.get(id=lease_id)
+        except Lease.DoesNotExist:
+            print("Lease not found!")
             raise serializers.ValidationError("Lease not found.")
 
+        # Exclude fully paid, security deposit, and adjustment invoices
+        invoices = lease.invoices.exclude(
+            status="paid"
+        ).exclude(
+            invoice_type__in=["security_deposit", "adjustment"]
+        ).order_by("invoice_date", "id")
+
+        print(f"Invoices considered for bulk payment ({len(invoices)}):")
+        for inv in invoices:
+            print(
+                f"  Invoice ID: {inv.id}, Type: {inv.invoice_type}, Status: {inv.status}, Amount: {inv.amount}, Paid: {inv.paid_amount}")
+
+        # Compute total outstanding
+        total_outstanding = sum(
+            (inv.amount - inv.paid_amount for inv in invoices),
+            Decimal("0.00")
+        )
+        print(f"Total Outstanding Amount: {total_outstanding}")
+
+        if amount > total_outstanding:
+            print("Validation failed: Payment exceeds total outstanding.")
+            raise serializers.ValidationError(
+                f"Payment exceeds total outstanding balance ({total_outstanding})."
+            )
+
+        print("Validation passed.")
+        print("=== Bulk Payment Validation End ===")
         return data
 
     def create(self, validated_data):
