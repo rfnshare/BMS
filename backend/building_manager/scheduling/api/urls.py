@@ -9,3 +9,4 @@ urlpatterns = [
     path("manual-reminder/", ManualRentReminderView.as_view(), name="manual-reminder"),
     path("manual-overdue/", ManualOverdueDetectionView.as_view(), name="manual-overdue"),
 ]
+

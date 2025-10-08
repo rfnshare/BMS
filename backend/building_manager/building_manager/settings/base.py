@@ -210,3 +210,10 @@ SECURE_HSTS_SECONDS = 0
 
 # Misc
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Email
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
+FROM_EMAIL = os.environ.get("FROM_EMAIL")  # e.g., rfnshare@gmail.com
+FROM_NAME = os.environ.get("FROM_NAME", "Building Manager")
+
+

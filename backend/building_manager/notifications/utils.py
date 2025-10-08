@@ -1,36 +1,20 @@
 # notifications/utils.py
-from notifications.models import Notification
-import random
+import os
+import pywhatkit as kit
+import sib_api_v3_sdk
+from django.conf import settings
+from pywhatkit import sendwhatmsg_instantly
 
+from notifications.models import Notification
+from twilio.rest import Client
+from sib_api_v3_sdk import ApiClient, TransactionalEmailsApi, SendSmtpEmail
+from sib_api_v3_sdk.rest import ApiException
 
 class NotificationService:
-    """
-    Mocked notification service.
-    Future-proof: dynamically reads model choices.
-    In Phase 2, replace with real Email/WhatsApp send logic.
-    """
 
     @staticmethod
-    def send(notification_type, renter, channel, subject, message, invoice=None, sent_by=None):
-        # Dynamically pull valid choices from model
-        valid_channels = dict(Notification.CHANNEL_CHOICES).keys()
-        valid_types = dict(Notification.TYPE_CHOICES).keys()
-
-        # Validate inputs
-        if notification_type not in valid_types:
-            raise ValueError(f"Invalid notification_type '{notification_type}'. Must be one of {list(valid_types)}.")
-        if channel not in valid_channels:
-            raise ValueError(f"Invalid channel '{channel}'. Must be one of {list(valid_channels)}.")
-
-        # Determine recipient
+    def send(notification_type, renter, channel, message, subject=None, invoice=None, sent_by=None):
         recipient = renter.email if channel == "email" else renter.phone_number
-        if not recipient:
-            raise ValueError(f"Renter has no valid recipient for channel '{channel}'.")
-
-        # Base error/log message
-        error_message = f"Simulated send to {recipient} via {channel}"
-
-        # Create initial Notification record
         notification = Notification.objects.create(
             notification_type=notification_type,
             renter=renter,
@@ -40,15 +24,59 @@ class NotificationService:
             subject=subject,
             message=message,
             sent_by=sent_by,
-            error_message=error_message,
             status="pending",
         )
 
-        # Simulate actual sending (mock)
-        success = random.choice([True, True, True, False])  # ~75% success rate
+        try:
+            if channel == "email":
+                NotificationService._send_email(recipient, subject, message)
+            if channel == "whatsapp":
+                result = NotificationService._send_whatsapp(renter.phone_number, message)
+                notification.status = result["status"]
+                notification.error_message = result["error_message"]
+                notification.save()
+            notification.error_message = ""
+        except Exception as e:
+            notification.status = "failed"
+            notification.error_message = str(e)
 
-        notification.status = "sent" if success else "failed"
-        notification.error_message += " — Success" if success else " — Failed (simulated error)"
         notification.save()
-
         return notification
+
+    @staticmethod
+    def _send_email(to_email, subject, content):
+        configuration = sib_api_v3_sdk.Configuration()
+
+        configuration.api_key['api-key'] = os.getenv("BREVO_API_KEY")
+        api_instance = TransactionalEmailsApi(ApiClient(configuration))
+
+        send_smtp_email = SendSmtpEmail(
+            sender={"name": settings.FROM_NAME, "email": settings.FROM_EMAIL},
+            to=[{"email": to_email}],
+            subject=subject,
+            html_content=content,
+        )
+
+        try:
+            api_instance.send_transac_email(send_smtp_email)
+        except ApiException as e:
+            raise Exception(f"Email send failed: {e}")
+
+    @staticmethod
+    def _send_whatsapp(to_number, message):
+        from_number = os.getenv("WHATSAPP_FROM")  # Use centralized config
+        if not from_number:
+            raise ValueError("WHATSAPP_FROM is not set in .env")
+
+        # Ensure proper format: +880XXXXXXXXXX
+        formatted_number = to_number
+        if not formatted_number.startswith("+"):
+            formatted_number = f"+88{to_number}"
+
+        try:
+            sendwhatmsg_instantly(formatted_number, message)
+            return {"status": "sent", "error_message": None}
+
+        except Exception as e:
+            return {"status": "failed", "error_message": str(e)}
+
