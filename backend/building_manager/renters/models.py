@@ -19,6 +19,18 @@ class Renter(BaseAuditModel):
         ("widowed", "Widowed"),
     ]
 
+    class NotificationPreference(models.TextChoices):
+        NONE = "none", "None"
+        EMAIL = "email", "Email"
+        WHATSAPP = "whatsapp", "WhatsApp"
+        BOTH = "both", "Both"
+
+    notification_preference = models.CharField(
+        max_length=20,
+        choices=NotificationPreference.choices,
+        default=NotificationPreference.NONE,
+        help_text="Select how this renter wants to receive notifications"
+    )
     # Basic Info
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="renter_profile")
     full_name = models.CharField(max_length=255)
@@ -74,6 +86,14 @@ class Renter(BaseAuditModel):
     @property
     def is_former(self):
         return self.status == self.Status.FORMER
+
+    @property
+    def prefers_email(self):
+        return self.notification_preference in [self.NotificationPreference.EMAIL, self.NotificationPreference.BOTH]
+
+    @property
+    def prefers_whatsapp(self):
+        return self.notification_preference in [self.NotificationPreference.WHATSAPP, self.NotificationPreference.BOTH]
 
     def __str__(self):
         return f"{self.full_name} ({self.user.username})"

@@ -36,6 +36,7 @@ class RenterSerializer(serializers.ModelSerializer):
             "status",
             "is_active",
             "is_former",
+            "notification_preference"
         ]
         read_only_fields = ["id", "created_at", "updated_at", "status"]
 
@@ -73,6 +74,6 @@ class RenterSerializer(serializers.ModelSerializer):
 class RenterProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Renter
-        fields = ["full_name", "phone_number", "email", "profile_pic"]
+        fields = ["full_name", "phone_number", "email", "profile_pic", "notification_preference"]
         read_only_fields = ["email"]  # email can't be changed if you want
 

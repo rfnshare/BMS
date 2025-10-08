@@ -1,29 +1,30 @@
-# scheduling/api/views.py
+from datetime import timedelta
+
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
-from rest_framework import generics, status, views, filters
+from rest_framework import generics, filters
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.views import APIView
 
 from common.pagination import CustomPagination
-from permissions.drf import RoleBasedPermission
-from scheduling.models import TaskLog
-from scheduling.api.serializers import TaskLogSerializer
 from invoices.models import Invoice
 from leases.models import Lease
-from datetime import date, timedelta
+from notifications.utils import NotificationService
+from permissions.drf import RoleBasedPermission
+from scheduling.api.serializers import TaskLogSerializer
+from scheduling.models import TaskLog
 
 
+# -------------------------------
+# Task Log List
+# -------------------------------
 @extend_schema(tags=["Scheduling"])
 class TaskLogListView(generics.ListAPIView):
-    """
-    List all task logs with filtering, search, and pagination.
-    """
     queryset = TaskLog.objects.all()
     serializer_class = TaskLogSerializer
-    permission_classes = [IsAuthenticated, RoleBasedPermission]
+    permission_classes = [RoleBasedPermission]
     pagination_class = CustomPagination
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -37,11 +38,9 @@ class TaskLogListView(generics.ListAPIView):
 class ManualInvoiceGenerationView(APIView):
     """
     Allows admin/staff to manually trigger monthly rent invoice creation
-    for all active leases. Skips if an invoice already exists for the current month.
+    and send notifications according to renter preferences.
     """
     permission_classes = [IsAuthenticated, RoleBasedPermission]
-    pagination_class = CustomPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
 
     def post(self, request, *args, **kwargs):
         today = timezone.now().date()
@@ -55,18 +54,15 @@ class ManualInvoiceGenerationView(APIView):
         active_leases = Lease.objects.filter(status="active")
 
         for lease in active_leases:
+            renter = lease.renter  # Assuming Lease has FK to Renter
+
             # Check if invoice already exists this month
-            if Invoice.objects.filter(
-                lease=lease,
-                invoice_type="rent",
-                invoice_date__gte=current_month_start
-            ).exists():
+            if Invoice.objects.filter(lease=lease, invoice_type="rent", invoice_date__gte=current_month_start).exists():
                 skipped_count += 1
                 messages.append(f"Skipped lease {lease.id} — invoice already exists")
                 continue
 
-            due_date = current_month_start + timedelta(days=7)  # configurable later
-
+            due_date = current_month_start + timedelta(days=7)
             invoice = Invoice.objects.create(
                 lease=lease,
                 invoice_type="rent",
@@ -79,9 +75,31 @@ class ManualInvoiceGenerationView(APIView):
             created_count += 1
             messages.append(f"Created invoice {invoice.invoice_number or invoice.id} for lease {lease.id}")
 
-        # ✅ Log the operation in TaskLog
+            # Send notifications based on renter preferences
+            if renter.prefers_email:
+                NotificationService.send(
+                    notification_type="invoice_created",
+                    renter=renter,
+                    channel="email",
+                    subject=f"Invoice {invoice.invoice_number}",
+                    message=f"Your invoice {invoice.invoice_number} is generated. Amount due: {invoice.amount}.",
+                    invoice=invoice,
+                    sent_by=user
+                )
+            if renter.prefers_whatsapp:
+                NotificationService.send(
+                    notification_type="invoice_created",
+                    renter=renter,
+                    channel="whatsapp",
+                    subject=None,
+                    message=f"Invoice {invoice.invoice_number} generated. Amount due: {invoice.amount}.",
+                    invoice=invoice,
+                    sent_by=user
+                )
+
+        # Log Task
         TaskLog.objects.create(
-            task_name="Manual Monthly Invoice Generation",
+            task_name="GENERATE_INVOICES",
             status="SUCCESS",
             executed_by=user,
             message="\n".join(messages)[:1000]
@@ -92,13 +110,13 @@ class ManualInvoiceGenerationView(APIView):
             "created": created_count,
             "skipped": skipped_count,
             "details": messages
-        }, status=status.HTTP_200_OK)
+        })
+
 
 @extend_schema(tags=["Scheduling"])
 class ManualRentReminderView(APIView):
     """
     Manually send reminders for invoices due in next 3 days.
-    Accessible by staff/admin only.
     """
     permission_classes = [IsAuthenticated, RoleBasedPermission]
 
@@ -112,30 +130,49 @@ class ManualRentReminderView(APIView):
             status__in=["draft", "unpaid", "partially_paid"]
         )
 
-        count = invoices_due.count()
+        messages = []
 
-        # Log Task Execution
+        for invoice in invoices_due:
+            renter = invoice.lease.renter
+            if renter.prefers_email:
+                NotificationService.send(
+                    notification_type="rent_reminder",
+                    renter=renter,
+                    channel="email",
+                    subject=f"Upcoming Rent Due: {invoice.invoice_number}",
+                    message=f"Reminder: Your invoice {invoice.invoice_number} is due on {invoice.due_date}.",
+                    invoice=invoice,
+                    sent_by=user
+                )
+            if renter.prefers_whatsapp:
+                NotificationService.send(
+                    notification_type="rent_reminder",
+                    renter=renter,
+                    channel="whatsapp",
+                    subject=None,
+                    message=f"Reminder: Invoice {invoice.invoice_number} is due on {invoice.due_date}.",
+                    invoice=invoice,
+                    sent_by=user
+                )
+            messages.append(f"Reminder sent for invoice {invoice.invoice_number}")
+
         TaskLog.objects.create(
             task_name="LEASE_REMINDER",
             status="SUCCESS",
-            message=f"{count} invoices due within 3 days",
-            executed_by=user
+            executed_by=user,
+            message="\n".join(messages)[:1000]
         )
-
-        # TODO: Integrate Notifications later
-        # for invoice in invoices_due:
-        #     send_notification(invoice)
 
         return Response({
             "status": "success",
-            "message": f"{count} invoices due soon processed for reminders"
+            "message": f"{len(invoices_due)} reminders processed"
         })
+
 
 @extend_schema(tags=["Scheduling"])
 class ManualOverdueDetectionView(APIView):
     """
-    Manually detect overdue invoices (older than 30 days).
-    Accessible by staff/admin only.
+    Manually detect overdue invoices (older than 30 days) and notify.
     """
     permission_classes = [IsAuthenticated, RoleBasedPermission]
 
@@ -149,20 +186,40 @@ class ManualOverdueDetectionView(APIView):
             status__in=["draft", "unpaid", "partially_paid"]
         )
 
-        count = overdue_invoices.count()
+        messages = []
 
-        # Log Task Execution
+        for invoice in overdue_invoices:
+            renter = invoice.lease.renter
+            if renter.prefers_email:
+                NotificationService.send(
+                    notification_type="overdue_notice",
+                    renter=renter,
+                    channel="email",
+                    subject=f"Overdue Invoice {invoice.invoice_number}",
+                    message=f"Your invoice {invoice.invoice_number} is overdue since {invoice.due_date}. Please pay immediately.",
+                    invoice=invoice,
+                    sent_by=user
+                )
+            if renter.prefers_whatsapp:
+                NotificationService.send(
+                    notification_type="overdue_notice",
+                    renter=renter,
+                    channel="whatsapp",
+                    subject=None,
+                    message=f"Overdue: Invoice {invoice.invoice_number} since {invoice.due_date}. Please pay.",
+                    invoice=invoice,
+                    sent_by=user
+                )
+            messages.append(f"Overdue notice sent for invoice {invoice.invoice_number}")
+
         TaskLog.objects.create(
             task_name="CUSTOM",
             status="SUCCESS",
-            message=f"{count} overdue invoices detected",
-            executed_by=user
+            executed_by=user,
+            message="\n".join(messages)[:1000]
         )
-
-        # Optional: mark as flagged for follow-up
-        # overdue_invoices.update(flagged=True)
 
         return Response({
             "status": "success",
-            "message": f"{count} overdue invoices detected"
+            "message": f"{len(overdue_invoices)} overdue notices processed"
         })

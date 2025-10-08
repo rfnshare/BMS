@@ -1,7 +1,10 @@
 # scheduling/models.py
 from django.db import models
 
-class TaskLog(models.Model):
+from common.models import BaseAuditModel
+
+
+class TaskLog(BaseAuditModel):
     TASK_CHOICES = [
         ("GENERATE_INVOICES", "Generate Invoices"),
         ("LEASE_REMINDER", "Lease Reminder"),
