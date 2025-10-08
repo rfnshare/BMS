@@ -2,7 +2,7 @@ from django.core.mail import send_mail
 from dotenv import load_dotenv
 from twilio.rest import Client
 import os
-
+from notifications.utils import NotificationService
 load_dotenv()
 # Load from environment variables for security
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
@@ -27,9 +27,28 @@ def send_otp_whatsapp(phone, code):
         print(f"[WhatsApp] Failed to send OTP to {phone}: {e}")
 
 def send_otp_email(email, code):
-    send_mail(
-        subject="Your OTP Code",
-        message=f"Your OTP is {code}",
-        from_email=None,
-        recipient_list=[email],
-    )
+    """
+    Send OTP via email using the NotificationService class.
+    email: recipient's email address
+    code: OTP code (integer or string)
+    """
+    subject = "Your OTP Code"
+    message = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; color: #333; padding: 20px; background-color: #f9f9f9;">
+            <h2 style="color: #2e6c80; font-size: 24px; font-weight: bold;">Dear User,</h2>
+            <p style="font-size: 16px;">Your OTP code is <strong>{code}</strong>. For your security, please do not share this code.</p>
+            <p style="font-size: 16px;">Best regards,<br> Building Manager - Saptaneer</p>
+        </body>
+    </html>
+    """
+    try:
+        # Call the _send_email method from NotificationService
+        NotificationService._send_email(
+            to_email=email,
+            subject=subject,
+            content=message  # HTML formatted content
+        )
+        print(f"[Email] OTP {code} sent to {email} successfully.")
+    except Exception as e:
+        print(f"[Email] Failed to send OTP email to {email}: {e}")
