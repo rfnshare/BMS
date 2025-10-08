@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
+from datetime import date
 from common.pagination import CustomPagination
 from invoices.models import Invoice
 from payments.models import Payment
@@ -87,12 +87,13 @@ class LeaseViewSet(RenterAccessMixin, viewsets.ModelViewSet):
             created_invoices = []
 
             # 3️⃣ Create consolidated adjustment invoice if tenant owes money
+            due_date = date(date.today().year, date.today().month, 10)
             if total_rent_due > 0:
                 invoice = Invoice.objects.create(
                     lease=lease,
                     invoice_type="adjustment",
                     amount=total_rent_due,
-                    due_date=timezone.now().date(),
+                    due_date=due_date,
                     status="unpaid",
                     description=f"Final settlement for Lease {lease.id} after applying security deposit",
                     is_final=True,
@@ -105,12 +106,13 @@ class LeaseViewSet(RenterAccessMixin, viewsets.ModelViewSet):
                 refund_amount = paid_deposit_amount - sum(
                     inv.amount - inv.paid_amount for inv in rent_invoices
                 )
+                due_date = date(date.today().year, date.today().month, 10)
                 if refund_amount > 0:
                     refund_invoice = Invoice.objects.create(
                         lease=lease,
                         invoice_type="adjustment",
                         amount=refund_amount,
-                        due_date=timezone.now().date(),
+                        due_date=due_date,
                         status="unpaid",
                         description=f"Refund of excess security deposit for Lease {lease.id}",
                         is_final=True,

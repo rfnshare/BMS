@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     "notifications",
     "common",
     "payments",
-    "permissions"
+    "permissions",
+    "scheduling"
 ]
 
 # Middleware

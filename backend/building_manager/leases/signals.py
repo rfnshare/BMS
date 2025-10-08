@@ -30,22 +30,24 @@ def create_initial_invoices_and_update_status(sender, instance: Lease, created, 
     unit.save(update_fields=["status"])
 
     # 3️⃣ Create Security Deposit Invoice
+    due_date = date(date.today().year, date.today().month, 10)
     if instance.security_deposit > 0:
         Invoice.objects.create(
             lease=instance,
             invoice_type="security_deposit",
             amount=instance.security_deposit,
-            due_date=instance.start_date,
+            due_date=due_date,
             status="unpaid",
             description=f"Security deposit for lease {instance.id}"
         )
 
     # 4️⃣ Create First Month Rent Invoice
+    due_date = date(date.today().year, date.today().month, 10)
     Invoice.objects.create(
         lease=instance,
         invoice_type="rent",
         amount=instance.rent_amount,
-        due_date=instance.start_date,
+        due_date=due_date,
         status="unpaid",
         description=f"Rent for {instance.start_date.strftime('%B %Y')}"
     )

@@ -16,4 +16,6 @@ urlpatterns = [
     # Payments
     path("api/", include("payments.urls")),
     path('api/', include('permissions.urls')),
+    path("api/", include("scheduling.api.urls")),
+
 ]
