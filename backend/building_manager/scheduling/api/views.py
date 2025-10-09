@@ -67,6 +67,49 @@ def get_email_message(invoice, renter, message_type="invoice_created"):
             </body>
         </html>
         """
+    elif message_type == "invoice_payment_update":
+        subject = f"Payment Update for Invoice #{invoice.invoice_number}"
+        body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <h2 style="color: #2e6c80;">Dear {renter.full_name},</h2>
+                <p style="font-size: 16px;">We have received a payment towards your invoice <strong>#{invoice.invoice_number}</strong>.</p>
+
+                <table style="font-size: 16px; width: 100%; border-collapse: collapse; margin-top: 20px;">
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="padding: 8px; text-align: left;">Invoice Description</th>
+                        <td style="padding: 8px; text-align: left;">{invoice.description}</td>
+                    </tr>
+                    <tr>
+                        <th style="padding: 8px; text-align: left;">Total Amount</th>
+                        <td style="padding: 8px; text-align: left;">{invoice.amount} BDT</td>
+                    </tr>
+                    <tr>
+                        <th style="padding: 8px; text-align: left;">Paid Amount</th>
+                        <td style="padding: 8px; text-align: left;">{invoice.paid_amount} BDT</td>
+                    </tr>
+                    <tr>
+                        <th style="padding: 8px; text-align: left;">Remaining Balance</th>
+                        <td style="padding: 8px; text-align: left;">{invoice.amount - invoice.paid_amount} BDT</td>
+                    </tr>
+                    <tr>
+                        <th style="padding: 8px; text-align: left;">Payment Status</th>
+                        <td style="padding: 8px; text-align: left; color: {'green' if invoice.status == 'paid' else '#d97706'};">
+                            {invoice.status.replace('_', ' ').title()}
+                        </td>
+                    </tr>
+                </table>
+
+                <p style="font-size: 16px; margin-top: 20px;">An updated invoice PDF is attached for your reference.</p>
+
+                <p style="font-size: 16px;">Thank you for your prompt payment and continued trust in us.</p>
+
+                <p style="font-size: 16px;">Best regards,<br>
+                Building Manager - Saptaneer<br>
+                Contact us at: [8801521259370]</p>
+            </body>
+        </html>
+        """
     elif message_type == "rent_reminder":
         subject = f"Reminder: Rent Due for Invoice #{invoice.invoice_number}"
         body = f"""

@@ -50,7 +50,6 @@ def invoice_post_save(sender, instance: Invoice, created, **kwargs):
         # -----------------------
         # SYNCHRONOUS PDF GENERATION
         # -----------------------
-        logger.info(f"Invoice instance fields:\n{pprint.pformat(vars(instance))}")
         logger.info(f"Invoice {instance.id}: generating PDF synchronously.")
         pdf_url = generate_invoice_pdf(instance)
 
