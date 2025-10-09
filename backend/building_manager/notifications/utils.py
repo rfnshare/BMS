@@ -1,4 +1,5 @@
 # notifications/utils.py
+import base64
 import os
 import pywhatkit as kit
 import sib_api_v3_sdk
@@ -13,7 +14,7 @@ from sib_api_v3_sdk.rest import ApiException
 class NotificationService:
 
     @staticmethod
-    def send(notification_type, renter, channel, message, subject=None, invoice=None, sent_by=None):
+    def send(notification_type, renter, channel, message, subject=None, invoice=None, sent_by=None, attachment_url=None):
         recipient = renter.email if channel == "email" else renter.phone_number
         notification = Notification.objects.create(
             notification_type=notification_type,
@@ -29,9 +30,16 @@ class NotificationService:
 
         try:
             if channel == "email":
-                NotificationService._send_email(recipient, subject, message)
+                attachment_path = None
+                if invoice and invoice.invoice_pdf:
+                    attachment_path = invoice.invoice_pdf.path  # full path to file
+                NotificationService._send_email(recipient, subject, message, attachment_path)
+
             if channel == "whatsapp":
-                result = NotificationService._send_whatsapp(renter.phone_number, message)
+                full_msg = message
+                if attachment_url:
+                    full_msg += f"\n\nDownload: {attachment_url}"
+                result = NotificationService._send_whatsapp(renter.phone_number, full_msg)
                 notification.status = result["status"]
                 notification.error_message = result["error_message"]
                 notification.save()
@@ -44,17 +52,32 @@ class NotificationService:
         return notification
 
     @staticmethod
-    def _send_email(to_email, subject, content):
+    def _send_email(to_email, subject, content, attachment_path=None):
         configuration = sib_api_v3_sdk.Configuration()
-
         configuration.api_key['api-key'] = os.getenv("BREVO_API_KEY")
         api_instance = TransactionalEmailsApi(ApiClient(configuration))
+
+        # Prepare attachments if provided
+        attachments = []
+        if attachment_path:
+            try:
+                with open(attachment_path, "rb") as f:
+                    file_data = f.read()
+                attachments = [
+                    {
+                        "content": base64.b64encode(file_data).decode("utf-8"),
+                        "name": os.path.basename(attachment_path)
+                    }
+                ]
+            except Exception as e:
+                print("Attachment load failed:", e)
 
         send_smtp_email = SendSmtpEmail(
             sender={"name": settings.FROM_NAME, "email": settings.FROM_EMAIL},
             to=[{"email": to_email}],
             subject=subject,
             html_content=content,
+            attachment=attachments if attachments else None,
         )
 
         try:
@@ -78,5 +101,6 @@ class NotificationService:
             return {"status": "sent", "error_message": None}
 
         except Exception as e:
-            return {"status": "failed", "error_message": str(e)}
+            return {"status": "failed", "error_message":
+                str(e)}
 

@@ -10,8 +10,9 @@ from common.pagination import CustomPagination
 from permissions.drf import RoleBasedPermission
 from permissions.mixins import RenterAccessMixin
 from .models import Payment
-from .serializers import PaymentSerializer, BulkPaymentSerializer
 from permissions.custom_permissions import IsStaffOrReadOnlyForPayment
+from .serializers import PaymentSerializer, BulkPaymentSerializer
+
 
 @extend_schema(tags=["Payments"])
 class PaymentViewSet(RenterAccessMixin,viewsets.ModelViewSet):

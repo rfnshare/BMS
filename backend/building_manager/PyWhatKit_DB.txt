@@ -33,3 +33,63 @@ Time: 21:43
 Phone Number: +8801601259370
 Message: Dear *Sangida Akter*, Your monthly invoice *#INV-20251008-75* has been generated. *Amount Due*: 8000.00 BDT *Due Date*: October 08, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370]
 --------------------
+Date: 9/10/2025
+Time: 15:4
+Phone Number: +8801601259373
+Message: Dear *Sangida Akter*, Your monthly invoice *#None* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370] Download: http://127.0.0.1:8000/media/documents/invoices/2025/10/invoice_id_88/Invoice-INV-TEMP-88.pdf
+--------------------
+Date: 9/10/2025
+Time: 15:7
+Phone Number: +8801601259373
+Message: Dear *Sangida Akter*, Your monthly invoice *#None* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370] Download: http://127.0.0.1:8000/media/documents/invoices/2025/10/invoice_id_89/Invoice-INV-TEMP-89.pdf
+--------------------
+Date: 9/10/2025
+Time: 15:11
+Phone Number: +881601259373
+Message: Dear *Sangida Akter*, Your monthly invoice *#None* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370] Download: http://127.0.0.1:8000/media/documents/invoices/2025/10/invoice_id_90/Invoice-INV-TEMP-90.pdf
+--------------------
+Date: 9/10/2025
+Time: 15:12
+Phone Number: +881601259373
+Message: Dear *Sangida Akter*, Your monthly invoice *#None* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370]
+--------------------
+Date: 9/10/2025
+Time: 15:16
+Phone Number: +881601259373
+Message: Dear *Sangida Akter*, Your monthly invoice *#INV-20251009-92* has been generated. *Amount Due*: 8000.00 BDT *Due Date*: October 08, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370]
+--------------------
+Date: 9/10/2025
+Time: 15:22
+Phone Number: +881601259373
+Message: Dear *Sangida Akter*, Your monthly invoice *#None* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370] Download: http://127.0.0.1:8000/media/documents/invoices/2025/10/invoice_id_93/Invoice-INV-TEMP-93.pdf
+--------------------
+Date: 9/10/2025
+Time: 15:25
+Phone Number: +881601259373
+Message: Dear *Sangida Akter*, Your monthly invoice *#None* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370] Download: http://127.0.0.1:8000/media/documents/invoices/2025/10/invoice_id_94/Invoice-INV-TEMP-94.pdf
+--------------------
+Date: 9/10/2025
+Time: 15:31
+Phone Number: +8801601259373
+Message: Dear *Sangida Akter*, Your monthly invoice *#None* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370] Download: http://127.0.0.1:8000/media/documents/invoices/2025/10/invoice_id_98/Invoice-INV-TEMP-98.pdf
+--------------------
+Date: 9/10/2025
+Time: 15:32
+Phone Number: +8801601259373
+Message: Dear *Sangida Akter*, Your monthly invoice *#None* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370] Download: http://127.0.0.1:8000/media/documents/invoices/2025/10/invoice_id_99/Invoice-INV-TEMP-99.pdf
+--------------------
+Date: 9/10/2025
+Time: 15:36
+Phone Number: +8801601259373
+Message: %0A%20%20%20%20%20%20%20%20Dear%20%2ASangida%20Akter%2A%2C%0A%0A%20%20%20%20%20%20%20%20Your%20monthly%20invoice%20%2A%23None%2A%20has%20been%20generated.%0A%0A%20%20%20%20%20%20%20%20%2AAmount%20Due%2A%3A%201000.00%20BDT%0A%0A%20%20%20%20%20%20%20%20%2ADue%20Date%2A%3A%20September%2010%2C%202025%0A%0A%20%20%20%20%20%20%20%20Please%20ensure%20payment%20is%20made%20by%20the%20due%20date%20to%20avoid%20penalties.%0A%0A%20%20%20%20%20%20%20%20If%20you%20have%20any%20questions%2C%20feel%20free%20to%20contact%20us.%0A%0A%0A%20%20%20%20%20%20%20%20Best%20regards%2C%0A%0A%20%20%20%20%20%20%20%20Building%20Manager%20-%20Saptaneer%0A%0A%20%20%20%20%20%20%20%20Contact%3A%20%5B8801521259370%5D%0A%20%20%20%20%20%20%20%20%0A%0ADownload%3A%20http%3A//127.0.0.1%3A8000/media/documents/invoices/2025/10/invoice_id_101/Invoice-INV-TEMP-101.pdf
+--------------------
+Date: 9/10/2025
+Time: 15:37
+Phone Number: +8801601259373
+Message: Test
+--------------------
+Date: 9/10/2025
+Time: 15:41
+Phone Number: +8801601259370
+Message: Dear *Sangida Akter*, Your monthly invoice *#None* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370] Download: http://127.0.0.1:8000/media/documents/invoices/2025/10/invoice_id_103/Invoice-INV-TEMP-103.pdf
+--------------------

@@ -215,5 +215,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
 FROM_EMAIL = os.environ.get("FROM_EMAIL")  # e.g., rfnshare@gmail.com
 FROM_NAME = os.environ.get("FROM_NAME", "Building Manager")
-
+BREVO_USE_ATTACHMENT_URL = True
+SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")
 

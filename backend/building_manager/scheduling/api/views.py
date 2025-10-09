@@ -209,7 +209,7 @@ class ManualInvoiceGenerationView(APIView):
                 continue
 
             due_date = current_month_start + timedelta(days=7)
-            invoice = Invoice.objects.create(
+            invoice = Invoice(
                 lease=lease,
                 invoice_type="rent",
                 amount=lease.rent_amount,
@@ -217,6 +217,8 @@ class ManualInvoiceGenerationView(APIView):
                 status="unpaid",
                 description=f"Monthly rent for {today.strftime('%B %Y')}"
             )
+            invoice._skip_signal_notify = True  # mark in memory only
+            invoice.save()
 
             created_count += 1
             messages.append(f"Created invoice {invoice.invoice_number or invoice.id} for lease {lease.id}")

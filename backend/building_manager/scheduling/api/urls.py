@@ -10,3 +10,4 @@ urlpatterns = [
     path("manual-overdue/", ManualOverdueDetectionView.as_view(), name="manual-overdue"),
 ]
 
+

@@ -54,3 +54,17 @@ def lease_document_upload_path(instance, filename):
         f"lease_{instance.id}",
         filename
     )
+
+def invoice_pdf_upload_path(instance, filename):
+    """
+    Example:
+      documents/invoices/2025/10/invoice_INV-20251003-84/invoice_INV-20251003-84.pdf
+    """
+    invoice_key = getattr(instance, "invoice_number", None) or f"id_{instance.id}"
+    return os.path.join(
+        "documents",
+        "invoices",
+        now().strftime("%Y/%m"),
+        f"invoice_{invoice_key}",
+        filename
+    )

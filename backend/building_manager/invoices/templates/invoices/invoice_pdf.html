@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Invoice {{ invoice.invoice_number }}</title>
+  <style>
+    /* ===========================
+       Fonts & Body
+       =========================== */
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 12px;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ===========================
+       Header
+       =========================== */
+    header {
+      background-color: #1a73e8;
+      color: #fff;
+      padding: 20px;
+      display: block;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      vertical-align: middle;
+      display: inline-block;
+    }
+
+    .meta {
+      display: inline-block;
+      float: right;
+      text-align: right;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .meta div {
+      margin-bottom: 3px;
+    }
+
+    /* ===========================
+       Billing Section
+       =========================== */
+    section.billing {
+      background: #fff;
+      padding: 15px 20px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+    }
+
+    section.billing h3 {
+      margin-top: 0;
+      margin-bottom: 5px;
+      color: #1a73e8;
+      font-size: 14px;
+      border-bottom: 1px solid #1a73e8;
+      padding-bottom: 2px;
+    }
+
+    section.billing p {
+      margin: 2px 0;
+    }
+
+    /* ===========================
+       Items Table
+       =========================== */
+    table.items {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+    }
+
+    table.items th, table.items td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+
+    table.items th {
+      background-color: #1a73e8;
+      color: #fff;
+      text-align: left;
+    }
+
+    table.items tfoot td {
+      font-weight: bold;
+      border-top: 2px solid #1a73e8;
+    }
+
+    /* Paid / Due coloring */
+    .paid { color: green; }
+    .due { color: red; }
+
+    /* ===========================
+       Footer
+       =========================== */
+    footer {
+      margin-top: 20px;
+      font-size: 10px;
+      text-align: center;
+      color: #555;
+    }
+
+    /* QR code */
+    .qr-code {
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .qr-code img {
+      width: 100px;
+      height: 100px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      {% if invoice.lease.unit %}
+        Saptaneer
+      {% endif %}
+    </div>
+    <div class="meta">
+      <div>Invoice: {{ invoice.invoice_number }}</div>
+      <div>Date: {{ invoice.invoice_date }}</div>
+      <div>Due: {{ invoice.due_date }}</div>
+    </div>
+  </header>
+
+  <section class="billing">
+    <h3>Bill To</h3>
+    <p>{{ invoice.lease.renter.full_name }}</p>
+    <p>{{ invoice.lease.renter.email }} | {{ invoice.lease.renter.phone_number }}</p>
+    <p>Unit: {{ invoice.lease.unit.name }}</p>
+  </section>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ invoice.description|default:"Rent" }}</td>
+        <td>{{ invoice.amount }}</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr class="total">
+        <td>Total</td>
+        <td>{{ invoice.amount }}</td>
+      </tr>
+      <tr class="{% if invoice.paid_amount >= invoice.amount %}paid{% else %}due{% endif %}">
+        <td>Paid</td>
+        <td>{{ invoice.paid_amount }}</td>
+      </tr>
+      <tr class="{% if invoice.balance_due == 0 %}paid{% else %}due{% endif %}">
+        <td>Balance</td>
+        <td>{{ invoice.balance_due|floatformat:2 }}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  {% if invoice.payment_qr_url %}
+  <div class="qr-code">
+    <img src="{{ invoice.payment_qr_url }}" alt="Scan to Pay">
+    <p>Scan to pay your invoice</p>
+  </div>
+  {% endif %}
+
+  <footer>
+    Thank you for your business. For queries, contact support@example.com
+  </footer>
+</body>
+</html>
