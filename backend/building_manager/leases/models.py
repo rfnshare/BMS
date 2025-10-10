@@ -104,3 +104,24 @@ class LeaseRentHistory(BaseAuditModel):
 
     def __str__(self):
         return f"Lease {self.lease.id} Rent Change {self.old_rent} → {self.new_rent}"
+
+class RentType(BaseAuditModel):
+    name = models.CharField(max_length=50, unique=True)
+    code = models.CharField(max_length=20, unique=True, help_text="Short code for system usage")
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+class LeaseRent(BaseAuditModel):
+    lease = models.ForeignKey(Lease, related_name="lease_rents", on_delete=models.CASCADE)
+    rent_type = models.ForeignKey(RentType, on_delete=models.PROTECT)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        unique_together = ("lease", "rent_type")  # Each rent type can appear once per lease
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"Lease {self.lease.id} - {self.rent_type.name}: {self.amount}"

@@ -1,13 +1,13 @@
-import io
 import os
 from decimal import Decimal
+
 from django.conf import settings
-from django.core.files.base import ContentFile
 from django.db import transaction
-from reportlab.lib import colors, styles
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
 from invoices.models import Invoice
 from payments.models import Payment
 
@@ -15,7 +15,6 @@ from payments.models import Payment
 # Helpers
 # -----------------------------
 DEFAULT_FONT = 'Helvetica'
-
 
 
 def currency(value):
@@ -27,6 +26,7 @@ def currency(value):
         except Exception:
             value = Decimal('0.00')
     return f"{value:,.2f}"
+
 
 def _header_footer(canvas_obj, doc, unit_name=None):
     canvas_obj.saveState()
@@ -55,13 +55,16 @@ def _header_footer(canvas_obj, doc, unit_name=None):
     canvas_obj.drawRightString(width - doc.rightMargin, 30, f"Page {canvas_obj.getPageNumber()}")
     canvas_obj.restoreState()
 
+
 def generate_invoice_pdf(invoice: Invoice):
     """Generate a PDF invoice with your building/unit/renter info and header/footer."""
     media_root = getattr(settings, "MEDIA_ROOT", None)
     if not media_root:
         raise ValueError("MEDIA_ROOT not configured in settings.")
 
-    folder_path = os.path.join(media_root, 'documents', 'invoices', invoice.invoice_month.strftime('%Y/%m') if invoice.invoice_month else 'misc', f"invoice_{invoice.invoice_number or invoice.id}")
+    folder_path = os.path.join(media_root, 'documents', 'invoices',
+                               invoice.invoice_month.strftime('%Y/%m') if invoice.invoice_month else 'misc',
+                               f"invoice_{invoice.invoice_number or invoice.id}")
     os.makedirs(folder_path, exist_ok=True)
     filename = f"Invoice-{invoice.invoice_number or invoice.id}.pdf"
     pdf_path = os.path.join(folder_path, filename)
@@ -83,9 +86,12 @@ def generate_invoice_pdf(invoice: Invoice):
 
     # Invoice meta
     meta_data = [
-        [Paragraph(f"<b>Invoice #</b>", styles['HeadingSmall']), Paragraph(str(invoice.invoice_number), styles['NormalSmall'])],
-        [Paragraph(f"<b>Invoice Date</b>", styles['HeadingSmall']), Paragraph(str(invoice.invoice_date), styles['NormalSmall'])],
-        [Paragraph(f"<b>Due Date</b>", styles['HeadingSmall']), Paragraph(str(invoice.due_date), styles['NormalSmall'])],
+        [Paragraph(f"<b>Invoice #</b>", styles['HeadingSmall']),
+         Paragraph(str(invoice.invoice_number), styles['NormalSmall'])],
+        [Paragraph(f"<b>Invoice Date</b>", styles['HeadingSmall']),
+         Paragraph(str(invoice.invoice_date), styles['NormalSmall'])],
+        [Paragraph(f"<b>Due Date</b>", styles['HeadingSmall']),
+         Paragraph(str(invoice.due_date), styles['NormalSmall'])],
     ]
 
     renter_data = [
@@ -97,12 +103,12 @@ def generate_invoice_pdf(invoice: Invoice):
 
     header_tbl = Table([[renter_data, meta_data]], colWidths=[300, 170])
     header_tbl.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('LEFTPADDING', (0,0), (-1,-1), 0),
-        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
     ]))
     story.append(header_tbl)
-    story.append(Spacer(1,12))
+    story.append(Spacer(1, 12))
 
     # ---------------------------
     # Amount table
@@ -111,22 +117,37 @@ def generate_invoice_pdf(invoice: Invoice):
     paid_amount = invoice.paid_amount or Decimal("0.00")
     remaining_amount = total_amount - paid_amount
 
+    # Main items (total)
     items = [
-        [Paragraph('<b>Description</b>', styles['HeadingSmall']), Paragraph('<b>Amount (BDT)</b>', styles['HeadingSmall'])],
-        [Paragraph(invoice.description or 'Monthly Rent', styles['NormalSmall']), Paragraph(currency(total_amount), styles['NormalSmall'])],
+        [Paragraph('<b>Description</b>', styles['HeadingSmall']),
+         Paragraph('<b>Amount (BDT)</b>', styles['HeadingSmall'])],
+        [Paragraph('Monthly Rent', styles['NormalSmall']), Paragraph(currency(total_amount), styles['NormalSmall'])],
         [Paragraph('<b>Paid</b>', styles['NormalSmall']), Paragraph(currency(paid_amount), styles['NormalSmall'])],
-        [Paragraph('<b>Remaining</b>', styles['NormalSmall']), Paragraph(currency(remaining_amount), styles['NormalSmall'])],
+        [Paragraph('<b>Remaining</b>', styles['NormalSmall']),
+         Paragraph(currency(remaining_amount), styles['NormalSmall'])],
     ]
 
-    tbl = Table(items, colWidths=[360,110])
+    # ---------------------------
+    # Lease rent breakdown
+    # ---------------------------
+    lease_rents = invoice.lease.lease_rents.all()
+    if lease_rents.exists():
+        items.append([Paragraph('<b>Breakdown:</b>', styles['HeadingSmall']), ''])
+        for lr in lease_rents:
+            items.append([
+                Paragraph(f"- {lr.rent_type.name}", styles['NormalSmall']),
+                Paragraph(currency(lr.amount), styles['NormalSmall'])
+            ])
+
+    tbl = Table(items, colWidths=[360, 110])
     tbl.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f0f0f0')),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-        ('ALIGN', (1,1), (-1,-1), 'RIGHT'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f0f0')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
     ]))
     story.append(tbl)
-    story.append(Spacer(1,18))
+    story.append(Spacer(1, 18))
 
     # -------------------------------
     # NOTES
@@ -180,8 +201,8 @@ def generate_invoice_pdf(invoice: Invoice):
     # Build PDF with header/footer
     doc.build(
         story,
-        onFirstPage=lambda c,d: _header_footer(c,d, unit.name),
-        onLaterPages=lambda c,d: _header_footer(c,d, unit.name)
+        onFirstPage=lambda c, d: _header_footer(c, d, unit.name),
+        onLaterPages=lambda c, d: _header_footer(c, d, unit.name)
     )
 
     # Save path to model

@@ -28,6 +28,12 @@ class FloorViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     search_fields = ["name"]
     ordering_fields = ["id", "created_at", "name"]
 
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
+
 
 @extend_schema(tags=["Units"])
 class UnitViewSet(RenterAccessMixin, viewsets.ModelViewSet):
@@ -123,3 +129,9 @@ class UnitViewSet(RenterAccessMixin, viewsets.ModelViewSet):
             return Response({"message": "Document deleted"}, status=status.HTTP_204_NO_CONTENT)
         except UnitDocument.DoesNotExist:
             return Response({"error": "Document not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)

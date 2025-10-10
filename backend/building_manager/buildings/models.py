@@ -1,5 +1,7 @@
 # building_manager/buildings/models.py
 from django.db import models
+
+from accounts.models import User
 from common.models import BaseAuditModel
 
 class Floor(BaseAuditModel):
@@ -8,6 +10,9 @@ class Floor(BaseAuditModel):
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    updated_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
 
     class Meta:
         ordering = ["number"]
@@ -47,3 +52,6 @@ class Unit(BaseAuditModel):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    updated_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
