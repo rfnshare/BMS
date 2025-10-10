@@ -68,3 +68,28 @@ def invoice_pdf_upload_path(instance, filename):
         f"invoice_{invoice_key}",
         filename
     )
+
+def expense_attachment_upload_path(instance, filename):
+    """
+    Generate dynamic path for expense attachments.
+    Example:
+      - For renter-related expense:
+        documents/expenses/2025/10/renter_12/receipt_AC_Repair.pdf
+      - For general expense:
+        documents/expenses/2025/10/general/maintenance_bill.pdf
+    """
+    from django.utils.timezone import now
+
+    base_path = os.path.join(
+        "documents",
+        "expenses",
+        now().strftime("%Y/%m"),
+    )
+
+    # Subfolder based on whether expense is renter-related
+    if instance.renter:
+        subfolder = f"renter_{instance.renter.id}"
+    else:
+        subfolder = "general"
+
+    return os.path.join(base_path, subfolder, filename)
