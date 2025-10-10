@@ -63,28 +63,24 @@ class RequestOTP(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Check if input is an email or phone
-        email_pattern = r"[^@]+@[^@]+\.[^@]+"
-        is_email = re.match(email_pattern, phone_or_email)
-
+        # Lookup user
         try:
-            if is_email:
-                user = User.objects.get(email=phone_or_email, is_renter=True)
-            else:
-                normalized_phone = phone_or_email.strip().replace(" ", "")
-                user = User.objects.get(phone_number=normalized_phone, is_renter=True)
-        except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"},
-                status=status.HTTP_404_NOT_FOUND
+            user = User.objects.get(
+                email=phone_or_email if "@" in phone_or_email else None,
+                is_renter=True
             )
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
 
-        # Generate OTP → signal handles sending
+        # Generate OTP
         RenterOTP.generate_otp(user)
 
         return Response(
-            {"message": "OTP sent successfully"},
-            status=status.HTTP_200_OK
+            {
+                "message": "OTP sent successfully via email only.",
+                "email": user.email
+            },
+            status=200
         )
 
 
