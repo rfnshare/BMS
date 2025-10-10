@@ -93,3 +93,28 @@ Time: 15:41
 Phone Number: +8801601259370
 Message: Dear *Sangida Akter*, Your monthly invoice *#None* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370] Download: http://127.0.0.1:8000/media/documents/invoices/2025/10/invoice_id_103/Invoice-INV-TEMP-103.pdf
 --------------------
+Date: 10/10/2025
+Time: 11:53
+Phone Number: +8801601259370
+Message: Dear *Sangida Akter*, Your monthly invoice *#INV-20251010-150* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370] Download: https://aalfaroque.me/media/documents/invoices/2025/04/invoice_INV-20251010-150/Invoice-INV-20251010-150.pdf
+--------------------
+Date: 10/10/2025
+Time: 12:6
+Phone Number: +8801601259370
+Message: Dear *Sangida Akter*, Your monthly invoice *#INV-20251010-151* has been generated. *Amount Due*: 1000.00 BDT *Due Date*: September 10, 2025 Please ensure payment is made by the due date to avoid penalties. If you have any questions, feel free to contact us. Best regards, Building Manager - Saptaneer Contact: [8801521259370]Download: https://aalfaroque.me/media/documents/invoices/2025/05/invoice_INV-20251010-151/Invoice-INV-20251010-151.pdf
+--------------------
+Date: 10/10/2025
+Time: 12:11
+Phone Number: +8801601259370
+Message: Dear *Sangida Akter*,Your monthly invoice *#INV-20251010-152* has been generated.*Amount Due*: 1000.00 BDT*Due Date*: September 10, 2025Please ensure payment is made by the due date to avoid penalties.If you have any questions, feel free to contact us.Best regards,Building Manager - SaptaneerContact: [8801521259370]Download: https://aalfaroque.me/media/documents/invoices/2025/06/invoice_INV-20251010-152/Invoice-INV-20251010-152.pdf
+--------------------
+Date: 10/10/2025
+Time: 12:18
+Phone Number: +8801601259370
+Message: Dear *Sangida Akter*,We’ve received your payment for invoice *#INV-20251010-152*.*Invoice Description*: Rent For Oct 2025*Total Amount*: 1000.00 BDT*Paid Amount*: 500.00 BDT*Remaining Balance*: 500.00 BDT*Payment Status*: 🟡 Partially PaidAn updated invoice PDF is available for your reference.Thank you for your prompt payment and continued trust in us.Best regards,Building Manager - SaptaneerContact: [8801521259370]Download: https://aalfaroque.me/media/documents/invoices/2025/06/invoice_INV-20251010-152/Invoice-INV-20251010-152.pdf
+--------------------
+Date: 10/10/2025
+Time: 12:19
+Phone Number: +8801601259370
+Message: Dear *Sangida Akter*,We’ve received your payment for invoice *#INV-20251010-152*.*Invoice Description*: Rent For Oct 2025*Total Amount*: 1000.00 BDT*Paid Amount*: 1000.00 BDT*Remaining Balance*: 0.00 BDT*Payment Status*: ✅ PaidAn updated invoice PDF is available for your reference.Thank you for your prompt payment and continued trust in us.Best regards,Building Manager - SaptaneerContact: [8801521259370]Download: https://aalfaroque.me/media/documents/invoices/2025/06/invoice_INV-20251010-152/Invoice-INV-20251010-152.pdf
+--------------------

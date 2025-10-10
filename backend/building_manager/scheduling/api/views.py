@@ -174,51 +174,71 @@ def get_email_message(invoice, renter, message_type="invoice_created"):
 
 def get_whatsapp_message(invoice, renter, message_type="invoice_created"):
     """
-    Get a structured and professional message for WhatsApp with rich text formatting.
+    Generate a compact WhatsApp message (no left padding or blank indentation).
     """
     contact_number = "[8801521259370]"  # Contact Number Placeholder
 
     if message_type == "invoice_created":
-        return f"""
-        Dear *{renter.full_name}*,\n
-        Your monthly invoice *#{invoice.invoice_number}* has been generated.\n
-        *Amount Due*: {invoice.amount} BDT\n
-        *Due Date*: {invoice.due_date.strftime('%B %d, %Y')}\n
-        Please ensure payment is made by the due date to avoid penalties.\n
-        If you have any questions, feel free to contact us.\n\n
-        Best regards,\n
-        Building Manager - Saptaneer\n
-        Contact: {contact_number}
-        """
+        return (
+            f"Dear *{renter.full_name}*,\n\n"
+            f"Your monthly invoice *#{invoice.invoice_number}* has been generated.\n"
+            f"*Amount Due*: {invoice.amount:.2f} BDT\n"
+            f"*Due Date*: {invoice.due_date.strftime('%B %d, %Y')}\n\n"
+            "Please ensure payment is made by the due date to avoid penalties.\n"
+            "If you have any questions, feel free to contact us.\n\n"
+            "Best regards,\n"
+            "Building Manager - Saptaneer\n"
+            f"Contact: {contact_number}"
+        )
 
     elif message_type == "rent_reminder":
-        return f"""
-        Dear *{renter.full_name}*,\n
-        Reminder: Your rent payment for invoice *#{invoice.invoice_number}* is due soon.\n
-        *Amount Due*: {invoice.amount} BDT\n
-        *Due Date*: {invoice.due_date.strftime('%B %d, %Y')}\n
-        Kindly make payment before the due date to avoid late fees.\n
-        If you need any assistance, please contact us.\n\n
-        Best regards,\n
-        Building Manager - Saptaneer\n
-        Contact: {contact_number}
-        """
+        return (
+            f"Dear *{renter.full_name}*,\n\n"
+            f"Reminder: Your rent payment for invoice *#{invoice.invoice_number}* is due soon.\n"
+            f"*Amount Due*: {invoice.amount:.2f} BDT\n"
+            f"*Due Date*: {invoice.due_date.strftime('%B %d, %Y')}\n\n"
+            "Kindly make payment before the due date to avoid late fees.\n"
+            "If you need any assistance, please contact us.\n\n"
+            "Best regards,\n"
+            "Building Manager - Saptaneer\n"
+            f"Contact: {contact_number}"
+        )
 
     elif message_type == "overdue_notice":
-        return f"""
-        Dear *{renter.full_name}*,\n
-        Your invoice *#{invoice.invoice_number}* is now overdue.\n
-        *Amount Due*: {invoice.amount} BDT\n
-        *Due Date*: {invoice.due_date.strftime('%B %d, %Y')}\n
-        *Days Overdue*: {(timezone.now().date() - invoice.due_date).days} days\n
-        Please settle the payment at your earliest convenience to avoid penalties.\n
-        If you need assistance or have already paid, please contact us immediately.\n\n
-        Best regards,\n
-        Building Manager - Saptaneer\n
-        Contact: {contact_number}
-        """
+        from django.utils import timezone
+        days_overdue = (timezone.now().date() - invoice.due_date).days
+        return (
+            f"Dear *{renter.full_name}*,\n\n"
+            f"Your invoice *#{invoice.invoice_number}* is now overdue.\n"
+            f"*Amount Due*: {invoice.amount:.2f} BDT\n"
+            f"*Due Date*: {invoice.due_date.strftime('%B %d, %Y')}\n"
+            f"*Days Overdue*: {days_overdue} days\n\n"
+            "Please settle the payment at your earliest convenience to avoid penalties.\n"
+            "If you’ve already paid, please contact us immediately.\n\n"
+            "Best regards,\n"
+            "Building Manager - Saptaneer\n"
+            f"Contact: {contact_number}"
+        )
+    elif message_type == "invoice_payment_update":
+        return (
+            f"Dear *{renter.full_name}*,\n\n"
+            f"We’ve received your payment for invoice *#{invoice.invoice_number}*.\n\n"
+            f"*Invoice Description*: {invoice.description}\n"
+            f"*Total Amount*: {invoice.amount:.2f} BDT\n"
+            f"*Paid Amount*: {invoice.paid_amount:.2f} BDT\n"
+            f"*Remaining Balance*: {invoice.amount - invoice.paid_amount:.2f} BDT\n"
+            f"*Payment Status*: {'✅ Paid' if invoice.status == 'paid' else '🟡 ' + invoice.status.replace('_', ' ').title()}\n\n"
+            "An updated invoice PDF is available for your reference.\n\n"
+            "Thank you for your prompt payment and continued trust in us.\n\n"
+            "Best regards,\n"
+            "Building Manager - Saptaneer\n"
+            "Contact: [8801521259370]"
+        )
+
+
     else:
         return ""
+
 
 # -------------------------------
 # Manual Invoice Generation

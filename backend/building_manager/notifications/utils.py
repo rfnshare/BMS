@@ -14,8 +14,22 @@ from sib_api_v3_sdk.rest import ApiException
 class NotificationService:
 
     @staticmethod
-    def send(notification_type, renter, channel, message, subject=None, invoice=None, sent_by=None, attachment_url=None):
+    def send(
+            notification_type,
+            renter,
+            channel,
+            message,
+            subject=None,
+            invoice=None,
+            sent_by=None,
+            attachment_url=None,
+    ):
+        """
+        Sends notification via email or WhatsApp, logs it in Notification model.
+        Automatically handles attachments and message formatting.
+        """
         recipient = renter.email if channel == "email" else renter.phone_number
+
         notification = Notification.objects.create(
             notification_type=notification_type,
             renter=renter,
@@ -26,24 +40,31 @@ class NotificationService:
             message=message,
             sent_by=sent_by,
             status="pending",
+
         )
 
         try:
             if channel == "email":
+                # Attach invoice PDF if available
                 attachment_path = None
-                if invoice and invoice.invoice_pdf:
-                    attachment_path = invoice.invoice_pdf.path  # full path to file
+                if invoice and getattr(invoice, "invoice_pdf", None):
+                    attachment_path = invoice.invoice_pdf.path
                 NotificationService._send_email(recipient, subject, message, attachment_path)
 
-            if channel == "whatsapp":
-                full_msg = message
+            elif channel == "whatsapp":
+                # Append download link if provided
+                full_msg = message.strip()
                 if attachment_url:
-                    full_msg += f"\n\nDownload: {attachment_url}"
+                    full_msg += f"\n\nDownload: {attachment_url.strip()}"
+
                 result = NotificationService._send_whatsapp(renter.phone_number, full_msg)
-                notification.status = result["status"]
-                notification.error_message = result["error_message"]
-                notification.save()
-            notification.error_message = ""
+                notification.status = result.get("status", "failed")
+                notification.error_message = result.get("error_message", "")
+
+            else:
+                notification.status = "failed"
+                notification.error_message = f"Unsupported channel: {channel}"
+
         except Exception as e:
             notification.status = "failed"
             notification.error_message = str(e)
