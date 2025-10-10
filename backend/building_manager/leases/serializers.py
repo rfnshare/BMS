@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.db import models
 from rest_framework import serializers
 
 from documents.serializers import LeaseDocumentSerializer
@@ -62,36 +63,26 @@ class LeaseSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
 
         if lease_rents_data is not None:
-            # Track existing lease_rent IDs
-            existing_ids = {lr.id for lr in instance.lease_rents.all()}
-            incoming_ids = set()
-
-            total_rent = Decimal("0.00")
             for rent_data in lease_rents_data:
-                rent_id = rent_data.get("id", None)
-                if rent_id:
-                    # Update existing
-                    lease_rent = LeaseRent.objects.get(id=rent_id, lease=instance)
-                    lease_rent.rent_type = rent_data.get("rent_type", lease_rent.rent_type)
-                    lease_rent.amount = rent_data.get("amount", lease_rent.amount)
-                    lease_rent.save()
-                    incoming_ids.add(rent_id)
-                    total_rent += lease_rent.amount
-                else:
-                    # Create new
-                    rent = LeaseRent.objects.create(lease=instance, **rent_data)
-                    total_rent += rent.amount
+                rent_type = rent_data["rent_type"]
+                amount = rent_data["amount"]
 
-            # Delete lease_rents not in incoming data
-            to_delete = existing_ids - incoming_ids
-            if to_delete:
-                LeaseRent.objects.filter(id__in=to_delete).delete()
+                # Update existing LeaseRent or create new
+                LeaseRent.objects.update_or_create(
+                    lease=instance,
+                    rent_type_id=rent_type,
+                    defaults={"amount": amount}
+                )
 
-            # Update rent_amount
+            # Recalculate total rent_amount after updating lease_rents
+            total_rent = instance.lease_rents.aggregate(
+                total=models.Sum("amount")
+            )["total"] or Decimal("0.00")
             instance.rent_amount = total_rent
             instance.save(update_fields=["rent_amount"])
 
         return instance
+
 
 
 
