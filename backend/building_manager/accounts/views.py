@@ -1,4 +1,5 @@
 # building_manager/accounts/views.py
+import re
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import serializers
@@ -30,7 +31,7 @@ class TokenResponseSerializer(serializers.Serializer):
 
 
 class DetectRoleSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    phone_or_email = serializers.CharField()
 
 
 class RoleResponseSerializer(serializers.Serializer):
@@ -55,18 +56,36 @@ class RequestOTP(APIView):
 
     def post(self, request):
         phone_or_email = request.data.get("phone_or_email")
+
+        if not phone_or_email:
+            return Response(
+                {"error": "phone_or_email is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if input is an email or phone
+        email_pattern = r"[^@]+@[^@]+\.[^@]+"
+        is_email = re.match(email_pattern, phone_or_email)
+
         try:
-            user = User.objects.get(username=phone_or_email, is_renter=True)
+            if is_email:
+                user = User.objects.get(email=phone_or_email, is_renter=True)
+            else:
+                normalized_phone = phone_or_email.strip().replace(" ", "")
+                user = User.objects.get(phone_number=normalized_phone, is_renter=True)
         except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        otp_instance = RenterOTP.generate_otp(user)
+        # Generate OTP → signal handles sending
+        RenterOTP.generate_otp(user)
 
-        if not user.phone_number:
-            return Response({"error": "User does not have a phone number"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # send_otp_whatsapp(user.phone_number, otp_instance.code)
-        return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "OTP sent successfully"},
+            status=status.HTTP_200_OK
+        )
 
 
 @extend_schema(
@@ -74,8 +93,9 @@ class RequestOTP(APIView):
     responses={200: TokenResponseSerializer, 400: OpenApiResponse(description="Invalid OTP")},
     summary="Verify OTP",
     description="Verify the OTP and return access & refresh tokens",
-tags=["Accounts"]
+    tags=["Accounts"]
 )
+
 class VerifyOTP(APIView):
     permission_classes = [AllowAny]
 
@@ -83,17 +103,35 @@ class VerifyOTP(APIView):
         phone_or_email = request.data.get("phone_or_email")
         code = request.data.get("otp")
 
+        if not phone_or_email or not code:
+            return Response(
+                {"error": "phone_or_email and otp are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Detect email vs phone
+        email_pattern = r"[^@]+@[^@]+\.[^@]+"
+        is_email = re.match(email_pattern, phone_or_email)
+
         try:
-            user = User.objects.get(username=phone_or_email, is_renter=True)
-            otp = RenterOTP.objects.filter(user=user, code=code, is_used=False).last()
-            if not otp or not otp.is_valid():
-                raise Exception("Invalid OTP")
-        except Exception:
-            return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
+            if is_email:
+                user = User.objects.get(email=phone_or_email, is_renter=True)
+            else:
+                normalized_phone = phone_or_email.strip().replace(" ", "")
+                user = User.objects.get(phone_number=normalized_phone, is_renter=True)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        otp.is_used = True
-        otp.save()
+        # Check OTP
+        otp_instance = RenterOTP.objects.filter(user=user, code=code, is_used=False).last()
+        if not otp_instance or not otp_instance.is_valid():
+            return Response({"error": "Invalid or expired OTP"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Mark OTP as used
+        otp_instance.is_used = True
+        otp_instance.save()
+
+        # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
         return Response({
             "access": str(refresh.access_token),
@@ -106,24 +144,40 @@ class VerifyOTP(APIView):
     responses={200: RoleResponseSerializer, 404: OpenApiResponse(description="User not found")},
     summary="Detect user role",
     description="Detects if a user is renter or staff",
-tags=["Accounts"]
+    tags=["Accounts"]
 )
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def detect_role(request):
-    username_or_phone = request.data.get('username')
-    if not username_or_phone:
-        return Response({"error": "Username or phone is required"}, status=400)
+    phone_or_email = request.data.get("phone_or_email")
+
+    if not phone_or_email:
+        return Response(
+            {"error": "phone_or_email is required"},
+            status=400
+        )
+
+    # Detect email vs phone number
+    email_pattern = r"[^@]+@[^@]+\.[^@]+"
+    is_email = re.match(email_pattern, phone_or_email)
 
     try:
-        user = User.objects.get(username=username_or_phone)
+        if is_email:
+            user = User.objects.get(email=phone_or_email)
+        else:
+            normalized_phone = phone_or_email.strip().replace(" ", "")
+            user = User.objects.get(phone_number=normalized_phone)
     except User.DoesNotExist:
-        try:
-            user = User.objects.get(phone_number=username_or_phone)
-        except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=404)
+        return Response({"error": "User not found"}, status=404)
 
-    role = "renter" if user.is_renter else "staff"
+    # Determine user role
+    if user.is_renter:
+        role = "renter"
+    elif user.is_superadmin or user.is_manager:
+        role = "staff"
+    else:
+        role = "unknown"
+
     return Response({"role": role})
 
 
@@ -131,7 +185,7 @@ def detect_role(request):
     responses={200: UserSerializer},
     summary="Get current user info",
     description="Returns the authenticated user's details",
-tags=["Accounts"]
+    tags=["Accounts"]
 )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -145,7 +199,7 @@ def me(request):
     responses={205: OpenApiResponse(description="Logout successful")},
     summary="Logout user",
     description="Blacklists the refresh token and logs the user out",
-tags=["Accounts"]
+    tags=["Accounts"]
 )
 class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)

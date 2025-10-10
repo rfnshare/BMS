@@ -1,10 +1,11 @@
 # notifications/api/views.py
-from rest_framework import generics
 from drf_spectacular.utils import extend_schema
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
 
 from common.pagination import CustomPagination
-from notifications.models import Notification
 from notifications.api.serializers import NotificationSerializer
+from notifications.models import Notification
 from permissions.drf import RoleBasedPermission
 
 
@@ -12,7 +13,7 @@ from permissions.drf import RoleBasedPermission
 class NotificationListView(generics.ListAPIView):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
-    permission_classes = [RoleBasedPermission]
+    permission_classes = [IsAuthenticated, RoleBasedPermission]
     pagination_class = CustomPagination
     filterset_fields = ["notification_type", "channel", "status"]
     search_fields = ["recipient", "subject", "message"]
