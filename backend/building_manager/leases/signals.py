@@ -43,11 +43,14 @@ def create_initial_invoices_and_update_status(sender, instance: Lease, created, 
 
     # 4️⃣ Create First Month Rent Invoice
     due_date = date(date.today().year, date.today().month, 10)
+    invoice_month = instance.start_date.replace(day=1)  # ensure it's the first day of the start month
+
     Invoice.objects.create(
         lease=instance,
         invoice_type="rent",
         amount=instance.rent_amount,
         due_date=due_date,
+        invoice_month=invoice_month,
         status="unpaid",
         description=f"Rent for {instance.start_date.strftime('%B %Y')}"
     )
