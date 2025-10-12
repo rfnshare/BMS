@@ -32,9 +32,6 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "corsheaders",
-    "django_celery_beat",
-    "whitenoise.runserver_nostatic",
-    "storages",
     "drf_spectacular",
 
     # Local apps (fix paths)

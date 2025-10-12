@@ -1,0 +1,9 @@
+Django
+djangorestframework_simplejwt==5.5.1
+drf_spectacular==0.28.0
+python-dotenv==1.1.1
+pywhatkit==5.4
+reportlab==4.4.4
+sib_api_v3_sdk==7.6.0
+twilio==9.8.3
+django-filter
