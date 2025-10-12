@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "drf_spectacular",
+    "dj_database_url"
 
     # Local apps (fix paths)
     "accounts",
