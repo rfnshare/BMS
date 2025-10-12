@@ -4,10 +4,3 @@ djangorestframework-simplejwt
 psycopg2-binary
 python-dotenv
 django-cors-headers
-whitenoise
-Pillow
-boto3
-django-storages
-celery
-redis
-django-celery-beat
