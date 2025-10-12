@@ -25,7 +25,7 @@ export default function Login() {
     const detectRole = async (data: { username: string }) => {
         try {
             const res = await axios.post(`${API_URL}/accounts/detect-role/`, {
-                username: data.username,
+                phone_or_email: data.username,
             });
 
             setUser(data.username);
