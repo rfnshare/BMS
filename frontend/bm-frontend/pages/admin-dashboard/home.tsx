@@ -1,4 +1,4 @@
-﻿import Layout from '../components/Layout';
+﻿import Layout from '../../components/layouts/Layout';
 import withAuth from "../../utils/withAuth";
 
 const menuItems = [

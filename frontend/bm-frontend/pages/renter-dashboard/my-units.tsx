@@ -1,4 +1,4 @@
-﻿import Layout from '../components/Layout';
+﻿import Layout from '../../components/layouts/Layout';
 
 const menuItems = [
   { name: 'My Units', path: '/renter-dashboard/my-units', icon: 'bi-building' },

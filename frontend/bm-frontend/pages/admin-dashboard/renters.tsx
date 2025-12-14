@@ -1,4 +1,4 @@
-﻿import Layout from '../components/Layout';
+﻿import Layout from '../../components/layouts/Layout';
 
 const menuItems = [
   { name: 'Home', path: '/admin-dashboard/home', icon: 'bi-house' },

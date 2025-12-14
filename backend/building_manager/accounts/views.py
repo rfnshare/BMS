@@ -1,6 +1,6 @@
 # building_manager/accounts/views.py
 import re
-
+from rest_framework_simplejwt.views import TokenObtainPairView
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import serializers
 from rest_framework import status
@@ -148,21 +148,25 @@ def detect_role(request):
     phone_or_email = request.data.get("phone_or_email")
 
     if not phone_or_email:
-        return Response(
-            {"error": "phone_or_email is required"},
-            status=400
-        )
+        return Response({"error": "phone_or_email is required"}, status=400)
 
-    # Detect email vs phone number
+    user = None
+
     email_pattern = r"[^@]+@[^@]+\.[^@]+"
-    is_email = re.match(email_pattern, phone_or_email)
+    phone_pattern = r"^\+?\d{7,15}$"
 
     try:
-        if is_email:
+        if re.match(email_pattern, phone_or_email):
             user = User.objects.get(email=phone_or_email)
-        else:
+
+        elif re.match(phone_pattern, phone_or_email.strip().replace(" ", "")):
             normalized_phone = phone_or_email.strip().replace(" ", "")
             user = User.objects.get(phone_number=normalized_phone)
+
+        else:
+            # Assume it's a username (mostly for staff login)
+            user = User.objects.get(username=phone_or_email)
+
     except User.DoesNotExist:
         return Response({"error": "User not found"}, status=404)
 
@@ -210,3 +214,19 @@ class LogoutView(APIView):
             return Response({"detail": "Refresh token missing"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        # Log the request data (username and password)
+        logger.debug(f"Received request data: {request.data}")
+
+        # Optionally, you can log additional info, like headers or IP address
+        logger.debug(f"Request Headers: {request.headers}")
+
+        # You can also log specific fields if needed
+        logger.debug(f"Username: {request.data.get('username')}")
+
+        # Call the parent post method to proceed with the normal logic
+        return super().post(request, *args, **kwargs)
