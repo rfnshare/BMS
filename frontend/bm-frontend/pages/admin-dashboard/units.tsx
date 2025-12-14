@@ -1,4 +1,7 @@
-﻿import Layout from '../../components/layouts/Layout';
+﻿// pages/admin-dashboard/units.tsx
+import Layout from '../../components/layouts/Layout';
+import FloorManager from '../../components/features/Units/FloorManager';
+import UnitManager from '../../components/features/Units/UnitManager';
 
 const menuItems = [
   { name: 'Home', path: '/admin-dashboard/home', icon: 'bi-house' },
@@ -11,12 +14,19 @@ const menuItems = [
   { name: 'Profile', path: '/admin-dashboard/profile', icon: 'bi-person' },
 ];
 
-export default function Page() {
+export default function UnitsPage() {
   return (
     <Layout menuItems={menuItems}>
-      <h1 className='mb-4'>Placeholder Page</h1>
-      <div className='p-4 bg-white rounded shadow-sm'>
-        Content for C:\Users\afaroque\PycharmProjects\BM\frontend\bm-frontend\pages\admin-dashboard\units.tsx
+      <h1 className="mb-4">Floor & Unit Management</h1>
+
+      {/* FLOOR CRUD */}
+      <div className="mb-5 p-4 bg-white rounded shadow-sm">
+        <FloorManager />
+      </div>
+
+      {/* UNIT CRUD */}
+      <div className="p-4 bg-white rounded shadow-sm">
+        <UnitManager />
       </div>
     </Layout>
   );
