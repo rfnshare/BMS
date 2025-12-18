@@ -12,30 +12,17 @@ export default function FloorManager() {
     setLoading(true);
     try {
       const data = await FloorService.list();
-      setFloors(data.results);
+      setFloors(data.results || data);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadFloors();
-  }, []);
+  useEffect(() => { loadFloors(); }, []);
 
-  const openCreate = () => {
-    setEditingFloor(null);
-    setShowModal(true);
-  };
-
-  const openEdit = (floor: Floor) => {
-    setEditingFloor(floor);
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setEditingFloor(null);
-    setShowModal(false);
-  };
+  const openCreate = () => { setEditingFloor(null); setShowModal(true); };
+  const openEdit = (floor: Floor) => { setEditingFloor(floor); setShowModal(true); };
+  const closeModal = () => { setEditingFloor(null); setShowModal(false); };
 
   const onSaved = () => {
     closeModal();
@@ -43,76 +30,71 @@ export default function FloorManager() {
   };
 
   const deleteFloor = async (id: number) => {
-  if (!confirm("Delete this floor?")) return;
-
-  try {
-    await FloorService.destroy(id);
-    loadFloors();
-  } catch (err: any) {
-    const msg =
-      err?.response?.data?.message ||
-      "Unable to delete floor.";
-    alert(msg);
-  }
-};
-
+    if (!confirm("Are you sure? This might affect units assigned to this floor.")) return;
+    try {
+      await FloorService.destroy(id);
+      loadFloors();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "Unable to delete floor.");
+    }
+  };
 
   return (
-    <div>
-      <div className="d-flex justify-content-between mb-3">
-        <h4>Floors</h4>
-        <button className="btn btn-primary" onClick={openCreate}>
-          Add Floor
+    <div className="container-fluid py-4">
+      {/* HEADER SECTION */}
+      <div className="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-4 shadow-sm border-start border-4 border-primary">
+        <div>
+          <h4 className="fw-bold mb-0 text-dark">Building Floors</h4>
+          <p className="text-muted small mb-0">Define the vertical structure of your building.</p>
+        </div>
+        <button className="btn btn-primary px-4 fw-bold rounded-pill shadow-sm" onClick={openCreate}>
+          + Add New Floor
         </button>
       </div>
 
-      <table className="table table-bordered align-middle">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Number</th>
-            <th>Description</th>
-            <th width="160">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {floors.map((f) => (
-            <tr key={f.id}>
-              <td>{f.name}</td>
-              <td>{f.number}</td>
-              <td>{f.description || "-"}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-warning me-2"
-                  onClick={() => openEdit(f)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => deleteFloor(f.id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-          {!loading && floors.length === 0 && (
-            <tr>
-              <td colSpan={4} className="text-center text-muted">
-                No floors created yet
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      {/* TABLE CARD */}
+      <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div className="table-responsive">
+          <table className="table table-hover align-middle mb-0">
+            <thead className="bg-light">
+              <tr className="text-muted small text-uppercase">
+                <th className="ps-4 py-3">Floor Identity</th>
+                <th className="py-3 text-center">Floor Level</th>
+                <th className="py-3">Description</th>
+                <th className="pe-4 py-3 text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="border-top-0">
+              {loading ? (
+                <tr><td colSpan={4} className="text-center py-5"><div className="spinner-border text-primary"></div></td></tr>
+              ) : floors.length === 0 ? (
+                <tr><td colSpan={4} className="text-center py-5 text-muted">No floors found. Add one to get started.</td></tr>
+              ) : (
+                floors.map((f) => (
+                  <tr key={f.id} className="transition-all">
+                    <td className="ps-4 fw-bold text-dark">{f.name}</td>
+                    <td className="text-center">
+                      <span className="badge rounded-circle bg-primary-subtle text-primary border border-primary-subtle" style={{ width: '35px', height: '35px', lineHeight: '25px' }}>
+                        {f.number}
+                      </span>
+                    </td>
+                    <td className="text-muted small">{f.description || "No description provided."}</td>
+                    <td className="pe-4 text-end">
+                      <div className="btn-group shadow-sm rounded-3 overflow-hidden">
+                        <button className="btn btn-sm btn-white border-end" title="Edit" onClick={() => openEdit(f)}>✏️</button>
+                        <button className="btn btn-sm btn-outline-danger" title="Delete" onClick={() => deleteFloor(f.id)}>🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {showModal && (
-        <FloorModal
-          floor={editingFloor}
-          onClose={closeModal}
-          onSaved={onSaved}
-        />
+        <FloorModal floor={editingFloor} onClose={closeModal} onSaved={onSaved} />
       )}
     </div>
   );

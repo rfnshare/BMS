@@ -28,135 +28,141 @@ export default function RenterProfileManager() {
     load();
   }, [router.isReady, id]);
 
-  if (loading) return <div>Loading renter profile...</div>;
-  if (error) return <div className="alert alert-danger">{error}</div>;
+  if (loading) return (
+    <div className="d-flex justify-content-center align-items-center min-vh-100">
+      <div className="spinner-border text-primary" role="status"></div>
+    </div>
+  );
+
+  if (error) return <div className="alert alert-danger m-4 border-0 shadow-sm">{error}</div>;
   if (!renter) return null;
 
-  const InfoRow = ({ label, value }: { label: string; value?: any }) => (
-    <div className="col-md-6 mb-2">
-      <div className="fw-semibold text-muted small">{label}</div>
-      <div>{value || "-"}</div>
+  const InfoRow = ({ label, value, icon }: { label: string; value?: any; icon?: string }) => (
+    <div className="col-md-6 col-lg-4 mb-4">
+      <div className="d-flex align-items-center gap-2 mb-1">
+        {icon && <i className={`bi bi-${icon} text-primary opacity-75`}></i>}
+        <span className="fw-bold text-uppercase text-muted small" style={{ letterSpacing: '0.5px' }}>{label}</span>
+      </div>
+      <div className="fs-6 text-dark fw-medium">{value || <span className="text-light-emphasis">Not Provided</span>}</div>
     </div>
   );
 
   return (
-    <div className="container-fluid">
+    <div className="container-fluid py-4 bg-light min-vh-100">
 
-      {/* HEADER */}
-      <div className="card mb-4">
-        <div className="card-body d-flex align-items-center gap-4">
-          <img
-            src={renter.profile_pic || "/avatar.png"}
-            alt={renter.full_name}
-            className="rounded-circle border"
-            style={{ width: 96, height: 96, objectFit: "cover" }}
-          />
+      {/* 1. MODERN HEADER CARD */}
+      <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div className="bg-primary p-5" style={{ height: '120px' }}></div>
+        <div className="card-body px-4 pt-0 pb-4">
+          <div className="d-flex flex-column flex-md-row align-items-center align-items-md-end gap-4" style={{ marginTop: '-60px' }}>
+            <img
+              src={renter.profile_pic || "/avatar.png"}
+              alt={renter.full_name}
+              className="rounded-circle border border-5 border-white shadow-sm"
+              style={{ width: 140, height: 140, objectFit: "cover", backgroundColor: 'white' }}
+            />
+            <div className="flex-grow-1 text-center text-md-start pb-2">
+              <div className="d-flex flex-column flex-md-row align-items-center gap-2">
+                <h2 className="fw-bold mb-0">{renter.full_name}</h2>
+                <span className={`badge rounded-pill px-3 py-2 ${
+                  renter.status === "active" ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary"
+                }`}>
+                  {renter.status?.toUpperCase()}
+                </span>
+              </div>
+              <p className="text-muted mb-0 d-flex align-items-center gap-2 justify-content-center justify-content-md-start">
+                <i className="bi bi-geo-alt"></i> {renter.present_address}
+              </p>
+            </div>
+            <div className="d-flex gap-2 pb-2">
+              <button className="btn btn-outline-primary rounded-pill px-4">Message</button>
+              <button className="btn btn-primary rounded-pill px-4">Edit Profile</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          <div className="flex-grow-1">
-            <h4 className="mb-1">{renter.full_name}</h4>
-            <div className="text-muted">{renter.phone_number}</div>
-            {renter.email && <div className="text-muted">{renter.email}</div>}
-            <div className="mt-1 small">
-              Notification: <strong>{renter.notification_preference}</strong>
+      <div className="row g-4">
+        {/* LEFT COLUMN: Contact & Work */}
+        <div className="col-lg-8">
+
+          {/* PERSONAL INFO SECTION */}
+          <div className="card border-0 shadow-sm rounded-4 mb-4">
+            <div className="card-header bg-transparent border-0 pt-4 px-4">
+              <h5 className="fw-bold mb-0">Personal Information</h5>
+            </div>
+            <div className="card-body p-4">
+              <div className="row">
+                <InfoRow label="Email Address" value={renter.email} icon="envelope" />
+                <InfoRow label="Phone Number" value={renter.phone_number} icon="telephone" />
+                <InfoRow label="Date of Birth" value={renter.date_of_birth} icon="calendar-event" />
+                <InfoRow label="Gender" value={renter.gender} icon="person" />
+                <InfoRow label="Nationality" value={renter.nationality} icon="globe" />
+                <InfoRow label="Occupation" value={renter.occupation} icon="briefcase" />
+              </div>
             </div>
           </div>
 
-          <span
-            className={`badge fs-6 ${
-              renter.status === "active"
-                ? "bg-success"
-                : renter.status === "former"
-                ? "bg-secondary"
-                : "bg-warning text-dark"
-            }`}
-          >
-            {renter.status}
-          </span>
-        </div>
-      </div>
-
-      {/* PERSONAL INFO */}
-      <div className="card mb-4">
-        <div className="card-header fw-bold">Personal Information</div>
-        <div className="card-body row">
-          <InfoRow label="Date of Birth" value={renter.date_of_birth} />
-          <InfoRow label="Gender" value={renter.gender} />
-          <InfoRow label="Marital Status" value={renter.marital_status} />
-          <InfoRow label="Nationality" value={renter.nationality} />
-          <InfoRow label="Alternate Phone" value={renter.alternate_phone} />
-        </div>
-      </div>
-
-      {/* ADDRESS */}
-      <div className="card mb-4">
-        <div className="card-header fw-bold">Address Information</div>
-        <div className="card-body row">
-          <InfoRow label="Present Address" value={renter.present_address} />
-          <InfoRow label="Permanent Address" value={renter.permanent_address} />
-        </div>
-      </div>
-
-      {/* RESIDENCE HISTORY */}
-      <div className="card mb-4">
-        <div className="card-header fw-bold">Residence History</div>
-        <div className="card-body row">
-          <InfoRow label="Previous Address" value={renter.previous_address} />
-          <InfoRow label="From Date" value={renter.from_date} />
-          <InfoRow label="To Date" value={renter.to_date} />
-          <InfoRow label="Landlord Name" value={renter.landlord_name} />
-          <InfoRow label="Landlord Phone" value={renter.landlord_phone} />
-          <InfoRow label="Reason for Leaving" value={renter.reason_for_leaving} />
-        </div>
-      </div>
-
-      {/* EMERGENCY & WORK */}
-      <div className="card mb-4">
-        <div className="card-header fw-bold">Emergency & Occupation</div>
-        <div className="card-body row">
-          <InfoRow label="Emergency Contact Name" value={renter.emergency_contact_name} />
-          <InfoRow label="Relation" value={renter.relation} />
-          <InfoRow label="Emergency Phone" value={renter.emergency_contact_phone} />
-          <InfoRow label="Occupation" value={renter.occupation} />
-          <InfoRow label="Company" value={renter.company} />
-          <InfoRow label="Office Address" value={renter.office_address} />
-          <InfoRow label="Monthly Income" value={renter.monthly_income} />
-        </div>
-      </div>
-
-      {/* DOCUMENTS */}
-      <div className="card mb-4">
-        <div className="card-header fw-bold">Documents</div>
-        <div className="card-body d-flex gap-4 flex-wrap">
-          {renter.profile_pic && (
-            <div>
-              <div className="fw-semibold mb-1">Profile Picture</div>
-              <img
-                src={renter.profile_pic}
-                className="img-thumbnail"
-                style={{ maxHeight: 180 }}
-              />
+          {/* RESIDENCE HISTORY */}
+          <div className="card border-0 shadow-sm rounded-4">
+            <div className="card-header bg-transparent border-0 pt-4 px-4">
+              <h5 className="fw-bold mb-0">Residence History</h5>
             </div>
-          )}
+            <div className="card-body p-4">
+              <div className="row border-bottom mb-4 pb-2">
+                <InfoRow label="Permanent Address" value={renter.permanent_address} icon="house-lock" />
+                <InfoRow label="Previous Landlord" value={renter.landlord_name} icon="person-badge" />
+                <InfoRow label="Landlord Phone" value={renter.landlord_phone} icon="phone" />
+              </div>
+              <div className="row">
+                <InfoRow label="Reason for Leaving" value={renter.reason_for_leaving} />
+                <InfoRow label="Duration" value={`${renter.from_date || ''} to ${renter.to_date || ''}`} />
+              </div>
+            </div>
+          </div>
+        </div>
 
-          {renter.nid_scan && (
-            <div>
-              <div className="fw-semibold mb-1">NID Scan</div>
-              {renter.nid_scan.endsWith(".pdf") ? (
-                <a href={renter.nid_scan} target="_blank" rel="noreferrer">
-                  View NID PDF
-                </a>
+        {/* RIGHT COLUMN: Emergency & Documents */}
+        <div className="col-lg-4">
+
+          {/* EMERGENCY CONTACT */}
+          <div className="card border-0 shadow-sm rounded-4 mb-4 bg-danger-subtle border-start border-danger border-4">
+            <div className="card-body p-4">
+              <h6 className="fw-bold text-danger mb-3">Emergency Contact</h6>
+              <div className="fw-bold fs-5">{renter.emergency_contact_name}</div>
+              <div className="text-danger-emphasis small mb-2">{renter.relation}</div>
+              <div className="d-flex align-items-center gap-2 fw-bold text-dark">
+                <i className="bi bi-telephone-fill"></i> {renter.emergency_contact_phone}
+              </div>
+            </div>
+          </div>
+
+          {/* DOCUMENTS CARD */}
+          <div className="card border-0 shadow-sm rounded-4">
+            <div className="card-header bg-transparent border-0 pt-4 px-4">
+              <h5 className="fw-bold mb-0">Documents</h5>
+            </div>
+            <div className="card-body p-4">
+              {renter.nid_scan ? (
+                 <div className="d-flex align-items-center p-3 border rounded-3 mb-3">
+                    <i className="bi bi-file-earmark-pdf fs-2 text-danger me-3"></i>
+                    <div className="flex-grow-1">
+                      <div className="fw-bold small">NID Document</div>
+                      <a href={renter.nid_scan} target="_blank" rel="noreferrer" className="text-decoration-none small">Click to View</a>
+                    </div>
+                 </div>
               ) : (
-                <img
-                  src={renter.nid_scan}
-                  className="img-thumbnail"
-                  style={{ maxHeight: 180 }}
-                />
+                <p className="text-muted small italic">No documents uploaded.</p>
               )}
+
+              <div className="mt-3">
+                <button className="btn btn-light w-100 rounded-pill text-primary fw-bold">Manage Documents</button>
+              </div>
             </div>
-          )}
+          </div>
+
         </div>
       </div>
-
     </div>
   );
 }

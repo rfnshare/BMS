@@ -1,4 +1,3 @@
-// components/features/Login/LoginForm.tsx
 import { useState } from "react";
 import LoginUsernameStep from "./LoginUsernameStep";
 import LoginPasswordStep from "./LoginPasswordStep";
@@ -16,89 +15,121 @@ interface LoginFormProps {
   setMessage: (msg: string) => void;
 }
 
+// Modernized Background with an animated "Glow" feel
 const backgroundStyle: React.CSSProperties = {
-  backgroundColor: "#E8F6F4",
+  backgroundColor: "#f0f9f8",
   backgroundImage: `
-    linear-gradient(135deg, #E8F6F4 0%, #D0EBE8 100%),
-    url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+...")
+    radial-gradient(at 0% 0%, rgba(0, 77, 64, 0.05) 0, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(0, 150, 136, 0.1) 0, transparent 50%)
   `,
-  backgroundRepeat: "repeat",
-  backgroundSize: "200px",
-  backgroundBlendMode: "multiply, normal",
+  height: "100vh",
+  width: "100vw",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
 };
 
 const cardStyle: React.CSSProperties = {
-  maxWidth: "min(400px, 90vw)",
-  width: "100%",
-  borderRadius: "20px",
-  backgroundColor: "rgba(255, 255, 255, 0.95)",
-  boxShadow:
-    "0 15px 50px rgba(0, 77, 64, 0.1), 0 0 10px rgba(0, 0, 0, 0.05)",
+  maxWidth: "420px",
+  width: "90%",
+  borderRadius: "24px",
+  backgroundColor: "rgba(255, 255, 255, 0.8)",
+  backdropFilter: "blur(20px)",
+  WebkitBackdropFilter: "blur(20px)",
+  border: "1px solid rgba(255, 255, 255, 0.3)",
+  boxShadow: "0 20px 40px rgba(0, 0, 0, 0.05)",
+  padding: "2.5rem",
+  transition: "all 0.3s ease-in-out",
 };
 
 const titleStyle: React.CSSProperties = {
   color: "#004D40",
-  fontWeight: "700",
-  fontSize: "2rem",
+  fontWeight: "800",
+  fontSize: "2.25rem",
+  letterSpacing: "-0.5px",
+  marginBottom: "0.5rem",
+};
+
+const subtitleStyle: React.CSSProperties = {
+  color: "#607D8B",
+  fontSize: "0.95rem",
+  marginBottom: "2.5rem",
 };
 
 export default function LoginForm(props: LoginFormProps) {
-  // ✅ Parent owns username (Option 2)
   const [username, setUsername] = useState("");
 
+  // Helper to determine step description
+  const getStepDescription = () => {
+    if (props.step === "role") return "Enter your credentials to continue";
+    if (props.step === "password") return `Logging in as ${username}`;
+    if (props.step === "otp") return "Enter the code sent to your phone";
+    return "";
+  };
+
   return (
-    <div
-      className="d-flex justify-content-center align-items-center vh-100"
-      style={backgroundStyle}
-    >
-      <div className="card login-card p-4 p-md-5" style={cardStyle}>
-        <h2 className="text-center mb-5" style={titleStyle}>
-          BM Login
-        </h2>
+    <div style={backgroundStyle}>
+      <div style={cardStyle}>
+        {/* BRANDING HEADER */}
+        <div className="text-center">
+          <h2 style={titleStyle}>BM Portal</h2>
+          <p style={subtitleStyle}>{getStepDescription()}</p>
+        </div>
 
-        {/* USERNAME STEP */}
-        {props.step === "role" && (
-          <LoginUsernameStep
-            loading={props.loading}
-            detectRole={props.detectRole}
-            setMessage={props.setMessage}
-            username={username}
-            onUsernameSubmit={setUsername}
-          />
-        )}
+        {/* STEP CONTENT WITH TRANSITION WRAPPER */}
+        <div className="login-step-container">
+          {/* USERNAME STEP */}
+          {props.step === "role" && (
+            <LoginUsernameStep
+              loading={props.loading}
+              detectRole={props.detectRole}
+              setMessage={props.setMessage}
+              username={username}
+              onUsernameSubmit={setUsername}
+            />
+          )}
 
-        {/* PASSWORD STEP */}
-        {props.step === "password" && (
-          <LoginPasswordStep
-            loading={props.loading}
-            username={username}
-            loginStaff={props.loginStaff}
-            setMessage={props.setMessage}
-          />
-        )}
+          {/* PASSWORD STEP */}
+          {props.step === "password" && (
+            <LoginPasswordStep
+              loading={props.loading}
+              username={username}
+              loginStaff={props.loginStaff}
+              setMessage={props.setMessage}
+            />
+          )}
 
-        {/* OTP STEP */}
-        {props.step === "otp" && (
-          <LoginOtpStep
-            loading={props.loading}
-            verifyOtp={props.verifyOtp}
-            setMessage={props.setMessage}
-          />
-        )}
 
-        {/* MESSAGE */}
+          {/* OTP STEP */}
+{props.step === "otp" && (
+  <LoginOtpStep
+    loading={props.loading}
+    requestOtp={props.requestOtp} // 👈 THIS WAS MISSING
+    verifyOtp={props.verifyOtp}
+    setMessage={props.setMessage}
+  />
+)}
+        </div>
+
+        {/* FEEDBACK MESSAGE */}
         {props.message && (
-          <p
-            className={`text-center mt-3 ${
-              props.message.includes("Error")
-                ? "text-danger"
-                : "text-success"
+          <div
+            className={`mt-4 p-3 rounded-3 text-center small fw-medium transition-all ${
+              props.message.toLowerCase().includes("error") || props.message.toLowerCase().includes("failed")
+                ? "bg-danger-subtle text-danger border border-danger-subtle"
+                : "bg-success-subtle text-success border border-success-subtle"
             }`}
-            style={{ fontSize: "0.9rem" }}
           >
             {props.message}
-          </p>
+          </div>
         )}
+
+        {/* FOOTER INFO */}
+        <div className="mt-5 text-center">
+          <p className="text-muted small mb-0">
+            &copy; 2025 Building Management System
+          </p>
+        </div>
       </div>
     </div>
   );

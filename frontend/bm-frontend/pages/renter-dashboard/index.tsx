@@ -1,6 +1,8 @@
 ﻿import Layout from '../../components/layouts/Layout';
+import RenterDashboard from '../../components/features/Renter/RenterDashboard';
 
 const menuItems = [
+  { name: 'Home', path: '/renter-dashboard', icon: 'bi-house' },
   { name: 'My Units', path: '/renter-dashboard/my-units', icon: 'bi-building' },
   { name: 'Invoices', path: '/renter-dashboard/invoices', icon: 'bi-receipt' },
   { name: 'Payments', path: '/renter-dashboard/payments', icon: 'bi-wallet2' },
@@ -10,9 +12,9 @@ const menuItems = [
 export default function Page() {
   return (
     <Layout menuItems={menuItems}>
-      <h1 className='mb-4'>Placeholder Page</h1>
-      <div className='p-4 bg-white rounded shadow-sm'>
-        Content for C:\Users\afaroque\PycharmProjects\BM\frontend\bm-frontend\pages\renter-dashboard\index.tsx
+      <div className="container-fluid py-2">
+        {/* Real Data Logic is here */}
+        <RenterDashboard />
       </div>
     </Layout>
   );

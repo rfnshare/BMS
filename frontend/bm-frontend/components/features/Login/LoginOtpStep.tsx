@@ -1,9 +1,8 @@
-// components/features/Login/LoginOtpStep.tsx
 import { useState, useRef, useEffect } from "react";
 
 interface Props {
   loading: boolean;
-  requestOtp: () => Promise<void>;
+  requestOtp: () => Promise<void>; // 👈 The child is ready to receive it
   verifyOtp: (otp: string) => Promise<void>;
   setMessage: (msg: string) => void;
 }
@@ -11,14 +10,15 @@ interface Props {
 export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessage }: Props) {
   const otpLength = 6;
   const [otpDigits, setOtpDigits] = useState(new Array(otpLength).fill(""));
+  const [activeIdx, setActiveIdx] = useState(0); // Track focus for styling
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const combinedOtp = otpDigits.join("");
   const isOtpComplete = combinedOtp.length === otpLength;
 
-  const [resendTime, setResendTime] = useState(60); // Start the timer immediately
+  const [resendTime, setResendTime] = useState(60);
   const [initialRequestSent, setInitialRequestSent] = useState(false);
 
-  // Effect for the countdown timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (resendTime > 0) {
@@ -27,7 +27,6 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
     return () => clearInterval(timer);
   }, [resendTime]);
 
-  // Initial OTP request on mount
   useEffect(() => {
     if (!initialRequestSent) {
       requestOtp();
@@ -43,23 +42,24 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
     newDigits[index] = val;
     setOtpDigits(newDigits);
 
-    // Auto-focus logic
-    if (val && index < otpLength - 1) otpInputRefs.current[index + 1]?.focus();
-    else if (!val && index > 0 && e.nativeEvent.inputType === 'deleteContentBackward') {
-        otpInputRefs.current[index - 1]?.focus();
+    if (val && index < otpLength - 1) {
+      otpInputRefs.current[index + 1]?.focus();
+      setActiveIdx(index + 1);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    // Handle backspace to move to the previous field
-    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+    if (e.key === 'Backspace') {
+      if (!otpDigits[index] && index > 0) {
         otpInputRefs.current[index - 1]?.focus();
+        setActiveIdx(index - 1);
+      }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(''); // Clear previous messages
+    setMessage('');
     if (isOtpComplete) await verifyOtp(combinedOtp);
   };
 
@@ -69,39 +69,10 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
     setResendTime(60);
   };
 
-  const inputStyle: React.CSSProperties = {
-    // We use a flexible width (vw) and min/max limits
-    width: "min(45px, 12vw)",
-    height: "55px",
-    borderRadius: "10px",
-    border: "1px solid #E0E0E0",
-    fontSize: "1.25rem",
-    fontWeight: "700",
-    color: "#004D40",
-    // Smaller margin on very small screens, thanks to the fixed width
-    margin: "0 3px",
-    boxShadow: 'none',
-    transition: 'border-color 0.2s',
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    height: "55px",
-    borderRadius: "10px",
-    backgroundColor: "#4CAF50",
-    borderColor: "#4CAF50",
-    fontWeight: "600",
-  };
-
- return (
+  return (
     <form onSubmit={handleSubmit}>
-      <p className="text-center text-muted mb-4" style={{ fontSize: '0.9rem' }}>
-        Please enter the 6-digit code sent to your registered contact.
-      </p>
-
-      {/* Using 'justify-content-center' with small margins ensures they stay
-        centered and fit well on small screens.
-      */}
-      <div className="d-flex justify-content-center mb-4">
+      {/* INPUT GROUP */}
+      <div className="d-flex justify-content-between mb-4">
         {otpDigits.map((digit, i) => (
           <input
             key={i}
@@ -109,22 +80,68 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
             type="tel"
             maxLength={1}
             value={digit}
+            onFocus={() => setActiveIdx(i)}
             onChange={(e) => handleOtpChange(e, i)}
             onKeyDown={(e) => handleKeyDown(e, i)}
-            className="form-control text-center"
-            style={inputStyle}
+            className="form-control text-center p-0"
+            style={{
+              width: "min(48px, 13vw)",
+              height: "60px",
+              borderRadius: "12px",
+              fontSize: "1.5rem",
+              fontWeight: "700",
+              color: "#004D40",
+              border: activeIdx === i ? "2px solid #004D40" : "2px solid #E0E0E0",
+              backgroundColor: activeIdx === i ? "#fff" : "#f8fdfc",
+              boxShadow: activeIdx === i ? "0 0 10px rgba(0, 77, 64, 0.1)" : "none",
+              transition: "all 0.2s ease",
+            }}
             required
           />
         ))}
       </div>
+
+      {/* TIMER & RESEND */}
       <div className="mb-4 text-center">
-        <button type="button" className="btn btn-link p-0" onClick={handleResend} disabled={resendTime > 0} style={{ color: resendTime > 0 ? '#B0BEC5' : '#4CAF50', fontWeight: '500' }}>
-          {resendTime > 0 ? `Resend code in ${resendTime}s` : "Resend OTP"}
-        </button>
+        {resendTime > 0 ? (
+          <p className="text-muted small">
+            Resend code available in <span className="fw-bold text-dark">{resendTime}s</span>
+          </p>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-link btn-sm text-decoration-none fw-bold"
+            onClick={handleResend}
+            style={{ color: "#00796B" }}
+          >
+            Didn't receive code? Resend Now
+          </button>
+        )}
       </div>
-      <button className="btn w-100 text-white" style={buttonStyle} disabled={loading || !isOtpComplete}>
-        {loading ? "Verifying..." : "Verify OTP"}
+
+      {/* SUBMIT BUTTON */}
+      <button
+        className={`btn btn-lg w-100 py-3 rounded-3 shadow-sm transition-all ${
+            isOtpComplete ? "btn-primary shadow" : "btn-light border text-muted"
+        }`}
+        style={{
+            fontWeight: "700",
+            backgroundColor: isOtpComplete ? "#004D40" : "",
+            borderColor: isOtpComplete ? "#004D40" : ""
+        }}
+        disabled={loading || !isOtpComplete}
+      >
+        {loading ? (
+          <>
+            <span className="spinner-border spinner-border-sm me-2"></span>
+            Verifying...
+          </>
+        ) : "Verify & Log In"}
       </button>
+
+      <p className="mt-4 text-center text-muted small px-3">
+        Checking your security. We sent a code to your registered device.
+      </p>
     </form>
   );
 }
