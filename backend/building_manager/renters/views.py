@@ -99,3 +99,4 @@ class RenterViewSet(RenterAccessMixin, viewsets.ModelViewSet):
 
         # Save the updated renter instance
         serializer.save()
+

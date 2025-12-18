@@ -43,10 +43,19 @@ export default function FloorManager() {
   };
 
   const deleteFloor = async (id: number) => {
-    if (!confirm("Delete this floor? All units under this floor will be removed.")) return;
+  if (!confirm("Delete this floor?")) return;
+
+  try {
     await FloorService.destroy(id);
     loadFloors();
-  };
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ||
+      "Unable to delete floor.";
+    alert(msg);
+  }
+};
+
 
   return (
     <div>

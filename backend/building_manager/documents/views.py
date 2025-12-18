@@ -1,5 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, filters
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 
@@ -36,6 +37,7 @@ class RenterDocumentViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     queryset = RenterDocument.objects.all()
     serializer_class = RenterDocumentSerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission]
+    parser_classes = [MultiPartParser, FormParser]
 
     def perform_create(self, serializer):
         # link document to renter based on request data

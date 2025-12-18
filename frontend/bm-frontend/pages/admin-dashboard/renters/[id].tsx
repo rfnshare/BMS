@@ -1,5 +1,7 @@
-﻿import Layout from "../../components/layouts/Layout";
-import RenterManager from "../../components/features/Renters/RenterManager";
+import { useRouter } from "next/router";
+import Layout from "../../../components/layouts/Layout";
+import RenterProfileManager from "../../../components/features/Renters/RenterProfileManager";
+
 
 const menuItems = [
   { name: "Home", path: "/admin-dashboard/home", icon: "bi-house" },
@@ -12,10 +14,15 @@ const menuItems = [
   { name: "Profile", path: "/admin-dashboard/profile", icon: "bi-person" },
 ];
 
-export default function RentersPage() {
+export default function RenterProfilePage() {
+  const router = useRouter();
+
+  // wait until router is ready (prevents undefined id issues)
+  if (!router.isReady) return null;
+
   return (
     <Layout menuItems={menuItems}>
-      <RenterManager />
+      <RenterProfileManager />
     </Layout>
   );
 }

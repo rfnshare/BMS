@@ -34,9 +34,25 @@ class FloorViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
 
+    def destroy(self, request, *args, **kwargs):
+        floor = self.get_object()
+
+        # 🔒 Block deletion if units exist
+        if floor.units.exists():
+            return Response(
+                {
+                    "message": "Before removing floor, remove relevant units first."
+                },
+                status=status.HTTP_409_CONFLICT
+            )
+
+        self.perform_destroy(floor)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 @extend_schema(tags=["Units"])
 class UnitViewSet(RenterAccessMixin, viewsets.ModelViewSet):
+
     """
     ViewSet for managing units and their documents.
     """
@@ -135,3 +151,40 @@ class UnitViewSet(RenterAccessMixin, viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        partial = True  # ✅ allow partial updates
+        instance = self.get_object()
+
+        print("Incoming PUT data for unit update:", request.data)
+
+        serializer = self.get_serializer(
+            instance,
+            data=request.data,
+            partial=partial
+        )
+
+        if serializer.is_valid():
+            self.perform_update(serializer)
+            return Response(serializer.data)
+
+        # 🔴 This is what you need to see
+        print("Unit update validation errors:", serializer.errors)
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def create(self, request, *args, **kwargs):
+        # Log the incoming request data
+        print("Incoming POST data for unit creation:", request.data)
+
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            # Log serializer validation errors
+            print("Unit creation validation errors:", serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

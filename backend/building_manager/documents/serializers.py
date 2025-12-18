@@ -22,8 +22,8 @@ class UnitDocumentSerializer(serializers.ModelSerializer):
 class RenterDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = RenterDocument
-        fields = ["id", "renter", "doc_type", "file", "uploaded_at"]
-        read_only_fields = ["id", "uploaded_at", "renter"]
+        fields = ["id", "doc_type", "file", "uploaded_at"]
+        read_only_fields = ["id", "uploaded_at"]
 
 class LeaseDocumentSerializer(serializers.ModelSerializer):
     class Meta:

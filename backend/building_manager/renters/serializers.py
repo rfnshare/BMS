@@ -36,7 +36,15 @@ class RenterSerializer(serializers.ModelSerializer):
             "status",
             "is_active",
             "is_former",
-            "notification_preference"
+            "notification_preference",
+            "present_address",
+            "permanent_address",
+            "previous_address",
+            "from_date",
+            "to_date",
+            "landlord_name",
+            "landlord_phone",
+            "reason_for_leaving"
         ]
         read_only_fields = ["id", "created_at", "updated_at", "status"]
 

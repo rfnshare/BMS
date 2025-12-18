@@ -54,9 +54,24 @@ export default function FloorList({ floors, selectedFloor, onSelect, onCreate, o
                   const desc = prompt('Description', f.description || '') || '';
                   await onUpdate(f.id, { name: newName, description: desc });
                 }}>Edit</button>
-                <button className="btn btn-danger btn-sm" onClick={async () => {
-                  if (confirm(`Delete floor ${f.name}? This cannot be undone.`)) await onDelete(f.id);
-                }}>Delete</button>
+                <button
+  className="btn btn-danger btn-sm"
+  onClick={async () => {
+    if (!confirm(`Delete floor ${f.name}?`)) return;
+
+    try {
+      await onDelete(f.id);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        "Unable to delete floor.";
+      alert(msg);
+    }
+  }}
+>
+  Delete
+</button>
+
               </div>
             </li>
           ))}
