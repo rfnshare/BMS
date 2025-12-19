@@ -28,7 +28,10 @@ export interface UnitDocument {
 export interface PaginatedUnitList { count: number; results: Unit[]; next?: string; previous?: string; }
 
 export const UnitService = {
-  list: (params?: any) => api.get<PaginatedUnitList>('/buildings/units/', { params }).then(r => r.data),
+  list: async (page: number = 1) => {
+    const response = await api.get(`/buildings/units/?page=${page}`);
+    return response.data;
+  },
   create: (payload: any) => api.post<Unit>('/buildings/units/', payload).then(r => r.data),
   retrieve: (id: number) => api.get<Unit>(`/buildings/units/${id}/`).then(r => r.data),
   update: (id: number, payload: any) => api.put<Unit>(`/buildings/units/${id}/`, payload).then(r => r.data),
@@ -48,4 +51,5 @@ export const UnitService = {
   // Unit-documents collection endpoints
   listDocuments: (params?: any) => api.get('/unit-documents/', { params }).then(r => r.data),
   retrieveDocument: (id: number) => api.get(`/unit-documents/${id}/`).then(r => r.data),
+
 };

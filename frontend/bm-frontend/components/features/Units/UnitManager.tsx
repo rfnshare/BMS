@@ -12,18 +12,28 @@ export default function UnitManager() {
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [docUnit, setDocUnit] = useState<Unit | null>(null);
 
+  // 🔥 NEW: Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
   // ========================
   // 1. Data Loading Logic
   // ========================
-  const loadData = async () => {
+  const loadData = async (page: number = 1) => {
     setLoading(true);
     try {
+      // Assuming UnitService.list(page) now accepts a page number
       const [unitRes, floorRes] = await Promise.all([
-        UnitService.list(),
+        UnitService.list(page),
         FloorService.list()
       ]);
-      // Handle both paginated results and direct arrays
+
+      // 🔥 Updated to handle Paginated MetaData
       setUnits(unitRes.results || unitRes || []);
+      setTotalCount(unitRes.count || (unitRes.results ? unitRes.results.length : 0));
+      setTotalPages(unitRes.total_pages || 1);
+
       setFloors(floorRes.results || floorRes || []);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -32,7 +42,8 @@ export default function UnitManager() {
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  // 🔥 NEW: Reload when page changes
+  useEffect(() => { loadData(currentPage); }, [currentPage]);
 
   // ========================
   // 2. Action Handlers
@@ -41,7 +52,7 @@ export default function UnitManager() {
     if (confirm("Are you sure you want to delete this unit? This action cannot be undone.")) {
       try {
         await UnitService.destroy(id);
-        loadData(); // Refresh list
+        loadData(currentPage); // Refresh current page
       } catch (err) {
         console.error("Delete failed:", err);
         alert("Could not delete. The unit might be linked to an active lease.");
@@ -80,7 +91,8 @@ export default function UnitManager() {
         <div className="col-md-4">
           <div className="card border-0 shadow-sm p-3 bg-white border-start border-4 border-primary">
             <small className="text-muted fw-bold">TOTAL UNITS</small>
-            <h3 className="mb-0 fw-bold">{units.length}</h3>
+            {/* 🔥 Updated: Shows total count from DB, not just the list length */}
+            <h3 className="mb-0 fw-bold">{totalCount}</h3>
           </div>
         </div>
         <div className="col-md-4">
@@ -102,7 +114,7 @@ export default function UnitManager() {
       </div>
 
       {/* DATA TABLE CARD */}
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+      <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-3">
         <div className="table-responsive">
           <table className="table table-hover align-middle mb-0">
             <thead className="bg-light border-bottom">
@@ -145,9 +157,9 @@ export default function UnitManager() {
                     <td className="fw-bold">
                       ৳{u.monthly_rent ? Number(u.monthly_rent).toLocaleString() : "0"}
                     </td>
+                    {/* EXISTING ACTION BUTTONS PRESERVED */}
                     <td className="pe-4 text-end">
                       <div className="btn-group shadow-sm border rounded-3 overflow-hidden">
-                        {/* Documents */}
                         <button
                           className="btn btn-sm btn-white border-end"
                           onClick={() => setDocUnit(u)}
@@ -156,7 +168,6 @@ export default function UnitManager() {
                           <i className="bi bi-folder2-open text-info"></i>
                         </button>
 
-                        {/* Edit */}
                         <button
                           className="btn btn-sm btn-white border-end"
                           onClick={() => { setEditingUnit(u); setShowModal(true); }}
@@ -165,7 +176,6 @@ export default function UnitManager() {
                           <i className="bi bi-pencil-square text-warning"></i>
                         </button>
 
-                        {/* Delete */}
                         <button
                           className="btn btn-sm btn-white"
                           onClick={() => handleDelete(u.id)}
@@ -183,13 +193,45 @@ export default function UnitManager() {
         </div>
       </div>
 
+      {/* 🔥 NEW: PAGINATION UI */}
+      {totalPages > 1 && (
+        <div className="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm border">
+          <div className="small text-muted">
+            Showing <b>{units.length}</b> units on page <b>{currentPage}</b>
+          </div>
+          <nav>
+            <ul className="pagination pagination-sm mb-0 gap-1">
+              <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                <button className="page-link border-0 rounded-3 shadow-sm" onClick={() => setCurrentPage(prev => prev - 1)}>
+                  <i className="bi bi-chevron-left"></i>
+                </button>
+              </li>
+
+              {[...Array(totalPages)].map((_, i) => (
+                <li key={i} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
+                  <button className="page-link border-0 rounded-3 shadow-sm px-3" onClick={() => setCurrentPage(i + 1)}>
+                    {i + 1}
+                  </button>
+                </li>
+              ))}
+
+              <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                <button className="page-link border-0 rounded-3 shadow-sm" onClick={() => setCurrentPage(prev => prev + 1)}>
+                  <i className="bi bi-chevron-right"></i>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      )}
+
       {/* MODALS */}
       {showModal && (
         <UnitModal
           floors={floors}
           unit={editingUnit}
           onClose={() => setShowModal(false)}
-          onSaved={() => { setShowModal(false); loadData(); }}
+          onSaved={() => { setShowModal(false); loadData(currentPage); }}
         />
       )}
 
