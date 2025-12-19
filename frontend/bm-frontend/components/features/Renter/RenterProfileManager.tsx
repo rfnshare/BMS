@@ -1,139 +1,109 @@
 import { useEffect, useState } from "react";
-import { ProfileService } from "../../../logic/services/profileService";
-import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
-import { Spinner, Form, Button, Row, Col, Alert } from "react-bootstrap";
+import { RenterService } from "../../../logic/services/renterService";
+import { Row, Col, Card, Spinner, ListGroup, Badge } from "react-bootstrap";
 
 export default function RenterProfileManager() {
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
 
-  const [formData, setFormData] = useState({
-    full_name: "",
-    phone_number: "",
-    email: "",
-    notification_preference: "both",
-    profile_pic: null as File | string | null,
-  });
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await RenterService.getProfile();
+        setProfile(data);
+      } catch (error) {
+        console.error("Profile load failed", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProfile();
+  }, []);
 
-  useEffect(() => { loadProfile(); }, []);
+  if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
 
-  const loadProfile = async () => {
-    try {
-      const data = await ProfileService.getRenterProfile();
-      setFormData({
-        full_name: data.full_name,
-        phone_number: data.phone_number,
-        email: data.email,
-        notification_preference: data.notification_preference,
-        profile_pic: data.profile_pic
-      });
-    } catch (err) {
-      setMessage({ type: "danger", text: "Failed to load profile." });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await ProfileService.updateRenterProfile(formData);
-      setMessage({ type: "success", text: "Profile updated successfully!" });
-    } catch (err: any) {
-      setMessage({ type: "danger", text: getErrorMessage(err) });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) return <div className="text-center py-5"><Spinner animation="border" /></div>;
+  if (!profile) return <div className="alert alert-warning">Profile information not found.</div>;
 
   return (
-    <div className="card border-0 shadow-sm rounded-4 bg-white p-4 p-md-5">
-      <h5 className="fw-bold mb-5">My Account Settings</h5>
-
-      {message && <Alert variant={message.type} dismissible>{message.text}</Alert>}
-
-      <Form onSubmit={handleSubmit}>
-        {/* PROFILE PICTURE SECTION */}
-        <div className="d-flex flex-column align-items-center mb-5">
-          <div className="position-relative">
-            <div className="bg-light rounded-circle border overflow-hidden shadow-sm d-flex align-items-center justify-content-center"
-                 style={{ width: '130px', height: '130px' }}>
-              {typeof formData.profile_pic === 'string' && formData.profile_pic ? (
-                <img src={formData.profile_pic} className="w-100 h-100 object-fit-cover" alt="Profile" />
-              ) : (
-                <span className="text-muted small">Profile</span>
-              )}
+    <Row className="g-4">
+      {/* 1. Personal Identity Card */}
+      <Col lg={4}>
+        <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
+          <div className="bg-primary p-4 text-center text-white">
+            <div className="rounded-circle bg-white text-primary d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style={{ width: '80px', height: '80px' }}>
+              <i className="bi bi-person-fill display-4"></i>
             </div>
-            <Form.Label htmlFor="pic-upload" className="btn btn-dark btn-sm rounded-circle position-absolute bottom-0 end-0 m-1 shadow">
-              <i className="bi bi-camera"></i>
-            </Form.Label>
-            <input id="pic-upload" type="file" hidden accept="image/*"
-                   onChange={(e) => e.target.files && setFormData({...formData, profile_pic: e.target.files[0]})} />
+            <h5 className="fw-bold mb-0">{profile.full_name}</h5>
+            <small className="opacity-75">Member since {new Date(profile.created_at).getFullYear()}</small>
           </div>
-        </div>
+          <Card.Body className="p-4">
+            <div className="text-center mb-4">
+               <Badge bg={profile.is_active ? "success-subtle" : "danger-subtle"} className={`text-${profile.is_active ? 'success' : 'danger'} rounded-pill px-3 py-2 border`}>
+                 Status: {profile.is_active ? 'Verified Renter' : 'Inactive'}
+               </Badge>
+            </div>
+            <div className="vstack gap-3">
+               <div>
+                  <label className="x-small text-muted fw-bold text-uppercase">NID Number</label>
+                  <div className="fw-bold text-dark">{profile.nid_number || 'Not Provided'}</div>
+               </div>
+               <div>
+                  <label className="x-small text-muted fw-bold text-uppercase">Emergency Contact</label>
+                  <div className="fw-bold text-dark">{profile.emergency_contact_name}</div>
+                  <div className="small text-muted">{profile.emergency_contact_phone}</div>
+               </div>
+            </div>
+          </Card.Body>
+        </Card>
+      </Col>
 
-        {/* INPUT GRID */}
-        <Row className="gy-4">
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label className="small fw-bold">Full Name</Form.Label>
-              <Form.Control
-                className="bg-light border-0 py-2 px-3"
-                value={formData.full_name}
-                onChange={e => setFormData({...formData, full_name: e.target.value})}
-              />
-            </Form.Group>
-          </Col>
+      {/* 2. Contact & Details Card */}
+      <Col lg={8}>
+        <Card className="border-0 shadow-sm rounded-4 p-4 h-100">
+          <h6 className="fw-bold text-dark mb-4 pb-2 border-bottom">Contact & Professional Details</h6>
+          <Row className="g-4">
+            <Col md={6}>
+              <div className="d-flex align-items-center gap-3 mb-4">
+                <div className="bg-light p-2 rounded-3"><i className="bi bi-telephone text-primary"></i></div>
+                <div>
+                  <div className="text-muted x-small fw-bold">Phone Number</div>
+                  <div className="fw-bold">{profile.phone_number}</div>
+                </div>
+              </div>
+              <div className="d-flex align-items-center gap-3">
+                <div className="bg-light p-2 rounded-3"><i className="bi bi-envelope text-primary"></i></div>
+                <div>
+                  <div className="text-muted x-small fw-bold">Email Address</div>
+                  <div className="fw-bold">{profile.email}</div>
+                </div>
+              </div>
+            </Col>
+            <Col md={6}>
+              <div className="d-flex align-items-center gap-3 mb-4">
+                <div className="bg-light p-2 rounded-3"><i className="bi bi-briefcase text-primary"></i></div>
+                <div>
+                  <div className="text-muted x-small fw-bold">Profession</div>
+                  <div className="fw-bold">{profile.profession || 'N/A'}</div>
+                </div>
+              </div>
+              <div className="d-flex align-items-center gap-3">
+                <div className="bg-light p-2 rounded-3"><i className="bi bi-geo-alt text-primary"></i></div>
+                <div>
+                  <div className="text-muted x-small fw-bold">Permanent Address</div>
+                  <div className="small fw-bold lh-sm">{profile.permanent_address}</div>
+                </div>
+              </div>
+            </Col>
+          </Row>
 
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label className="small fw-bold">Phone Number (Login ID)</Form.Label>
-              <Form.Control
-                className="bg-light border-0 py-2 px-3"
-                value={formData.phone_number}
-                onChange={e => setFormData({...formData, phone_number: e.target.value})}
-              />
-            </Form.Group>
-          </Col>
-
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label className="small fw-bold">Email Address</Form.Label>
-              <Form.Control
-                className="bg-white py-2 px-3"
-                value={formData.email}
-                disabled
-              />
-              <Form.Text className="text-muted x-small">Contact admin to change registered email.</Form.Text>
-            </Form.Group>
-          </Col>
-
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label className="small fw-bold">Notification Preference</Form.Label>
-              <Form.Select
-                className="bg-light border-0 py-2 px-3"
-                value={formData.notification_preference}
-                onChange={e => setFormData({...formData, notification_preference: e.target.value})}
-              >
-                <option value="email">Email Only</option>
-                <option value="whatsapp">WhatsApp Only</option>
-                <option value="both">Both</option>
-              </Form.Select>
-            </Form.Group>
-          </Col>
-
-          <Col md={12} className="text-end mt-5">
-            <Button type="submit" variant="primary" className="rounded-pill px-5 py-2 fw-bold" disabled={saving}>
-              {saving ? "Saving..." : "Update Profile"}
-            </Button>
-          </Col>
-        </Row>
-      </Form>
-    </div>
+          <div className="mt-5 p-3 rounded-4 bg-light border-start border-4 border-primary">
+             <h6 className="fw-bold small mb-2"><i className="bi bi-info-circle me-2"></i>Note to Manager</h6>
+             <p className="small text-muted mb-0">
+               {profile.remarks || "No special instructions recorded for this profile."}
+             </p>
+          </div>
+        </Card>
+      </Col>
+    </Row>
   );
 }

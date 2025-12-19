@@ -52,7 +52,7 @@ export default function RenterExpenseManager() {
         </div>
 
         <div className="table-responsive">
-          <Table hover align="middle" className="mb-0">
+          <Table hover className="mb-0 align-middle">
             <thead className="bg-light small text-muted text-uppercase">
               <tr>
                 <th className="ps-4">Title / Description</th>

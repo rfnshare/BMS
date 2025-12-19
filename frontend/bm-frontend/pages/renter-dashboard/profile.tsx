@@ -67,18 +67,17 @@ export const renterMenuItems = [
 
 export default function RenterProfilePage() {
   return (
-    // 🔥 STEP 2: Pass 'renterMenuItems' to satisfy the Sidebar's nested mapping logic
     <Layout menuItems={renterMenuItems}>
-      <div className="container-fluid py-2 animate__animated animate__fadeIn">
+      <div className="container-fluid py-4 animate__animated animate__fadeIn">
 
-        <div className="mb-4">
-          <h2 className="fw-bold text-dark mb-1">My Profile</h2>
-          <p className="text-muted small">Manage your personal information and notification preferences.</p>
+        <div className="mb-4 d-flex justify-content-between align-items-end">
+          <div>
+            <h2 className="fw-bold text-dark mb-1">My Profile</h2>
+            <p className="text-muted small m-0">Securely view and verify your residency identity data.</p>
+          </div>
         </div>
 
         {/* REAL DATA LOGIC COMPONENT */}
-        {/* RenterProfileManager handles the API logic to fetch the Renter
-            model data linked to the current User session. */}
         <RenterProfileManager />
 
         {/* DATA PRIVACY NOTE */}
@@ -87,7 +86,7 @@ export default function RenterProfilePage() {
             <i className="bi bi-shield-lock-fill text-success"></i>
           </div>
           <span className="small text-muted">
-            <strong>Privacy Check:</strong> Your NID and contact details are encrypted. Only authorized building administrators can access your sensitive documents.
+            <strong>Security Notice:</strong> To update sensitive fields like your NID or Phone Number, please visit the building management office for identity verification.
           </span>
         </div>
 
