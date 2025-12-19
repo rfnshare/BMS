@@ -1,5 +1,8 @@
 import Layout from '../../components/layouts/Layout';
+import PaymentManager from "../../components/features/Payments/PaymentManager";
 
+
+// Your existing Menu Items
 const adminMenuItems = [
   {
     group: "Operations",
@@ -14,7 +17,7 @@ const adminMenuItems = [
     group: "Financials",
     items: [
       { name: 'Invoices', path: '/admin-dashboard/invoices', icon: 'bi-receipt' },
-      { name: 'Payments', path: '/admin-dashboard/payments', icon: 'bi-wallet2' },
+      { name: 'Payments', path: '/admin-dashboard/payments', icon: 'bi-wallet2' }, // Active Page
       { name: 'Expenses', path: '/admin-dashboard/expenses', icon: 'bi-cart-dash' },
     ]
   },
@@ -38,14 +41,11 @@ const adminMenuItems = [
 export default function PaymentsPage() {
   return (
     <Layout menuItems={adminMenuItems}>
-      <div className="container-fluid py-4 animate__animated animate__fadeIn">
-        <h2 className="fw-bold mb-1">Payment Collection</h2>
-        <p className="text-muted small">Verify transaction IDs and bank transfers from renters.</p>
-        <div className="card border-0 shadow-sm rounded-4 p-5 mt-4 text-center bg-white">
-          <i className="bi bi-cash-stack display-1 text-success mb-3 opacity-25"></i>
-          <h4>Payment Ledger Placeholder</h4>
-          <p className="text-muted">This module will connect to <code>/api/payments/</code>.</p>
-        </div>
+      {/* The PaymentManager handles its own Headers, Filters, and Tables.
+         We just provide the container with the fade-in animation.
+      */}
+      <div className="container-fluid p-0 animate__animated animate__fadeIn">
+        <PaymentManager />
       </div>
     </Layout>
   );

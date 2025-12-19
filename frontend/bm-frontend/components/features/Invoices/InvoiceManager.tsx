@@ -16,10 +16,9 @@ export default function InvoiceManager() {
     search: "",
     page: 1,
     ordering: "-id",
-    // 🔥 NEW FILTERS
-    invoice_month: "", // Month picker (YYYY-MM)
-    invoice_type: "", // Dropdown
-    lease: "",        // Lease ID number
+    invoice_month: "",
+    invoice_type: "",
+    lease: "",
   });
 
   // 3. Cache & Modals
@@ -34,7 +33,7 @@ export default function InvoiceManager() {
       const res = await InvoiceService.list(filters);
       setData(res);
       hydrateData(res.results || []);
-    } catch (err: any) { // 🔥 FIX: Explicitly type err as any
+    } catch (err: any) {
       alert(getErrorMessage(err));
     } finally {
       setLoading(false);
@@ -49,7 +48,7 @@ export default function InvoiceManager() {
 
     const hydrationTasks = uniqueLeaseIds.map(async (leaseId) => {
       try {
-        const lease = await InvoiceService.getLease(leaseId as number); // Cast ID if needed
+        const lease = await InvoiceService.getLease(leaseId as number);
         const [renterRes, unitRes] = await Promise.allSettled([
           InvoiceService.getRenter(lease.renter),
           InvoiceService.getUnit(lease.unit)
@@ -62,7 +61,7 @@ export default function InvoiceManager() {
             unit: unitRes.status === 'fulfilled' ? ((unitRes.value as any).name || (unitRes.value as any).unit_number) : "Unknown"
           }
         };
-      } catch (e: any) { // 🔥 FIX: Type catch variable
+      } catch (e: any) {
         return { id: leaseId, data: { renter: "Error", unit: "Error" } };
       }
     });
@@ -78,7 +77,6 @@ export default function InvoiceManager() {
     });
   };
 
-  // Reload when any filter changes
   useEffect(() => {
     loadInvoices();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,7 +84,7 @@ export default function InvoiceManager() {
     filters.status,
     filters.page,
     filters.search,
-    filters.invoice_month, // 🔥 Trigger on new filters
+    filters.invoice_month,
     filters.invoice_type,
     filters.lease
   ]);
@@ -103,7 +101,7 @@ export default function InvoiceManager() {
       await InvoiceService.generateMonthly();
       alert("✅ Success! Monthly invoices have been generated and sent.");
       loadInvoices();
-    } catch (err: any) { // 🔥 FIX
+    } catch (err: any) {
       alert(getErrorMessage(err));
     } finally {
       setIsGenerating(false);
@@ -133,7 +131,7 @@ export default function InvoiceManager() {
       } else {
         alert("Server returned a success status, but no 'pdf' link was found.");
       }
-    } catch (err: any) { // 🔥 FIX
+    } catch (err: any) {
       alert("Failed to generate PDF. " + (err.response?.data?.detail || err.message));
     } finally {
       setLoading(false);
@@ -145,7 +143,7 @@ export default function InvoiceManager() {
       try {
         await InvoiceService.destroy(id);
         loadInvoices();
-      } catch (err: any) { // 🔥 FIX
+      } catch (err: any) {
         alert(getErrorMessage(err));
       }
     }
@@ -155,6 +153,18 @@ export default function InvoiceManager() {
     if (!dateString) return "-";
     const date = new Date(dateString);
     return date.toLocaleDateString('default', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  };
+
+  // 🔥 Helper for Status Colors
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+        case 'paid': return 'bg-success-subtle text-success border-success';
+        case 'partially_paid': return 'bg-info-subtle text-info border-info'; // Blue
+        case 'unpaid': return 'bg-danger-subtle text-danger border-danger';
+        case 'draft': return 'bg-warning-subtle text-warning border-warning';
+        case 'cancelled': return 'bg-secondary-subtle text-secondary border-secondary'; // Grey
+        default: return 'bg-light text-dark border';
+    }
   };
 
   return (
@@ -199,7 +209,7 @@ export default function InvoiceManager() {
                 />
             </div>
 
-            {/* Status */}
+            {/* 🔥 UPDATED STATUS FILTER */}
             <div className="col-md-2">
                 <select
                     className="form-select form-select-sm bg-light border-0 px-3 rounded-pill"
@@ -207,13 +217,15 @@ export default function InvoiceManager() {
                     onChange={(e) => setFilters({...filters, status: e.target.value, page: 1})}
                 >
                     <option value="">All Statuses</option>
-                    <option value="unpaid">Unpaid</option>
-                    <option value="paid">Paid</option>
                     <option value="draft">Draft</option>
+                    <option value="unpaid">Unpaid</option>
+                    <option value="partially_paid">Partially Paid</option>
+                    <option value="paid">Paid</option>
+                    <option value="cancelled">Cancelled</option>
                 </select>
             </div>
 
-            {/* 🔥 Billed Month */}
+            {/* Billed Month */}
             <div className="col-md-2">
                 <input
                     type="month"
@@ -224,7 +236,7 @@ export default function InvoiceManager() {
                 />
             </div>
 
-            {/* 🔥 Invoice Type */}
+            {/* Invoice Type */}
             <div className="col-md-2">
                 <select
                     className="form-select form-select-sm bg-light border-0 px-3 rounded-pill"
@@ -239,7 +251,7 @@ export default function InvoiceManager() {
                 </select>
             </div>
 
-             {/* 🔥 Lease ID */}
+             {/* Lease ID */}
              <div className="col-md-2">
                 <input
                     type="number"
@@ -308,19 +320,15 @@ export default function InvoiceManager() {
                   ৳{Number(inv.amount).toLocaleString()}
                 </td>
 
+                {/* 🔥 UPDATED STATUS BADGE */}
                 <td>
-                   <span className={`badge rounded-pill border px-3 py-1 ${
-                     inv.status === 'paid' ? 'bg-success-subtle text-success border-success' : 
-                     inv.status === 'unpaid' ? 'bg-danger-subtle text-danger border-danger' : 
-                     'bg-warning-subtle text-warning border-warning'
-                   }`}>
-                     {inv.status.toUpperCase()}
+                   <span className={`badge rounded-pill border px-3 py-1 ${getStatusBadgeClass(inv.status)}`}>
+                     {inv.status.replace('_', ' ').toUpperCase()}
                    </span>
                 </td>
 
                 <td className="pe-4 text-end">
                    <div className="btn-group shadow-sm rounded-3">
-                      {/* PDF Button */}
                       <button
                         className="btn btn-sm btn-white border-end"
                         title={inv.invoice_pdf ? "Download PDF" : "Generate PDF"}
@@ -329,7 +337,6 @@ export default function InvoiceManager() {
                         <i className={`bi ${inv.invoice_pdf ? 'bi-file-earmark-pdf-fill text-danger' : 'bi-file-earmark-pdf text-secondary'}`}></i>
                       </button>
 
-                      {/* Preview Button */}
                       <button
                         className="btn btn-sm btn-white border-end"
                         onClick={() => setActiveModal({type: 'preview', data: inv})}
@@ -337,7 +344,6 @@ export default function InvoiceManager() {
                         <i className="bi bi-eye text-primary"></i>
                       </button>
 
-                      {/* Edit Button */}
                       <button
                         className="btn btn-sm btn-white border-end"
                         onClick={() => setActiveModal({type: 'edit', data: inv})}
@@ -345,7 +351,6 @@ export default function InvoiceManager() {
                         <i className="bi bi-pencil text-warning"></i>
                       </button>
 
-                      {/* Delete Button */}
                       <button
                         className="btn btn-sm btn-white"
                         onClick={() => handleDelete(inv.id)}
