@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useState } from 'react';
 // Assuming you have an InvoiceManager feature or want to build one here
 import RenterInvoiceManager from '../../components/features/Renter/RenterInvoiceManager';
+import InvoiceManager from "../../components/features/Invoices/InvoiceManager";
 
 // 🔥 STEP 1: Apply the Grouped Menu Structure (Consistency is Key!)
 const adminMenuItems = [
@@ -41,36 +42,19 @@ const adminMenuItems = [
 ];
 
 export default function InvoicesPage() {
-  const router = useRouter();
-
   return (
     <Layout menuItems={adminMenuItems}>
       <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
-        {/* HEADER SECTION */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
             <h2 className="fw-bold mb-1 text-dark">Invoice Management</h2>
-            <p className="text-muted small mb-0">Review, generate, and track all tenant billing cycles.</p>
-          </div>
-          <div className="d-flex gap-2">
-            <button className="btn btn-primary rounded-pill px-4 shadow-sm fw-bold small">
-                <i className="bi bi-plus-lg me-2"></i>Generate Invoices
-            </button>
+            <p className="text-muted small mb-0">Track payments, rent cycles, and generated receipts.</p>
           </div>
         </div>
 
-        {/* INVOICE CONTENT AREA */}
         <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
-          <div className="card-body p-0">
-             {/* You can reuse your Invoice Manager logic here */}
-             {/* Note: In Admin view, this should show ALL invoices, not just one renter's */}
-             <div className="p-4 text-center text-muted">
-                <i className="bi bi-tools fs-1 mb-3 d-block"></i>
-                <h5>Invoice Table Logic goes here</h5>
-                <p className="small">We will connect this to the <strong>InvoiceService.list()</strong> to show all building records.</p>
-             </div>
-          </div>
+          <InvoiceManager />
         </div>
 
       </div>
