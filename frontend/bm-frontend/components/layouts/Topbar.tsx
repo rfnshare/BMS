@@ -2,7 +2,6 @@ import { Navbar, Container, Nav, NavDropdown, Badge } from "react-bootstrap";
 import { useRouter } from "next/router";
 import { logout } from "../../utils/auth";
 
-// Define the shape of our user based on your API response
 interface UserProfile {
   username: string;
   role: string;
@@ -24,33 +23,37 @@ export default function Topbar({ user }: { user: UserProfile | null }) {
     ? user.role.charAt(0).toUpperCase() + user.role.slice(1).replace('_', ' ')
     : "Loading...";
 
+  // 🔥 Fix: Fallback for broken avatar
+  const userInitial = user?.username ? user.username.charAt(0).toUpperCase() : "?";
+
   return (
-    <Navbar bg="white" expand="lg" className="border-bottom px-3 py-2" style={{ height: '70px' }}>
+    <Navbar bg="white" expand="lg" className="border-bottom px-3 py-2 sticky-top" style={{ height: '70px', zIndex: 1020 }}>
       <Container fluid>
         <div className="d-flex align-items-center">
-           {/* Dynamic badge based on role */}
            <Badge
              bg={user?.is_renter ? "info" : "success"}
-             className="ms-2 px-2 py-1 opacity-75 fw-normal text-capitalize"
+             className="ms-2 px-2 py-1 opacity-75 fw-normal text-capitalize shadow-sm"
            >
-             {user?.is_renter ? "Verified Renter" : "Management Session"}
+             {user?.is_renter ? "Verified Renter" : "Management Active"}
            </Badge>
         </div>
 
         <Nav className="ms-auto align-items-center gap-3">
-          {/* Notification Icon */}
-          <button className="btn btn-light rounded-circle p-2 position-relative">
+          {/* 🔥 Fix: Notification button redirects to your new Notification Log */}
+          <button
+            className="btn btn-light rounded-circle p-2 position-relative border shadow-sm"
+            onClick={() => router.push("/admin-dashboard/notifications")}
+          >
             <i className="bi bi-bell text-muted"></i>
             <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem' }}>
-              3
+              !
             </span>
           </button>
 
-          {/* User Profile */}
+          {/* User Profile Section */}
           <div className="border-start ps-3 d-flex align-items-center">
             <div className="text-end me-2 d-none d-md-block">
-              <div className="fw-bold small">{user?.username || "Loading..."}</div>
-              {/* 🔥 DYNAMIC ROLE DISPLAY */}
+              <div className="fw-bold small text-dark">{user?.username || "Loading..."}</div>
               <div className={`fw-bold ${user?.is_renter ? 'text-info' : 'text-muted'}`} style={{ fontSize: '0.7rem' }}>
                 {displayRole}
               </div>
@@ -59,19 +62,36 @@ export default function Topbar({ user }: { user: UserProfile | null }) {
             <NavDropdown
               title={
                 <div className="position-relative">
-                  <img src="/avatar.png" className="rounded-circle border" width="35" height="35" alt="user" />
-                  <span className={`position-absolute bottom-0 end-0 p-1 border border-white rounded-circle ${user?.is_renter ? 'bg-info' : 'bg-success'}`}></span>
+                  {/* 🔥 Fix: Replaced broken img with a dynamic initial circle */}
+                  <div
+                    className={`rounded-circle border d-flex align-items-center justify-content-center fw-bold text-white shadow-sm ${user?.is_renter ? 'bg-info' : 'bg-success'}`}
+                    style={{ width: '38px', height: '38px', fontSize: '1rem' }}
+                  >
+                    {userInitial}
+                  </div>
+                  <span className="position-absolute bottom-0 end-0 p-1 border border-white rounded-circle bg-white" style={{ width: '10px', height: '10px' }}>
+                    <div className="bg-success rounded-circle w-100 h-100"></div>
+                  </span>
                 </div>
               }
               id="profile-dropdown"
               align="end"
+              className="no-caret"
             >
-              <NavDropdown.Header className="small text-uppercase fw-bold text-muted">Account</NavDropdown.Header>
+              <NavDropdown.Header className="small text-uppercase fw-bold text-muted px-3">
+                {user?.role || 'User'} Account
+              </NavDropdown.Header>
 
-              {/* Dynamic Redirect: Renter vs Admin Profile */}
               <NavDropdown.Item onClick={() => router.push(user?.is_renter ? "/renter-dashboard/profile" : "/admin-dashboard/profile")}>
-                <i className="bi bi-person me-2"></i>My Profile
+                <i className="bi bi-person-gear me-2"></i>My Profile
               </NavDropdown.Item>
+
+              {/* Added: Quick link to reports for Managers/Admins */}
+              {!user?.is_renter && (
+                <NavDropdown.Item onClick={() => router.push("/admin-dashboard/reports")}>
+                  <i className="bi bi-bar-chart-line me-2"></i>System Reports
+                </NavDropdown.Item>
+              )}
 
               <NavDropdown.Divider />
 
