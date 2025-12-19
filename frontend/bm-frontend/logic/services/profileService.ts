@@ -13,7 +13,6 @@ export const ProfileService = {
     /**
      * 2. PATCH Unified Detailed Profile
      * Handles updates for both models using FormData for MultiPart support (images).
-     * Now points to '/accounts/profile/detailed/' as requested.
      */
     updateDetailedProfile: async (data: any) => {
         const formData = new FormData();
@@ -35,7 +34,20 @@ export const ProfileService = {
         return response.data;
     },
 
-    // Keeping for backward compatibility if needed for other components
+    /**
+     * 3. POST Detect Role
+     * Used by Topbar to switch dashboards and profile pictures dynamically.
+     * Expects: { "phone_or_email": "..." }
+     * Returns: { "role": "renter" } or { "role": "admin" }
+     */
+    detectRole: async (emailOrPhone: string) => {
+        const response = await api.post('/accounts/detect-role/', {
+            phone_or_email: emailOrPhone
+        });
+        return response.data;
+    },
+
+    // Keeping for backward compatibility
     getMe: async () => {
         const response = await api.get("/accounts/me/");
         return response.data;
