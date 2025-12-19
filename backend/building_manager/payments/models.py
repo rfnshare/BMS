@@ -25,6 +25,16 @@ class Payment(BaseAuditModel):
     transaction_reference = models.CharField(max_length=100, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
 
+    def create(self, validated_data):
+        invoice = validated_data.get('invoice')
+        lease = validated_data.get('lease')
+
+        # 🔥 Logic: If paying an invoice, the lease is implicitly the invoice's lease
+        if invoice and not lease:
+            validated_data['lease'] = invoice.lease
+
+        return super().create(validated_data)
+
     def __str__(self):
         target = self.invoice.id if self.invoice else f"Lease {self.lease.id}"
         return f"Payment {self.id} | {target} | {self.amount}"

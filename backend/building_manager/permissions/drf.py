@@ -8,35 +8,42 @@ class RoleBasedPermission(BasePermission):
         if not user.is_authenticated:
             return False
 
-        # 1. Superadmins should NEVER get a 403
-        if user.is_superuser or getattr(user, 'is_superadmin', False):
+        if user.is_superuser:
             return True
 
-        # 2. Identify the model correctly
+        # Determine model from view
         model_cls = getattr(getattr(view, "queryset", None), "model", None)
+        if not model_cls and hasattr(view, "get_queryset"):
+            qs = view.get_queryset()
+            model_cls = getattr(qs, "model", None)
         if not model_cls:
             return False
 
-        app_label = model_cls._meta.app_label  # should be 'renters'
-        model_name = model_cls.__name__  # should be 'Renter'
+        app_label = model_cls._meta.app_label
+        model_name = model_cls.__name__
 
-        # 3. Check the Database Rule
-        if user.is_staff or getattr(user, 'is_manager', False):
-            # We check if THIS user is in the 'assigned_to' for this specific model
+        if user.is_staff:
             perms = AppPermission.objects.filter(
+                role="staff",
                 app_label__iexact=app_label,
                 model_name__iexact=model_name,
-                assigned_to=user  # Checks the ManyToMany relationship
+                assigned_to__in=[user]
             ).first()
-
             if not perms:
-                return False  # No rule found for this staff member = 403
+                return False
 
-            # 4. Map Methods to your Boolean Fields
-            if request.method in SAFE_METHODS: return perms.can_read
-            if request.method == "POST": return perms.can_create
-            if request.method in ["PUT", "PATCH"]: return perms.can_update
-            if request.method == "DELETE": return perms.can_delete
+            if request.method in SAFE_METHODS:
+                return perms.can_read
+            if request.method == "POST":
+                return perms.can_create
+            if request.method in ["PUT", "PATCH"]:
+                return perms.can_update
+            if request.method == "DELETE":
+                return perms.can_delete
+
+        # renter read-only handled separately
+        if getattr(user, "is_renter", False):
+            return request.method in SAFE_METHODS
 
         return False
 

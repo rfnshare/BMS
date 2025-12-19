@@ -19,73 +19,68 @@ def get_token():
         sys.exit(1)
 
 
-def create_floor(headers, number):
-    """Create a floor and return its ID"""
-    url = f"{BASE_URL}/api/buildings/floors/"
+def create_renter_directly(headers, index):
+    """
+    Calls /api/renters/ using multipart/form-data.
+    """
+    url = f"{BASE_URL}/api/renters/"
+
+    # Headers passed from main already contain the Authorization token.
+    # We do NOT add Content-Type here; requests adds it automatically for data= payloads.
+
+    username = f"renter_v{index}"
+    first_names = ["Arif", "Sultana", "Tanvir", "Nusrat", "Kamal", "Farhana", "Sajid", "Rina", "Imtiaz", "Mitu",
+                   "Zahid", "Lubna"]
+
+    # Logic to match your model's GENDER_CHOICES and MARITAL_STATUS_CHOICES
     payload = {
-        "name": f"Floor {number}",
-        "number": number,
-        "is_deleted": False
+        "username": username,
+        "password": "password123",
+        "email": f"{username}@example.com",
+        "first_name": first_names[index - 1],
+        "last_name": "Ahmed",
+        "full_name": f"{first_names[index - 1]} Ahmed",
+        "phone_number": f"017110000{index:02d}",
+        "status": "active",
+
+        # 🔥 FIX: Changed to lowercase keys to match GENDER_CHOICES
+        "gender": "male" if index % 2 != 0 else "female",
+
+        # 🔥 FIX: Changed to lowercase keys to match MARITAL_STATUS_CHOICES
+        "marital_status": "married" if index > 6 else "single",
+
+        "occupation": "Professional",
+        "monthly_income": str(50000 + (index * 2000)),
+        "present_address": "Dhaka, Bangladesh",
+        "permanent_address": "Village Home",
+
+        # 🔥 FIX: Matches your NotificationPreference.EMAIL value
+        "notification_preference": "email"
     }
-    # Check if floor exists or create new (simple create for this script)
-    response = requests.post(url, json=payload, headers=headers)
+
+    # Sending using data= instead of json= triggers multipart/form-data
+    response = requests.post(url, data=payload, headers=headers)
 
     if response.status_code == 201:
-        data = response.json()
-        print(f"✅ Created Floor {number} (ID: {data['id']})")
-        return data['id']
+        print(f"✅ [{index}/12] Renter created: {username}")
     else:
-        print(f"⚠️  Could not create Floor {number} (might already exist): {response.text}")
-        # In a real script, you might want to fetch the ID if it exists,
-        # but for now we return None to skip unit creation if floor fails
-        return None
-
-
-def create_unit(headers, floor_id, name, unit_type):
-    """Create a unit attached to a floor"""
-    url = f"{BASE_URL}/api/buildings/units/"
-    payload = {
-        "floor": floor_id,
-        "name": name,
-        "unit_type": unit_type,
-        "status": "vacant",
-        "monthly_rent": "0.00",
-        "security_deposit": "0.00"
-    }
-    response = requests.post(url, json=payload, headers=headers)
-    if response.status_code == 201:
-        print(f"   ├─ Created Unit: {name} ({unit_type})")
-    else:
-        print(f"   └─ ❌ Failed to create Unit {name}: {response.text}")
+        print(f"❌ [{index}/12] Failed: {response.status_code} - {response.text}")
 
 
 def main():
-    print("--- Starting Corrected Automation ---")
+    print("--- Starting Direct Renter API Automation ---")
 
     token = get_token()
+
+    # 🔥 FIX: Remove "Content-Type" from here.
+    # Only provide the Authorization token.
     headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
+        "Authorization": f"Bearer {token}"
     }
 
-    for i in range(1, 7):
-        floor_id = create_floor(headers, i)
-
-        if floor_id:
-            # --- FLOOR 1 LOGIC (Special Case) ---
-            if i == 1:
-                # 1. Two Residential Units
-                create_unit(headers, floor_id, "1A (East)", "residential")
-                create_unit(headers, floor_id, "1B (West)", "residential")
-
-                # 2. Two Shop Units
-                create_unit(headers, floor_id, "Shop 01", "shop")
-                create_unit(headers, floor_id, "Shop 02", "shop")
-
-            # --- FLOORS 2-6 LOGIC (Standard) ---
-            else:
-                create_unit(headers, floor_id, f"{i}A (East)", "residential")
-                create_unit(headers, floor_id, f"{i}B (West)", "residential")
+    # Generate 12 Renters to trigger pagination and test UI depth
+    for i in range(1, 13):
+        create_renter_directly(headers, i)
 
     print("\n--- Automation Complete ---")
 

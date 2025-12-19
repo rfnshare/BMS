@@ -49,7 +49,12 @@ class NotificationService:
                 attachment_path = None
                 if invoice and getattr(invoice, "invoice_pdf", None):
                     attachment_path = invoice.invoice_pdf.path
+
+                # 🔥 Call the helper
                 NotificationService._send_email(recipient, subject, message, attachment_path)
+
+                # ✅ FIX: Update the status here because no exception was raised
+                notification.status = "sent"
 
             elif channel == "whatsapp":
                 # Append download link if provided

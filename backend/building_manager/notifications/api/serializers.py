@@ -5,7 +5,7 @@ from notifications.models import Notification
 
 class NotificationSerializer(serializers.ModelSerializer):
     invoice_id = serializers.IntegerField(source="invoice.id", read_only=True)
-    renter_name = serializers.CharField(source="renter.name", read_only=True)
+    renter_name = serializers.CharField(source="renter.full_name", read_only=True)
     sent_by_name = serializers.CharField(source="sent_by.username", read_only=True)
 
     class Meta:

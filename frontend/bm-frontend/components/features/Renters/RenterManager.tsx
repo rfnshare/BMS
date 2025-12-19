@@ -11,17 +11,28 @@ export default function RenterManager() {
   const [docRenter, setDocRenter] = useState<Renter | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const load = async () => {
+  // 🔥 Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const load = async (page: number = 1) => {
     setLoading(true);
     try {
-      const res = await RenterService.list();
+      // 🔥 Passing page as a param to the service
+      const res = await RenterService.list({ page });
       setRenters(res.results || res);
+
+      // 🔥 Extracting metadata from your API response
+      setTotalCount(res.count || 0);
+      setTotalPages(res.total_pages || 1);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
+  // 🔥 Reload data when current page changes
+  useEffect(() => { load(currentPage); }, [currentPage]);
 
   const getStatusBadge = (status: string) => {
     const map: any = {
@@ -44,12 +55,12 @@ export default function RenterManager() {
         </button>
       </div>
 
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+      <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-3">
         <div className="table-responsive">
           <table className="table table-hover align-middle mb-0">
             <thead className="bg-light">
               <tr className="text-muted small text-uppercase fw-bold">
-                <th className="ps-4 py-3" width="80">Identity</th>
+                <th className="ps-4 py-3" style={{ width: "80px" }}>Identity</th>
                 <th>Full Name</th>
                 <th>Contact Info</th>
                 <th className="text-center">Status</th>
@@ -91,7 +102,7 @@ export default function RenterManager() {
                     <div className="btn-group shadow-sm bg-white rounded-3">
                       <button className="btn btn-sm btn-white border" onClick={() => setDocRenter(r)} title="Documents">📂</button>
                       <button className="btn btn-sm btn-white border" onClick={() => { setEditing(r); setShowModal(true); }} title="Edit">✏️</button>
-                      <button className="btn btn-sm btn-outline-danger border" onClick={async () => { if(confirm("Delete Renter?")) { await RenterService.destroy(r.id); load(); } }} title="Delete">🗑️</button>
+                      <button className="btn btn-sm btn-outline-danger border" onClick={async () => { if(confirm("Delete Renter?")) { await RenterService.destroy(r.id); load(currentPage); } }} title="Delete">🗑️</button>
                     </div>
                   </td>
                 </tr>
@@ -101,8 +112,41 @@ export default function RenterManager() {
         </div>
       </div>
 
-      {showModal && <RenterModal renter={editing} onClose={() => { setEditing(null); setShowModal(false); }} onSaved={load} />}
+      {/* 🔥 NEW: PAGINATION UI */}
+      {totalPages > 1 && (
+        <div className="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm border">
+          <div className="small text-muted">
+            Showing page <b>{currentPage}</b> of <b>{totalPages}</b> (Total <b>{totalCount}</b> renters)
+          </div>
+          <nav>
+            <ul className="pagination pagination-sm mb-0 gap-1">
+              <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                <button className="page-link border-0 rounded-3 shadow-sm" onClick={() => setCurrentPage(prev => prev - 1)}>
+                   Prev
+                </button>
+              </li>
+
+              {[...Array(totalPages)].map((_, i) => (
+                <li key={i} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
+                  <button className="page-link border-0 rounded-3 shadow-sm px-3" onClick={() => setCurrentPage(i + 1)}>
+                    {i + 1}
+                  </button>
+                </li>
+              ))}
+
+              <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                <button className="page-link border-0 rounded-3 shadow-sm" onClick={() => setCurrentPage(prev => prev + 1)}>
+                  Next
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      )}
+
+      {showModal && <RenterModal renter={editing} onClose={() => { setEditing(null); setShowModal(false); }} onSaved={() => load(currentPage)} />}
       {docRenter && <RenterDocumentsModal renter={docRenter} onClose={() => setDocRenter(null)} />}
     </div>
   );
+
 }
