@@ -1,4 +1,5 @@
 import Layout from '../../components/layouts/Layout';
+import ComplaintManager from "../../components/features/Complaints/ComplaintManager";
 
 const adminMenuItems = [
   {
@@ -38,14 +39,8 @@ const adminMenuItems = [
 export default function ComplaintsPage() {
   return (
     <Layout menuItems={adminMenuItems}>
-      <div className="container-fluid py-4 animate__animated animate__fadeIn">
-        <h2 className="fw-bold mb-1">Service Requests</h2>
-        <p className="text-muted small">Manage and resolve tenant complaints and maintenance tickets.</p>
-        <div className="card border-0 shadow-sm rounded-4 p-5 mt-4 text-center bg-white">
-          <i className="bi bi-tools display-1 text-warning mb-3 opacity-25"></i>
-          <h4>Ticket Management Placeholder</h4>
-          <p className="text-muted">This module will connect to <code>/api/complaints/</code>.</p>
-        </div>
+      <div className="container-fluid p-0 animate__animated animate__fadeIn">
+        <ComplaintManager />
       </div>
     </Layout>
   );

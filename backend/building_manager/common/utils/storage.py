@@ -101,3 +101,25 @@ def expense_attachment_upload_path(instance, filename):
     clean_filename = f"{slugify(name)}{ext}"
 
     return os.path.join(base_path, subfolder, clean_filename)
+
+
+def complaint_attachment_upload_path(instance, filename):
+    """
+    Path: documents/complaints/2025/10/lease_12/broken_window.jpg
+    """
+    from django.utils.timezone import now
+    import os
+    from django.utils.text import slugify
+
+    base_path = os.path.join("documents", "complaints", now().strftime("%Y/%m"))
+
+    # Organize by Lease ID if available
+    if instance.lease:
+        subfolder = f"lease_{instance.lease.id}"
+    else:
+        subfolder = "general"
+
+    name, ext = os.path.splitext(filename)
+    clean_filename = f"{slugify(name)}{ext}"
+
+    return os.path.join(base_path, subfolder, clean_filename)

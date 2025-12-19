@@ -1,80 +1,94 @@
-# complaints/views.py
-from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema
-from rest_framework import viewsets, filters, permissions, status
+from rest_framework import viewsets, permissions, filters, status
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from django_filters import rest_framework as django_filters
+from drf_spectacular.utils import extend_schema
 
+# Use your project's pagination and permissions
+from common.pagination import CustomPagination
 from .models import Complaint
 from .serializers import ComplaintSerializer
 
 
-class IsRenterOrAdminCreatePermission(permissions.BasePermission):
+class ComplaintFilter(django_filters.FilterSet):
     """
-    Custom permission:
-    - Renters can create complaints
-    - Admins can create or update status
-    - Everyone else read-only
+    Advanced filtering for the dashboard
     """
+    status = django_filters.CharFilter(lookup_expr='iexact')
+    priority = django_filters.CharFilter(lookup_expr='iexact')
+    lease = django_filters.NumberFilter()
 
-    def has_permission(self, request, view):
-        if view.action in ["create"]:
-            return request.user.is_staff or getattr(request.user, "is_renter", False)
-        if view.action in ["partial_update", "update"]:
-            # Only admin can update
-            return request.user.is_staff
-        return True
-
-    def has_object_permission(self, request, view, obj):
-        if request.user.is_staff:
-            return True
-        if getattr(request.user, "is_renter", False):
-            return obj.renter.user == request.user
-        return False
+    class Meta:
+        model = Complaint
+        fields = ["status", "priority", "lease"]
 
 
 @extend_schema(tags=["Complaints"])
 class ComplaintViewSet(viewsets.ModelViewSet):
-    queryset = Complaint.objects.all()
-    serializer_class = ComplaintSerializer
-    permission_classes = [permissions.IsAuthenticated, IsRenterOrAdminCreatePermission]
+    # 🔥 Optimization: Fetch Lease, Renter, Unit, and Creator in 1 query
+    queryset = Complaint.objects.select_related(
+        "lease",
+        "lease__renter",
+        "lease__unit",
+        "created_by"
+    ).all()
 
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["status"]
-    search_fields = ["title", "description", "renter__full_name"]
-    ordering_fields = ["created_at", "updated_at", "title"]
+    serializer_class = ComplaintSerializer
+    permission_classes = [permissions.IsAuthenticated]  # Add RoleBasedPermission here if you have it
+    pagination_class = CustomPagination
+
+    # 🔥 Filters & Search
+    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = ComplaintFilter
+
+    # Search inside the related tables
+    search_fields = ["title", "description", "lease__renter__full_name", "lease__unit__unit_number"]
+
+    # Allow sorting by priority and date
+    ordering_fields = ["created_at", "updated_at", "priority", "status"]
     ordering = ["-created_at"]
 
     def get_queryset(self):
+        """
+        Staff sees all complaints.
+        Renters only see complaints linked to their Lease.
+        """
         user = self.request.user
         if user.is_staff:
-            return Complaint.objects.all()
-        elif getattr(user, "is_renter", False):
-            return Complaint.objects.filter(renter__user=user)
+            return super().get_queryset()
+
+        # If user is a renter, find complaints linked to their active leases
+        if getattr(user, "is_renter", False):
+            # 🔥 FIX: Traverse Lease -> Renter -> User
+            return super().get_queryset().filter(lease__renter__user=user)
+
         return Complaint.objects.none()
 
     def perform_create(self, serializer):
-        user = self.request.user
-        if getattr(user, "is_renter", False):
-            # Auto-link complaint to renter
-            serializer.save(renter=user.renter_profile)
-        else:
-            # Admin can provide renter in POST data
-            serializer.save()
+        """
+        Auto-assign 'created_by'. 
+        If a Renter submits, we could auto-link their active lease here,
+        but for Admin Dashboard, the Admin selects the lease manually.
+        """
+        serializer.save(created_by=self.request.user)
 
     def update(self, request, *args, **kwargs):
-        # Only allow admin to update status
+        """
+        Allow full updates for Staff.
+        """
         if not request.user.is_staff:
-            return Response({"detail": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        partial = kwargs.pop("partial", False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-    def partial_update(self, request, *args, **kwargs):
-        return self.update(request, partial=True, **kwargs)
+            return Response(
+                {"detail": "Only staff can update ticket status/details."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
-        return Response({"detail": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        """
+        Allow delete for Staff (e.g. removing accidental duplicates).
+        """
+        if not request.user.is_staff:
+            return Response(
+                {"detail": "Method not allowed."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().destroy(request, *args, **kwargs)
