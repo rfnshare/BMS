@@ -1,6 +1,6 @@
 from django.db import models
 from common.models import BaseAuditModel
-from renters.models import Renter
+from leases.models import Lease  # 🔥 Changed from Renter to Lease
 from accounts.models import User
 from common.utils.storage import expense_attachment_upload_path
 
@@ -12,14 +12,16 @@ class Expense(BaseAuditModel):
         REPAIR = "repair", "Repair"
         OTHER = "other", "Other"
 
-    renter = models.ForeignKey(
-        Renter,
+    # 🔥 LINK TO LEASE instead of Renter
+    lease = models.ForeignKey(
+        Lease,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="expenses",
-        help_text="Linked renter if this expense is renter-specific."
+        help_text="Linked lease if this expense is tenant-specific (e.g. damages)."
     )
+
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
@@ -29,12 +31,14 @@ class Expense(BaseAuditModel):
         default=Category.OTHER
     )
     date = models.DateField()
+
+    # Optional: You can keep this or derive it from 'if self.lease'
     is_renter_related = models.BooleanField(default=False)
+
     attachment = models.FileField(
         upload_to=expense_attachment_upload_path,
         blank=True,
-        null=True,
-        help_text="Optional receipt or supporting document."
+        null=True
     )
     created_by = models.ForeignKey(
         User,
@@ -44,9 +48,9 @@ class Expense(BaseAuditModel):
     )
 
     def save(self, *args, **kwargs):
-        self.is_renter_related = bool(self.renter)
+        self.is_renter_related = bool(self.lease)
         super().save(*args, **kwargs)
 
     def __str__(self):
         base = f"{self.title} - {self.amount}"
-        return f"{base} (Renter: {self.renter.full_name})" if self.renter else base
+        return f"{base} (Lease: {self.lease})" if self.lease else base

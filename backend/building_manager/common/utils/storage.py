@@ -1,4 +1,6 @@
 import os
+
+from django.utils.text import slugify
 from django.utils.timezone import now
 
 
@@ -73,23 +75,29 @@ def expense_attachment_upload_path(instance, filename):
     """
     Generate dynamic path for expense attachments.
     Example:
-      - For renter-related expense:
-        documents/expenses/2025/10/renter_12/receipt_AC_Repair.pdf
+      - For lease-related expense:
+        documents/expenses/2025/10/lease_12/receipt_AC_Repair.pdf
       - For general expense:
         documents/expenses/2025/10/general/maintenance_bill.pdf
     """
     from django.utils.timezone import now
 
+    # 1. Base path: documents/expenses/YYYY/MM
     base_path = os.path.join(
         "documents",
         "expenses",
         now().strftime("%Y/%m"),
     )
 
-    # Subfolder based on whether expense is renter-related
-    if instance.renter:
-        subfolder = f"renter_{instance.renter.id}"
+    # 2. Subfolder based on LEASE (Fix: Changed from renter to lease)
+    if instance.lease:
+        # Using lease ID keeps files organized by contract
+        subfolder = f"lease_{instance.lease.id}"
     else:
         subfolder = "general"
 
-    return os.path.join(base_path, subfolder, filename)
+    # 3. Optional: Sanitize filename to prevent issues
+    name, ext = os.path.splitext(filename)
+    clean_filename = f"{slugify(name)}{ext}"
+
+    return os.path.join(base_path, subfolder, clean_filename)

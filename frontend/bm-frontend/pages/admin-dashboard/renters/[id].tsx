@@ -9,31 +9,31 @@ const adminMenuItems = [
     items: [
       { name: 'Dashboard', path: '/admin-dashboard/home', icon: 'bi-speedometer2' },
       { name: 'Units', path: '/admin-dashboard/units', icon: 'bi-building' },
-      { name: 'Lease Agreements', path: '/admin-dashboard/leases', icon: 'bi-file-earmark-text' },
+      { name: 'Leases', path: '/admin-dashboard/leases', icon: 'bi-file-earmark-text' },
       { name: 'Renters', path: '/admin-dashboard/renters', icon: 'bi-people' },
     ]
   },
   {
     group: "Financials",
     items: [
-      { name: 'Invoices', path: '/admin-dashboard/invoices', icon: 'bi-receipt-cutoff' },
-      { name: 'Payments', path: '/admin-dashboard/payments', icon: 'bi-cash-stack' },
-      { name: 'Expenses', path: '/admin-dashboard/expenses', icon: 'bi-cart-dash' },
+      { name: 'Invoices', path: '/admin-dashboard/invoices', icon: 'bi-receipt' },
+      { name: 'Payments', path: '/admin-dashboard/payments', icon: 'bi-wallet2' },
+      { name: 'Expenses', path: '/admin-dashboard/expenses', icon: 'bi-cart-dash' }, // Active Page
     ]
   },
   {
-    group: "Service & Analytics",
+    group: "Support & Intelligence",
     items: [
-      { name: 'Complaints', path: '/admin-dashboard/complaints', icon: 'bi-exclamation-octagon' },
-      { name: 'Notifications', path: '/admin-dashboard/notifications', icon: 'bi-megaphone' },
-      { name: 'Reports', path: '/admin-dashboard/reports', icon: 'bi-graph-up-arrow' },
+      { name: 'Complaints', path: '/admin-dashboard/complaints', icon: 'bi-exclamation-triangle' },
+      { name: 'Notifications', path: '/admin-dashboard/notifications', icon: 'bi-bell' },
+      { name: 'Reports', path: '/admin-dashboard/reports', icon: 'bi-bar-chart-line' },
     ]
   },
   {
-    group: "Administration",
+    group: "System",
     items: [
       { name: 'Permissions', path: '/admin-dashboard/permissions', icon: 'bi-shield-lock' },
-      { name: 'Admin Profile', path: '/admin-dashboard/profile', icon: 'bi-person-gear' },
+      { name: 'Profile', path: '/admin-dashboard/profile', icon: 'bi-person-gear' },
     ]
   },
 ];
