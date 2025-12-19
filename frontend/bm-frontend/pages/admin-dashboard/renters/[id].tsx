@@ -2,80 +2,122 @@ import { useRouter } from "next/router";
 import Layout from "../../../components/layouts/Layout";
 import RenterProfileManager from "../../../components/features/Renters/RenterProfileManager";
 
-const menuItems = [
-  { name: "Home", path: "/admin-dashboard/home", icon: "bi-house" },
-  { name: "Units", path: "/admin-dashboard/units", icon: "bi-building" },
-  { name: "Renters", path: "/admin-dashboard/renters", icon: "bi-people" },
-  { name: "Leases", path: "/admin-dashboard/leases", icon: "bi-file-text" },
-  { name: "Invoices", path: "/admin-dashboard/invoices", icon: "bi-receipt" },
-  { name: "Notifications", path: "/admin-dashboard/notifications", icon: "bi-bell" },
-  { name: "Reports", path: "/admin-dashboard/reports", icon: "bi-bar-chart" },
-  { name: "Profile", path: "/admin-dashboard/profile", icon: "bi-person" },
+// 🔥 STEP 1: Use the CORRECT Grouped Menu for Admin
+const adminMenuItems = [
+  {
+    group: "Operations",
+    items: [
+      { name: 'Dashboard', path: '/admin-dashboard/home', icon: 'bi-speedometer2' },
+      { name: 'Units', path: '/admin-dashboard/units', icon: 'bi-building' },
+      { name: 'Lease Agreements', path: '/admin-dashboard/leases', icon: 'bi-file-earmark-text' },
+      { name: 'Renters', path: '/admin-dashboard/renters', icon: 'bi-people' },
+    ]
+  },
+  {
+    group: "Financials",
+    items: [
+      { name: 'Invoices', path: '/admin-dashboard/invoices', icon: 'bi-receipt-cutoff' },
+      { name: 'Payments', path: '/admin-dashboard/payments', icon: 'bi-cash-stack' },
+      { name: 'Expenses', path: '/admin-dashboard/expenses', icon: 'bi-cart-dash' },
+    ]
+  },
+  {
+    group: "Service & Analytics",
+    items: [
+      { name: 'Complaints', path: '/admin-dashboard/complaints', icon: 'bi-exclamation-octagon' },
+      { name: 'Notifications', path: '/admin-dashboard/notifications', icon: 'bi-megaphone' },
+      { name: 'Reports', path: '/admin-dashboard/reports', icon: 'bi-graph-up-arrow' },
+    ]
+  },
+  {
+    group: "Administration",
+    items: [
+      { name: 'Permissions', path: '/admin-dashboard/permissions', icon: 'bi-shield-lock' },
+      { name: 'Admin Profile', path: '/admin-dashboard/profile', icon: 'bi-person-gear' },
+    ]
+  },
 ];
 
-export default function RenterProfilePage() {
+export default function RenterDetailedView() {
   const router = useRouter();
+  const { id } = router.query; // This captures the ID from the URL
 
-  // wait until router is ready
+  // Defensive SQA Check: Wait until router is ready to avoid "undefined" ID errors
   if (!router.isReady) {
     return (
-      <Layout menuItems={menuItems}>
+      <Layout menuItems={adminMenuItems}>
         <div className="d-flex justify-content-center align-items-center min-vh-100">
-          <div className="spinner-grow text-primary" role="status"></div>
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
         </div>
       </Layout>
     );
   }
 
   return (
-    <Layout menuItems={menuItems}>
-      <div className="container-fluid py-4">
+    <Layout menuItems={adminMenuItems}>
+      <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
-        {/* BREADCRUMB & BACK NAVIGATION */}
+        {/* BREADCRUMB NAVIGATION */}
         <div className="mb-4 d-flex align-items-center justify-content-between">
           <nav aria-label="breadcrumb">
-            <ol className="breadcrumb mb-0">
+            <ol className="breadcrumb mb-0 bg-transparent p-0">
               <li className="breadcrumb-item">
-                <a href="/admin-dashboard/home" className="text-decoration-none text-muted">Admin</a>
+                <button
+                  onClick={() => router.push("/admin-dashboard/home")}
+                  className="btn btn-link p-0 text-decoration-none text-muted small"
+                >
+                  Admin
+                </button>
               </li>
               <li className="breadcrumb-item">
-                <a href="/admin-dashboard/renters" className="text-decoration-none text-muted">Renters</a>
+                <button
+                  onClick={() => router.push("/admin-dashboard/renters")}
+                  className="btn btn-link p-0 text-decoration-none text-muted small"
+                >
+                  Renters
+                </button>
               </li>
-              <li className="breadcrumb-item active fw-bold text-primary" aria-current="page">
-                Detailed Profile
+              <li className="breadcrumb-item active small fw-bold text-primary" aria-current="page">
+                Renter Dossier #{id}
               </li>
             </ol>
           </nav>
 
           <button
             onClick={() => router.push('/admin-dashboard/renters')}
-            className="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-2"
+            className="btn btn-white border btn-sm rounded-pill px-3 d-flex align-items-center gap-2 shadow-sm"
           >
-            <i className="bi bi-arrow-left"></i> Back to List
+            <i className="bi bi-arrow-left"></i> Back to Directory
           </button>
         </div>
 
+        {/* HEADER SECTION */}
+        <div className="mb-4">
+          <h2 className="fw-bold mb-1">Renter Detailed Profile</h2>
+          <p className="text-muted small">Comprehensive view of identity, documents, and historical leases for Renter ID: {id}.</p>
+        </div>
+
         {/* PROFILE MANAGER CONTENT */}
-        <div className="animate__animated animate__fadeIn">
+        {/* SQA Note: RenterProfileManager should use the 'id' from props or URL
+            to fetch the specific data from /api/renters/{id}/ */}
+        <div className="bg-white rounded-4 shadow-sm border-0 overflow-hidden">
           <RenterProfileManager />
         </div>
 
         {/* QUICK ACTIONS FOOTER */}
-        <div className="row mt-4">
-          <div className="col-12">
-            <div className="card border-0 shadow-sm rounded-4 bg-light">
-              <div className="card-body d-flex flex-wrap justify-content-center gap-3">
-                <button className="btn btn-primary rounded-pill px-4">
-                   <i className="bi bi-pencil-square me-2"></i>Edit Information
-                </button>
-                <button className="btn btn-outline-danger rounded-pill px-4">
-                   <i className="bi bi-trash me-2"></i>Delete Profile
-                </button>
-                <button className="btn btn-dark rounded-pill px-4">
-                   <i className="bi bi-printer me-2"></i>Print Dossier
-                </button>
-              </div>
-            </div>
+        <div className="mt-4 card border-0 shadow-sm rounded-4 bg-dark text-white p-3">
+          <div className="card-body d-flex flex-wrap justify-content-center gap-3">
+            <button className="btn btn-primary rounded-pill px-4 fw-bold small">
+               <i className="bi bi-pencil-square me-2"></i>Edit Resident
+            </button>
+            <button className="btn btn-outline-light rounded-pill px-4 fw-bold small">
+               <i className="bi bi-printer me-2"></i>Print Dossier
+            </button>
+            <button className="btn btn-danger rounded-pill px-4 fw-bold small">
+               <i className="bi bi-trash me-2"></i>Flag Account
+            </button>
           </div>
         </div>
 
