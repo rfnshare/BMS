@@ -1,7 +1,7 @@
-﻿import Layout from '../../components/layouts/Layout';
-import RenterDashboard from '../../components/features/Renter/RenterDashboard';
+import Layout from '../../components/layouts/Layout';
+import RenterInvoiceManager from '../../components/features/Renter/RenterInvoiceManager';
+import RenterComplaintManager from "../../components/features/Renter/RenterComplaintManager";
 
-// 🔥 STEP 1: Define Grouped Menu Items for Renters
 export const renterMenuItems = [
   {
     group: "Home",
@@ -60,22 +60,15 @@ export const renterMenuItems = [
   }
 ];
 
-export default function Page() {
+export default function RenterComplaintsPage() {
   return (
-    // 🔥 STEP 2: Pass the grouped 'renterMenuItems' to the Layout
     <Layout menuItems={renterMenuItems}>
-      <div className="container-fluid py-2 animate__animated animate__fadeIn">
-
-        {/* WELCOME HEADER */}
-        <div className="mb-4 ps-1">
-          <h2 className="fw-bold text-dark mb-1">Renter Portal</h2>
-          <p className="text-muted small">Welcome back! Manage your stay and view your latest bills.</p>
+      <div className="container-fluid py-4 animate__animated animate__fadeIn">
+        <div className="mb-4 ps-2">
+          <h2 className="fw-bold mb-1">Support & Maintenance</h2>
+          <p className="text-muted small">Submit requests for repairs or report issues with your unit.</p>
         </div>
-
-        {/* FEATURE COMPONENT */}
-        {/* This component pulls real data like 'Total Outstanding Dues' and 'Unit Info' */}
-        <RenterDashboard />
-
+        <RenterComplaintManager />
       </div>
     </Layout>
   );

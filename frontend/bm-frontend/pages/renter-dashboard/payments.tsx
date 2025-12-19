@@ -1,36 +1,62 @@
 ﻿import Layout from '../../components/layouts/Layout';
 import RenterPaymentManager from '../../components/features/Renter/RenterPaymentManager';
 
-// 🔥 STEP 1: Define the Grouped Menu for the Renter
-// This must match the nested structure expected by your updated Sidebar
-const renterMenuItems = [
+export const renterMenuItems = [
   {
-    group: "My Residence",
+    group: "Home",
     items: [
-      { name: 'Home', path: '/renter-dashboard', icon: 'bi-house-heart' },
-      { name: 'My Units', path: '/renter-dashboard/my-units', icon: 'bi-building' },
+      {
+        name: 'Home',
+        path: '/renter-dashboard',
+        icon: 'bi-house-heart'
+      },
+      {
+        name: 'My Unit',
+        path: '/renter-dashboard/unit',
+        icon: 'bi-building'
+      },
     ]
   },
   {
-    group: "Bills & History",
+    group: "Finance",
     items: [
-      { name: 'Invoices', path: '/renter-dashboard/invoices', icon: 'bi-receipt' },
-      { name: 'Payment History', path: '/renter-dashboard/payments', icon: 'bi-credit-card-2-back' },
+      {
+        name: 'Invoices',
+        path: '/renter-dashboard/invoices',
+        icon: 'bi-receipt'
+      },
+      {
+        name: 'Payments',
+        path: '/renter-dashboard/payments',
+        icon: 'bi-wallet2'
+      },
     ]
   },
   {
-    group: "Communication",
+    group: "Support",
     items: [
-      { name: 'Notifications', path: '/renter-dashboard/notifications', icon: 'bi-bell' },
-      // { name: 'Complaints', path: '/renter-dashboard/complaints', icon: 'bi-chat-left-dots' },
+      {
+        name: 'Complaints',
+        path: '/renter-dashboard/complaints',
+        icon: 'bi-exclamation-triangle'
+      },
+      {
+        name: 'Notifications',
+        path: '/renter-dashboard/notifications',
+        icon: 'bi-bell'
+      },
     ]
   },
   {
     group: "Settings",
     items: [
-      { name: 'My Profile', path: '/renter-dashboard/profile', icon: 'bi-person-bounding-box' },
+      {
+        name: 'My Profile',
+        path: '/renter-dashboard/profile',
+        icon: 'bi-person-gear'
+      },
     ]
-  },
+  }
 ];
 
 export default function PaymentsPage() {

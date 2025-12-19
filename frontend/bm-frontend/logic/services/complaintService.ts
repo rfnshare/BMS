@@ -5,7 +5,10 @@ export const ComplaintService = {
     const response = await api.get("/complaints/", { params });
     return response.data;
   },
-
+    getRenterActiveLease: async () => {
+    const response = await api.get("/leases/leases/", { params: { is_active: true } });
+    return response.data.results[0]; // Returns the primary active lease
+  },
   create: async (data: any) => {
     // Handle File Upload
     if (data.attachment instanceof File) {

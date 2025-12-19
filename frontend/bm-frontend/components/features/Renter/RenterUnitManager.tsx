@@ -1,109 +1,144 @@
 import { useEffect, useState } from "react";
-import api from "../../../logic/services/apiClient";
-import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
+import { LeaseService } from "../../../logic/services/leaseService";
+import { Spinner, Row, Col, Card, Badge, ListGroup } from "react-bootstrap";
 
-export default function RenterUnitManager() {
-  const [units, setUnits] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+export default function RenterUnitDetails() {
+  const [lease, setLease] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const loadMyUnits = async () => {
-    setLoading(true);
-    try {
-      // Backend automatically filters based on the Renter's Token
-      // Only units assigned to 'Me' will be returned
-      const res = await api.get("/buildings/units/");
-      setUnits(res.data.results || res.data);
-    } catch (err) {
-      console.error(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const loadResidency = async () => {
+      try {
+        const activeLease = await LeaseService.getMyActiveLease();
+        setLease(activeLease);
+      } catch (error) {
+        console.error("Failed to load unit details", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadResidency();
+  }, []);
 
-  useEffect(() => { loadMyUnits(); }, []);
+  if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
 
-  if (loading) return (
-    <div className="text-center py-5">
-      <div className="spinner-border text-primary shadow-sm"></div>
-      <p className="mt-2 text-muted small">Fetching unit details...</p>
+  if (!lease) return <div className="text-center py-5 text-muted">No active lease found.</div>;
+
+  const HandoverItem = ({ label, done }: { label: string; done: boolean }) => (
+    <div className="d-flex justify-content-between align-items-center mb-2">
+      <span className="small text-muted">{label}</span>
+      {done ? (
+        <Badge bg="success-subtle" text="success" className="rounded-pill px-2">
+          <i className="bi bi-check-circle-fill me-1"></i> Received
+        </Badge>
+      ) : (
+        <Badge bg="light" text="muted" className="rounded-pill px-2 border">
+          <i className="bi bi-dash-circle me-1"></i> Pending
+        </Badge>
+      )}
     </div>
   );
 
-  if (units.length === 0) {
-    return (
-      <div className="text-center py-5 bg-white rounded-4 shadow-sm border border-light animate__animated animate__fadeIn">
-        <i className="bi bi-building-exclamation display-4 text-muted opacity-50"></i>
-        <h5 className="mt-3 fw-bold">No Assigned Units</h5>
-        <p className="text-muted">You are currently not assigned to any property units.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="row g-4 animate__animated animate__fadeIn">
-      {units.map((unit) => (
-        <div key={unit.id} className="col-lg-6 mx-auto">
-          <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white h-100">
-
-            {/* 1. UNIT HEADER */}
-            <div className="card-header bg-primary text-white p-4 border-0">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h3 className="fw-bold mb-0">{unit.name}</h3>
-                  <div className="small opacity-75 fw-medium text-uppercase ls-1">Current Residence</div>
-                </div>
-                <div className="bg-white bg-opacity-20 rounded-circle p-2">
-                   <i className="bi bi-building-check fs-3"></i>
-                </div>
+    <div className="animate__animated animate__fadeIn pb-5">
+      <Row className="g-4">
+        {/* LEFT COLUMN: PRIMARY INFO */}
+        <Col lg={8}>
+          <Card className="border-0 shadow-sm rounded-4 p-4 mb-4">
+            <div className="d-flex justify-content-between align-items-start mb-4">
+              <div>
+                <Badge bg="success" className="mb-2 px-3 rounded-pill text-uppercase" style={{ fontSize: '0.7rem' }}>
+                    {lease.status} residency
+                </Badge>
+                <h3 className="fw-bold text-dark">Unit Details</h3>
+              </div>
+              <div className="text-end">
+                <div className="small text-muted text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Move-in Date</div>
+                <div className="fw-bold text-primary">{new Date(lease.start_date).toLocaleDateString()}</div>
               </div>
             </div>
 
-            {/* 2. UNIT BODY DATA */}
-            <div className="card-body p-4">
-              <div className="row g-3">
-                <div className="col-6">
-                  <div className="p-3 bg-light rounded-4 text-center">
-                    <div className="x-small text-muted text-uppercase fw-bold mb-1">Floor</div>
-                    <div className="h5 fw-bold mb-0">{unit.floor || 'N/A'}</div>
-                  </div>
+            {/* Rent Breakdown Table */}
+            <h6 className="fw-bold text-muted text-uppercase mb-3" style={{ fontSize: '0.75rem' }}>Monthly Rent Breakdown</h6>
+            <div className="bg-light rounded-4 p-3 mb-4">
+              {lease.lease_rents?.map((item: any) => (
+                <div key={item.id} className="d-flex justify-content-between mb-2">
+                  <span className="text-secondary">{item.rent_type_name}</span>
+                  <span className="fw-bold">৳{Number(item.amount).toLocaleString()}</span>
                 </div>
-                <div className="col-6">
-                  <div className="p-3 bg-light rounded-4 text-center">
-                    <div className="x-small text-muted text-uppercase fw-bold mb-1">Total Area</div>
-                    <div className="h5 fw-bold mb-0">{unit.total_area || '0'} SFT</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* PROPERTY SPECS */}
-              <div className="mt-4 pt-3 border-top">
-                <h6 className="fw-bold text-muted small text-uppercase mb-3">Unit Specifications</h6>
-                <div className="vstack gap-3">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <span className="text-muted small"><i className="bi bi-door-open me-2"></i>Bedrooms</span>
-                    <span className="fw-bold text-dark">{unit.bed_room || 0}</span>
-                  </div>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <span className="text-muted small"><i className="bi bi-droplet me-2"></i>Bathrooms</span>
-                    <span className="fw-bold text-dark">{unit.bath_room || 0}</span>
-                  </div>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <span className="text-muted small"><i className="bi bi-square me-2"></i>Unit Type</span>
-                    <span className="badge bg-light text-primary border border-primary-subtle rounded-pill">
-                      {unit.unit_type || 'Residential'}
-                    </span>
-                  </div>
-                </div>
+              ))}
+              <hr />
+              <div className="d-flex justify-content-between text-dark fw-bold">
+                <span>Total Monthly Commitment</span>
+                <span>৳{Number(lease.rent_amount).toLocaleString()}</span>
               </div>
             </div>
 
-            {/* 3. UNIT FOOTER */}
-            <div className="card-footer bg-light border-0 p-3 px-4 text-center">
-              <span className="small text-muted">Last Updated: <strong>{new Date(unit.updated_at).toLocaleDateString()}</strong></span>
+            {/* Handover Checklist */}
+            <h6 className="fw-bold text-muted text-uppercase mb-3" style={{ fontSize: '0.75rem' }}>Handover Checklist</h6>
+            <Row className="g-3">
+              <Col md={6}>
+                <HandoverItem label="Electricity Card" done={lease.electricity_card_given} />
+                <HandoverItem label="Gas Card" done={lease.gas_card_given} />
+                <HandoverItem label="Main Gate Key" done={lease.main_gate_key_given} />
+              </Col>
+              <Col md={6}>
+                <HandoverItem label="Pocket Gate Key" done={lease.pocket_gate_key_given} />
+                <HandoverItem label="Agreement Paper" done={lease.agreement_paper_given} />
+                <HandoverItem label="Police Verification" done={lease.police_verification_done} />
+              </Col>
+            </Row>
+          </Card>
+
+          {/* Documents Section */}
+          {lease.documents?.length > 0 && (
+            <Card className="border-0 shadow-sm rounded-4 p-4">
+              <h6 className="fw-bold text-muted text-uppercase mb-3" style={{ fontSize: '0.75rem' }}>Attached Documents</h6>
+              <div className="list-group list-group-flush">
+                {lease.documents.map((doc: any) => (
+                  <a key={doc.id} href={doc.file} target="_blank" rel="noreferrer" className="list-group-item list-group-item-action border-0 px-0 d-flex align-items-center">
+                    <i className="bi bi-file-earmark-pdf text-danger fs-4 me-3"></i>
+                    <div>
+                      <div className="fw-bold small text-capitalize">{doc.doc_type} Paper</div>
+                      <div className="x-small text-muted">Uploaded on {new Date(doc.uploaded_at).toLocaleDateString()}</div>
+                    </div>
+                    <i className="bi bi-download ms-auto text-muted"></i>
+                  </a>
+                ))}
+              </div>
+            </Card>
+          )}
+        </Col>
+
+        {/* RIGHT COLUMN: BALANCE & QUICK STATS */}
+        <Col lg={4}>
+          <Card className="border-0 shadow-sm rounded-4 p-4 bg-dark text-white mb-4">
+            <div className="opacity-75 small text-uppercase fw-bold mb-1">Current Balance</div>
+            <h2 className="display-6 fw-bold mb-4">৳{Number(lease.current_balance).toLocaleString()}</h2>
+
+            <div className="mb-3">
+              <div className="opacity-50 small text-uppercase fw-bold">Security Deposit</div>
+              <div className="h5 fw-bold">৳{Number(lease.security_deposit).toLocaleString()}</div>
+              <Badge bg={lease.deposit_status === 'pending' ? 'warning' : 'success'} className="fw-normal">
+                Deposit {lease.deposit_status}
+              </Badge>
             </div>
-          </div>
-        </div>
-      ))}
+
+            <hr className="opacity-25" />
+            <p className="x-small opacity-50 mb-0">
+                Created on {new Date(lease.created_at).toLocaleDateString()}
+            </p>
+          </Card>
+
+          {/* Management Remarks */}
+          {lease.remarks && (
+            <Card className="border-0 shadow-sm rounded-4 p-4 bg-info bg-opacity-10 border-start border-4 border-info">
+                <h6 className="fw-bold text-info small text-uppercase">Management Remarks</h6>
+                <p className="small text-dark mb-0 italic">"{lease.remarks}"</p>
+            </Card>
+          )}
+        </Col>
+      </Row>
     </div>
   );
 }
