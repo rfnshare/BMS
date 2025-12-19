@@ -35,6 +35,11 @@ export const InvoiceService = {
     const response = await api.post(`/invoices/${id}/generate_pdf/`);
     return response.data; // Returns { pdf: "url_to_file" }
   },
+    generateMonthly: async () => {
+    // This calls the scheduling endpoint defined in your schema
+    const response = await api.post("/scheduling/manual-invoice/");
+    return response.data;
+  },
     // Hydration Helpers
   getLease: (id: number) => api.get(`/leases/leases/${id}/`).then(res => res.data),
   getRenter: (id: number) => api.get(`/renters/${id}/`).then(res => res.data),
