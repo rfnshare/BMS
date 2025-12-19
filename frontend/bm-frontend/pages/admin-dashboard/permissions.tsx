@@ -1,4 +1,5 @@
 import Layout from '../../components/layouts/Layout';
+import PermissionManager from "../../components/features/Permission/PermissionManager";
 
 const adminMenuItems = [
   {
@@ -39,13 +40,12 @@ export default function PermissionsPage() {
   return (
     <Layout menuItems={adminMenuItems}>
       <div className="container-fluid py-4 animate__animated animate__fadeIn">
-        <h2 className="fw-bold mb-1">Access Control</h2>
-        <p className="text-muted small">Manage roles and system permissions for administrative staff.</p>
-        <div className="card border-0 shadow-sm rounded-4 p-5 mt-4 text-center bg-white">
-          <i className="bi bi-shield-lock display-1 text-primary mb-3 opacity-25"></i>
-          <h4>User Roles Placeholder</h4>
-          <p className="text-muted">This module will connect to Django <code>Group</code> and <code>Permission</code> models.</p>
+        <div className="mb-4">
+          <h2 className="fw-bold mb-1">Access Control</h2>
+          <p className="text-muted small">Configure Role-Based Access Control (RBAC) for the building staff.</p>
         </div>
+
+        <PermissionManager />
       </div>
     </Layout>
   );
