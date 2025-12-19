@@ -6,21 +6,25 @@ import InvoicePreviewModal from "./InvoicePreviewModal";
 
 export default function InvoiceManager() {
   // 1. Data State
-  const [data, setData] = useState({ results: [], count: 0, next: null, previous: null });
+  const [data, setData] = useState<any>({ results: [], count: 0, next: null, previous: null });
   const [loading, setLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false); // For bulk button spinner
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  // 2. Filter State (Default sort: Newest First)
+  // 2. Filter State
   const [filters, setFilters] = useState({
     status: "",
     search: "",
     page: 1,
-    ordering: "-id"
+    ordering: "-id",
+    // 🔥 NEW FILTERS
+    invoice_month: "", // Month picker (YYYY-MM)
+    invoice_type: "", // Dropdown
+    lease: "",        // Lease ID number
   });
 
   // 3. Cache & Modals
-  const [cache, setCache] = useState({});
-  const [activeModal, setActiveModal] = useState({ type: null, data: null });
+  const [cache, setCache] = useState<{ [key: number]: { renter: string, unit: string } }>({});
+  const [activeModal, setActiveModal] = useState<{ type: 'edit' | 'preview' | null, data: any }>({ type: null, data: null });
 
   // --- API CALLS ---
 
@@ -29,29 +33,23 @@ export default function InvoiceManager() {
     try {
       const res = await InvoiceService.list(filters);
       setData(res);
-      // Immediately start fetching names for these invoices
       hydrateData(res.results || []);
-    } catch (err) {
+    } catch (err: any) { // 🔥 FIX: Explicitly type err as any
       alert(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  const hydrateData = async (invoices) => {
-    // Identify distinct lease IDs not yet in cache
+  const hydrateData = async (invoices: any[]) => {
     const uniqueLeaseIds = [...new Set(invoices.map(inv => inv.lease))]
       .filter(id => id && !cache[id]);
 
     if (uniqueLeaseIds.length === 0) return;
 
-    // Fetch details in parallel tasks
     const hydrationTasks = uniqueLeaseIds.map(async (leaseId) => {
       try {
-        // Fetch Lease first to get Renter ID and Unit ID
-        const lease = await InvoiceService.getLease(leaseId);
-
-        // Fetch Renter and Unit in parallel
+        const lease = await InvoiceService.getLease(leaseId as number); // Cast ID if needed
         const [renterRes, unitRes] = await Promise.allSettled([
           InvoiceService.getRenter(lease.renter),
           InvoiceService.getUnit(lease.unit)
@@ -60,29 +58,38 @@ export default function InvoiceManager() {
         return {
           id: leaseId,
           data: {
-            renter: renterRes.status === 'fulfilled' ? renterRes.value.full_name : "Unknown",
-            // Schema uses 'name' for Unit, not unit_number
-            unit: unitRes.status === 'fulfilled' ? (unitRes.value.name) : "Unknown"
+            renter: renterRes.status === 'fulfilled' ? (renterRes.value as any).full_name : "Unknown",
+            unit: unitRes.status === 'fulfilled' ? ((unitRes.value as any).name || (unitRes.value as any).unit_number) : "Unknown"
           }
         };
-      } catch (e) {
+      } catch (e: any) { // 🔥 FIX: Type catch variable
         return { id: leaseId, data: { renter: "Error", unit: "Error" } };
       }
     });
 
     const results = await Promise.all(hydrationTasks);
 
-    // Update cache without wiping existing data
     setCache(prev => {
       const updated = { ...prev };
       results.forEach(res => {
-        if(res) updated[res.id] = res.data;
+        if(res && res.id) updated[Number(res.id)] = res.data;
       });
       return updated;
     });
   };
 
-  useEffect(() => { loadInvoices(); }, [filters.status, filters.page, filters.search]);
+  // Reload when any filter changes
+  useEffect(() => {
+    loadInvoices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    filters.status,
+    filters.page,
+    filters.search,
+    filters.invoice_month, // 🔥 Trigger on new filters
+    filters.invoice_type,
+    filters.lease
+  ]);
 
   // --- ACTIONS ---
 
@@ -93,69 +100,58 @@ export default function InvoiceManager() {
 
     setIsGenerating(true);
     try {
-      // Calls POST /api/scheduling/manual-invoice/
       await InvoiceService.generateMonthly();
       alert("✅ Success! Monthly invoices have been generated and sent.");
-      loadInvoices(); // Refresh list to see new items
-    } catch (err) {
+      loadInvoices();
+    } catch (err: any) { // 🔥 FIX
       alert(getErrorMessage(err));
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleDownloadPdf = async (invoice) => {
-    // A. If PDF URL already exists in the list, open it
+  const handleDownloadPdf = async (invoice: any) => {
     if (invoice.invoice_pdf) {
       window.open(invoice.invoice_pdf, '_blank');
       return;
     }
 
-    // B. If not, generate it
     const isConfirmed = window.confirm("⚠️ PDF not found. Generate a new one now?");
     if (!isConfirmed) return;
 
     try {
       setLoading(true);
-
-      // Calls POST /api/invoices/{id}/generate_pdf/
       const response = await InvoiceService.generatePdf(invoice.id);
 
-      // 🔥 FIX: Handle the specific { "pdf": "..." } response structure
       if (response && response.pdf) {
-
-        // Check if URL is relative (starts with /media) or absolute
         let pdfUrl = response.pdf;
         if (pdfUrl.startsWith("/")) {
-            // Prepend Backend URL (Adjust this if your live server is different)
             pdfUrl = `http://127.0.0.1:8000${pdfUrl}`;
         }
-
         window.open(pdfUrl, '_blank');
-        loadInvoices(); // Refresh list to save the URL for next time
+        loadInvoices();
       } else {
         alert("Server returned a success status, but no 'pdf' link was found.");
       }
-    } catch (err) {
+    } catch (err: any) { // 🔥 FIX
       alert("Failed to generate PDF. " + (err.response?.data?.detail || err.message));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     if (confirm("⚠️ SQA Warning: Deleting an invoice will affect financial reports. Proceed?")) {
       try {
         await InvoiceService.destroy(id);
         loadInvoices();
-      } catch (err) {
+      } catch (err: any) { // 🔥 FIX
         alert(getErrorMessage(err));
       }
     }
   };
 
-  // Helper to format YYYY-MM-DD -> "Feb 2025"
-  const formatMonth = (dateString) => {
+  const formatMonth = (dateString: string) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
     return date.toLocaleDateString('default', { month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -163,49 +159,96 @@ export default function InvoiceManager() {
 
   return (
     <div className="bg-white">
-      {/* 1. FILTER & ACTION BAR */}
-      <div className="p-4 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <div className="d-flex gap-2">
-           <input
-             type="text"
-             className="form-control form-control-sm rounded-pill px-3 bg-light border-0"
-             placeholder="Search Invoice #..."
-             style={{ width: '250px' }}
-             onChange={(e) => setFilters({...filters, search: e.target.value, page: 1})}
-           />
-           <select
-             className="form-select form-select-sm rounded-pill px-3 bg-light border-0 w-auto"
-             value={filters.status}
-             onChange={(e) => setFilters({...filters, status: e.target.value, page: 1})}
-           >
-             <option value="">All Statuses</option>
-             <option value="unpaid">Unpaid</option>
-             <option value="paid">Paid</option>
-             <option value="draft">Draft</option>
-           </select>
+      {/* 1. ADVANCED FILTER BAR */}
+      <div className="p-4 border-bottom">
+
+        {/* Top Row: Title & Actions */}
+        <div className="d-flex justify-content-between align-items-center mb-3">
+            <h5 className="fw-bold text-dark m-0">Invoice Manager</h5>
+            <div className="d-flex gap-2">
+                <button
+                    className="btn btn-warning btn-sm rounded-pill px-3 fw-bold shadow-sm text-dark"
+                    onClick={handleBulkGenerate}
+                    disabled={isGenerating}
+                >
+                    {isGenerating ? (
+                        <span><span className="spinner-border spinner-border-sm me-2"></span>Processing...</span>
+                    ) : (
+                        <span><i className="bi bi-lightning-charge-fill me-2"></i>Generate Monthly</span>
+                    )}
+                </button>
+                <button
+                    className="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm"
+                    onClick={() => setActiveModal({ type: 'edit', data: null })}
+                >
+                    <i className="bi bi-plus-lg me-2"></i>Create Invoice
+                </button>
+            </div>
         </div>
 
-        <div className="d-flex gap-2">
-            {/* Bulk Generate Button */}
-            <button
-                className="btn btn-warning btn-sm rounded-pill px-3 fw-bold shadow-sm text-dark"
-                onClick={handleBulkGenerate}
-                disabled={isGenerating}
-            >
-                {isGenerating ? (
-                    <span><span className="spinner-border spinner-border-sm me-2"></span>Processing...</span>
-                ) : (
-                    <span><i className="bi bi-lightning-charge-fill me-2"></i>Generate Monthly</span>
-                )}
-            </button>
+        {/* Filter Grid */}
+        <div className="row g-2">
+            {/* Search (Renter/Unit) */}
+            <div className="col-md-3">
+                <input
+                    type="text"
+                    className="form-control form-control-sm bg-light border-0 px-3 rounded-pill"
+                    placeholder="Search ID, Renter, Unit..."
+                    value={filters.search}
+                    onChange={(e) => setFilters({...filters, search: e.target.value, page: 1})}
+                />
+            </div>
 
-            {/* Create Single Button */}
-            <button
-                className="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm"
-                onClick={() => setActiveModal({ type: 'edit', data: null })}
-            >
-                <i className="bi bi-plus-lg me-2"></i>Create Invoice
-            </button>
+            {/* Status */}
+            <div className="col-md-2">
+                <select
+                    className="form-select form-select-sm bg-light border-0 px-3 rounded-pill"
+                    value={filters.status}
+                    onChange={(e) => setFilters({...filters, status: e.target.value, page: 1})}
+                >
+                    <option value="">All Statuses</option>
+                    <option value="unpaid">Unpaid</option>
+                    <option value="paid">Paid</option>
+                    <option value="draft">Draft</option>
+                </select>
+            </div>
+
+            {/* 🔥 Billed Month */}
+            <div className="col-md-2">
+                <input
+                    type="month"
+                    className="form-control form-control-sm bg-light border-0 px-3 rounded-pill"
+                    title="Filter by Billed Month"
+                    value={filters.invoice_month}
+                    onChange={(e) => setFilters({...filters, invoice_month: e.target.value, page: 1})}
+                />
+            </div>
+
+            {/* 🔥 Invoice Type */}
+            <div className="col-md-2">
+                <select
+                    className="form-select form-select-sm bg-light border-0 px-3 rounded-pill"
+                    value={filters.invoice_type}
+                    onChange={(e) => setFilters({...filters, invoice_type: e.target.value, page: 1})}
+                >
+                    <option value="">All Types</option>
+                    <option value="rent">Rent</option>
+                    <option value="security_deposit">Deposit</option>
+                    <option value="adjustment">Adjustment</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+             {/* 🔥 Lease ID */}
+             <div className="col-md-2">
+                <input
+                    type="number"
+                    className="form-control form-control-sm bg-light border-0 px-3 rounded-pill"
+                    placeholder="Lease ID..."
+                    value={filters.lease}
+                    onChange={(e) => setFilters({...filters, lease: e.target.value, page: 1})}
+                />
+            </div>
         </div>
       </div>
 
@@ -227,7 +270,7 @@ export default function InvoiceManager() {
           <tbody>
             {loading ? (
               <tr><td colSpan={8} className="text-center py-5"><div className="spinner-border text-primary"></div></td></tr>
-            ) : data.results.map((inv) => (
+            ) : data.results.map((inv: any) => (
               <tr key={inv.id}>
                 <td className="ps-4">
                   <div className="fw-bold text-dark">{inv.invoice_number}</div>
@@ -243,7 +286,7 @@ export default function InvoiceManager() {
 
                 <td>
                   <div className="fw-bold small text-primary">
-                    {cache[inv.lease]?.renter || "Loading..."}
+                    {cache[inv.lease as number]?.renter || "Loading..."}
                   </div>
                   <div className="text-muted x-small fw-bold">
                     ID: <span className="text-dark">LS-{inv.lease}</span>
@@ -253,7 +296,7 @@ export default function InvoiceManager() {
                 <td>
                   <div className="badge bg-light text-dark border fw-normal">
                     <i className="bi bi-door-open me-1"></i>
-                    {cache[inv.lease]?.unit || "..."}
+                    {cache[inv.lease as number]?.unit || "..."}
                   </div>
                 </td>
 
