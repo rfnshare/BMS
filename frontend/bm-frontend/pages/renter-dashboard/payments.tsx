@@ -1,38 +1,69 @@
 ﻿import Layout from '../../components/layouts/Layout';
 import RenterPaymentManager from '../../components/features/Renter/RenterPaymentManager';
 
-const menuItems = [
-  { name: 'Home', path: '/renter-dashboard', icon: 'bi-house' },
-  { name: 'My Units', path: '/renter-dashboard/my-units', icon: 'bi-building' },
-  { name: 'Invoices', path: '/renter-dashboard/invoices', icon: 'bi-receipt' },
-  { name: 'Payments', path: '/renter-dashboard/payments', icon: 'bi-wallet2' },
-  { name: 'Profile', path: '/renter-dashboard/profile', icon: 'bi-person' },
+// 🔥 STEP 1: Define the Grouped Menu for the Renter
+// This must match the nested structure expected by your updated Sidebar
+const renterMenuItems = [
+  {
+    group: "My Residence",
+    items: [
+      { name: 'Home', path: '/renter-dashboard', icon: 'bi-house-heart' },
+      { name: 'My Units', path: '/renter-dashboard/my-units', icon: 'bi-building' },
+    ]
+  },
+  {
+    group: "Bills & History",
+    items: [
+      { name: 'Invoices', path: '/renter-dashboard/invoices', icon: 'bi-receipt' },
+      { name: 'Payment History', path: '/renter-dashboard/payments', icon: 'bi-credit-card-2-back' },
+    ]
+  },
+  {
+    group: "Communication",
+    items: [
+      { name: 'Notifications', path: '/renter-dashboard/notifications', icon: 'bi-bell' },
+      // { name: 'Complaints', path: '/renter-dashboard/complaints', icon: 'bi-chat-left-dots' },
+    ]
+  },
+  {
+    group: "Settings",
+    items: [
+      { name: 'My Profile', path: '/renter-dashboard/profile', icon: 'bi-person-bounding-box' },
+    ]
+  },
 ];
 
 export default function PaymentsPage() {
   return (
-    <Layout menuItems={menuItems}>
-      <div className="container-fluid py-4">
+    // 🔥 STEP 2: Pass 'renterMenuItems' to satisfy the Sidebar's nested mapping logic
+    <Layout menuItems={renterMenuItems}>
+      <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
-        {/* HEADER */}
+        {/* HEADER SECTION */}
         <div className="d-flex justify-content-between align-items-end mb-4">
           <div>
             <h2 className="fw-bold text-dark mb-1">Payment History</h2>
-            <p className="text-muted mb-0">Keep track of your transaction references and historical receipts.</p>
+            <p className="text-muted small mb-0">Review your past transaction references and receipts.</p>
           </div>
-          <button className="btn btn-outline-secondary btn-sm rounded-pill px-4 fw-bold bg-white">
-            <i className="bi bi-download me-2"></i>Export Statement
-          </button>
+          <div className="d-flex gap-2">
+            <button className="btn btn-white border rounded-pill px-4 shadow-sm fw-bold small">
+              <i className="bi bi-download me-2 text-primary"></i>Export Ledger
+            </button>
+          </div>
         </div>
 
-        {/* COMPONENT */}
-        <RenterPaymentManager />
+        {/* LOGIC COMPONENT */}
+        {/* RenterPaymentManager handles the API logic to fetch historical
+            payments specific to the authenticated renter's token. */}
+        <div className="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+             <RenterPaymentManager />
+        </div>
 
         {/* SECURITY NOTE */}
-        <div className="mt-4 p-3 rounded-4 bg-light border d-flex align-items-center gap-3">
+        <div className="mt-4 p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 d-flex align-items-center gap-3 shadow-sm">
           <i className="bi bi-patch-check-fill text-success fs-5"></i>
-          <span className="small text-muted">
-            All bank and mobile wallet payments are verified against transaction IDs provided by the clearinghouse.
+          <span className="small text-dark fw-medium">
+            All mobile wallet and bank transactions are verified against the central clearinghouse. Your financial data is encrypted.
           </span>
         </div>
 
