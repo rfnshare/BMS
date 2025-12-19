@@ -26,6 +26,12 @@ export const renterMenuItems = [
         icon: 'bi-receipt'
       },
       {
+        // 🔥 Added the Expenses link here
+        name: 'Other Expenses',
+        path: '/renter-dashboard/expenses',
+        icon: 'bi-cart-check'
+      },
+      {
         name: 'Payments',
         path: '/renter-dashboard/payments',
         icon: 'bi-wallet2'

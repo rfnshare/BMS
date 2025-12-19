@@ -1,6 +1,7 @@
-﻿import Layout from '../../components/layouts/Layout';
-import RenterUnitManager from '../../components/features/Renter/RenterUnitManager';
-import RenterUnitDetails from "../../components/features/Renter/RenterUnitManager";
+import Layout from '../../components/layouts/Layout';
+import RenterInvoiceManager from '../../components/features/Renter/RenterInvoiceManager';
+import RenterComplaintManager from "../../components/features/Renter/RenterComplaintManager";
+import RenterExpenseManager from "../../components/features/Renter/RenterExpenseManager";
 
 export const renterMenuItems = [
   {
@@ -66,15 +67,19 @@ export const renterMenuItems = [
   }
 ];
 
-export default function MyUnitPage() {
+export default function RenterExpensesPage() {
   return (
     <Layout menuItems={renterMenuItems}>
-      <div className="container-fluid py-4">
-        <div className="mb-4">
-          <h2 className="fw-bold mb-1">My Unit</h2>
-          <p className="text-muted small">Overview of your current residency and lease terms.</p>
+      <div className="container-fluid py-4 animate__animated animate__fadeIn">
+        <div className="mb-4 ps-2">
+          <h2 className="fw-bold mb-1 text-dark">Additional Expenses</h2>
+          <p className="text-muted small">
+            View one-time charges, maintenance costs, and other renter-related expenses.
+          </p>
         </div>
-        <RenterUnitDetails />
+
+        {/* The component that handles the API data */}
+        <RenterExpenseManager />
       </div>
     </Layout>
   );
