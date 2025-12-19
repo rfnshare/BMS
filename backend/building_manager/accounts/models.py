@@ -6,6 +6,7 @@ from datetime import timedelta
 import random
 
 from common.models import BaseAuditModel
+from common.utils.storage import staff_profile_upload_path
 
 
 class User(AbstractUser):
@@ -14,6 +15,12 @@ class User(AbstractUser):
     is_manager = models.BooleanField(default=False)
     is_renter = models.BooleanField(default=False)
     phone_number = models.CharField(max_length=15, blank=True, null=True)  # For WhatsApp login
+    profile_picture = models.ImageField(
+        upload_to=staff_profile_upload_path,  # 👈 Using the new function
+        null=True,
+        blank=True
+    )
+    bio = models.TextField(max_length=500, blank=True)
 
     def __str__(self):
         return self.username

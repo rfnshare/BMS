@@ -1,37 +1,43 @@
 import api from "./apiClient";
 
 export const ProfileService = {
-    // Fetches the authenticated user's core account details
+    /**
+     * 1. GET Unified Detailed Profile
+     * Fetches User data and RenterProfile data in one request.
+     */
+    getDetailedProfile: async () => {
+        const response = await api.get('/accounts/profile/detailed/');
+        return response.data;
+    },
+
+    /**
+     * 2. PATCH Unified Detailed Profile
+     * Handles updates for both models using FormData for MultiPart support (images).
+     * Now points to '/accounts/profile/detailed/' as requested.
+     */
+    updateDetailedProfile: async (data: any) => {
+        const formData = new FormData();
+
+        // 1. Text Fields - Logic to append only if data exists
+        if (data.first_name) formData.append("first_name", data.first_name);
+        if (data.last_name) formData.append("last_name", data.last_name);
+        if (data.phone_number) formData.append("phone_number", data.phone_number);
+        if (data.bio) formData.append("bio", data.bio);
+
+        // 2. Profile Picture - Must match the backend 'profile_picture' field name
+        if (data.profile_picture instanceof File) {
+            formData.append("profile_picture", data.profile_picture);
+        }
+
+        const response = await api.patch("/accounts/profile/detailed/", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        return response.data;
+    },
+
+    // Keeping for backward compatibility if needed for other components
     getMe: async () => {
         const response = await api.get("/accounts/me/");
         return response.data;
     },
-
-    // If the user is a renter, fetches their specific profile details
-    getRenterMe: async () => {
-        const response = await api.get("/renters/me/");
-        return response.data;
-    },
-    getRenterProfile: async () => {
-        const response = await api.get("/renters/me/");
-        return response.data; // Returns RenterProfileSerializer data
-    },
-
-    updateRenterProfile: async (data: any) => {
-        const formData = new FormData();
-        // Append fields allowed by RenterProfileSerializer
-        if (data.full_name) formData.append("full_name", data.full_name);
-        if (data.phone_number) formData.append("phone_number", data.phone_number);
-        if (data.notification_preference) formData.append("notification_preference", data.notification_preference);
-
-        // Handle profile picture file upload
-        if (data.profile_pic instanceof File) {
-            formData.append("profile_pic", data.profile_pic);
-        }
-
-        const response = await api.patch("/renters/me/", formData, {
-            headers: {"Content-Type": "multipart/form-data"},
-        });
-        return response.data;
-    }
 };

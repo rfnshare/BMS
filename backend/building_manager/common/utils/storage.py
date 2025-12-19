@@ -123,3 +123,16 @@ def complaint_attachment_upload_path(instance, filename):
     clean_filename = f"{slugify(name)}{ext}"
 
     return os.path.join(base_path, subfolder, clean_filename)
+
+def staff_profile_upload_path(instance, filename):
+    """
+    Example: documents/staff/profile_pics/2025/12/user_1.png
+    """
+    return os.path.join(
+        "documents",
+        "staff",
+        "profile_pics",
+        now().strftime("%Y/%m"),
+        f"user_{instance.id}",
+        filename
+    )

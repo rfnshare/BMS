@@ -1,5 +1,7 @@
 # building_manager/accounts/views.py
 import re
+
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import serializers
@@ -11,7 +13,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User, RenterOTP
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserProfileSerializer
 
 
 # --- Serializers for Swagger docs only (inline or move to `serializers.py`) ---
@@ -230,3 +232,52 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
         # Call the parent post method to proceed with the normal logic
         return super().post(request, *args, **kwargs)
+
+@extend_schema(
+    responses={200: UserSerializer(many=True)},
+    summary="List all staff members",
+    description="Returns a list of all users with staff or superuser status for permission assignment.",
+    tags=["Accounts"]
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def staff_list(request):
+    """
+    Fetch all users who can be assigned administrative permissions.
+    """
+    # Use the Q object to filter for EITHER manager OR superadmin
+    from django.db.models import Q
+
+    users = User.objects.filter(
+        Q(is_manager=True) | Q(is_superadmin=True) | Q(is_staff=True)
+    ).distinct()  # .distinct() ensures no duplicates if a user has multiple flags
+
+    serializer = UserSerializer(users, many=True)
+    return Response(serializer.data)
+
+@extend_schema(
+    responses={200: UserProfileSerializer},
+    summary="Get or Update staff profile",
+    tags=["Accounts"]
+)
+class DetailedProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    # MultiPartParser is required to handle image uploads via FormData
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request):
+        """Fetch details for the profile page"""
+        serializer = UserProfileSerializer(request.user)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        """Update profile fields or the profile picture"""
+        serializer = UserProfileSerializer(
+            request.user,
+            data=request.data,
+            partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
