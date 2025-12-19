@@ -2,7 +2,8 @@ import { useState } from "react";
 import LoginUsernameStep from "./LoginUsernameStep";
 import LoginPasswordStep from "./LoginPasswordStep";
 import LoginOtpStep from "./LoginOtpStep";
-import { Step } from "../../../hooks/useLogin";
+import {Step} from "../../../logic/hooks/useLogin";
+
 
 interface LoginFormProps {
   step: Step;

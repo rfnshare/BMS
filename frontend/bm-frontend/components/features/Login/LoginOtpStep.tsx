@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 
 interface Props {
   loading: boolean;
-  requestOtp: () => Promise<void>; // 👈 The child is ready to receive it
+  requestOtp: () => Promise<void>;
   verifyOtp: (otp: string) => Promise<void>;
   setMessage: (msg: string) => void;
 }
@@ -10,15 +10,19 @@ interface Props {
 export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessage }: Props) {
   const otpLength = 6;
   const [otpDigits, setOtpDigits] = useState(new Array(otpLength).fill(""));
-  const [activeIdx, setActiveIdx] = useState(0); // Track focus for styling
+  const [activeIdx, setActiveIdx] = useState(0);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // TEACHING POINT: We use useRef here instead of useState because useRef
+  // updates immediately (synchronously). This is what stops the double OTP email.
+  const hasRequestedInitial = useRef(false);
 
   const combinedOtp = otpDigits.join("");
   const isOtpComplete = combinedOtp.length === otpLength;
 
   const [resendTime, setResendTime] = useState(60);
-  const [initialRequestSent, setInitialRequestSent] = useState(false);
 
+  // Timer logic for the Resend button
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (resendTime > 0) {
@@ -27,12 +31,13 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
     return () => clearInterval(timer);
   }, [resendTime]);
 
+  // FIX: The Initial Request Trigger
   useEffect(() => {
-    if (!initialRequestSent) {
+    if (!hasRequestedInitial.current) {
       requestOtp();
-      setInitialRequestSent(true);
+      hasRequestedInitial.current = true; // Locks the function immediately
     }
-  }, [initialRequestSent, requestOtp]);
+  }, [requestOtp]);
 
   const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const val = e.target.value.slice(-1);
@@ -42,6 +47,7 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
     newDigits[index] = val;
     setOtpDigits(newDigits);
 
+    // Auto-focus next input
     if (val && index < otpLength - 1) {
       otpInputRefs.current[index + 1]?.focus();
       setActiveIdx(index + 1);
@@ -59,11 +65,13 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // Prevent multiple submissions
     setMessage('');
     if (isOtpComplete) await verifyOtp(combinedOtp);
   };
 
   const handleResend = () => {
+    if (loading) return;
     setMessage('');
     requestOtp();
     setResendTime(60);
@@ -71,12 +79,12 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* INPUT GROUP */}
+      {/* OTP INPUT GROUP */}
       <div className="d-flex justify-content-between mb-4">
         {otpDigits.map((digit, i) => (
           <input
             key={i}
-            ref={(el) => (otpInputRefs.current[i] = el)}
+            ref={(el) => { otpInputRefs.current[i] = el; }}
             type="tel"
             maxLength={1}
             value={digit}
@@ -84,6 +92,7 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
             onChange={(e) => handleOtpChange(e, i)}
             onKeyDown={(e) => handleKeyDown(e, i)}
             className="form-control text-center p-0"
+            disabled={loading} // Disable inputs during verification
             style={{
               width: "min(48px, 13vw)",
               height: "60px",
@@ -95,13 +104,14 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
               backgroundColor: activeIdx === i ? "#fff" : "#f8fdfc",
               boxShadow: activeIdx === i ? "0 0 10px rgba(0, 77, 64, 0.1)" : "none",
               transition: "all 0.2s ease",
+              opacity: loading ? 0.6 : 1
             }}
             required
           />
         ))}
       </div>
 
-      {/* TIMER & RESEND */}
+      {/* TIMER & RESEND SECTION */}
       <div className="mb-4 text-center">
         {resendTime > 0 ? (
           <p className="text-muted small">
@@ -112,6 +122,7 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
             type="button"
             className="btn btn-link btn-sm text-decoration-none fw-bold"
             onClick={handleResend}
+            disabled={loading}
             style={{ color: "#00796B" }}
           >
             Didn't receive code? Resend Now
@@ -121,13 +132,14 @@ export default function LoginOtpStep({ loading, requestOtp, verifyOtp, setMessag
 
       {/* SUBMIT BUTTON */}
       <button
+        type="submit"
         className={`btn btn-lg w-100 py-3 rounded-3 shadow-sm transition-all ${
-            isOtpComplete ? "btn-primary shadow" : "btn-light border text-muted"
+            isOtpComplete && !loading ? "btn-primary shadow" : "btn-light border text-muted"
         }`}
         style={{
             fontWeight: "700",
-            backgroundColor: isOtpComplete ? "#004D40" : "",
-            borderColor: isOtpComplete ? "#004D40" : ""
+            backgroundColor: isOtpComplete && !loading ? "#004D40" : "",
+            borderColor: isOtpComplete && !loading ? "#004D40" : ""
         }}
         disabled={loading || !isOtpComplete}
       >
