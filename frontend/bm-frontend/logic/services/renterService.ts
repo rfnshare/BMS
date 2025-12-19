@@ -67,6 +67,16 @@ export const RenterService = {
     updateProfile: async (id: number, data: any) => {
         const response = await api.patch(`/renters/${id}/`, data);
         return response.data;
-    }
+    },
+    listDocuments: (renterId: number) =>
+        api.get(`/documents/renter-documents/?renter=${renterId}`).then(r => r.data),
+
+    uploadDocument: (formData: FormData) =>
+        api.post('/documents/renter-documents/', formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        }).then(r => r.data),
+
+    deleteDocument: (docId: number) =>
+        api.delete(`/documents/renter-documents/${docId}/`).then(r => r.status === 204),
 };
 
