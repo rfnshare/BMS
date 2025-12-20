@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import api from "../../../logic/services/apiClient";
 import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
+import { Spinner, Modal, Button, Form } from "react-bootstrap";
 
 interface Props {
   leaseId: number;
   onClose: () => void;
-  leaseLabel?: string; // Optional label for UI context
+  leaseLabel?: string;
 }
 
 export default function LeaseDocumentsModal({ leaseId, onClose, leaseLabel }: Props) {
@@ -15,7 +16,6 @@ export default function LeaseDocumentsModal({ leaseId, onClose, leaseLabel }: Pr
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Match these exactly with your Django Model DOC_TYPES
   const DOCUMENT_CATEGORIES = [
     { value: "agreement", label: "Lease Agreement" },
     { value: "police_verification", label: "Police Verification" },
@@ -28,11 +28,8 @@ export default function LeaseDocumentsModal({ leaseId, onClose, leaseLabel }: Pr
     try {
       const res = await api.get(`/documents/lease-documents/?lease=${leaseId}`);
       setDocs(res.data.results || res.data);
-    } catch (err) {
-      console.error(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(getErrorMessage(err)); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { loadDocs(); }, [leaseId]);
@@ -40,8 +37,6 @@ export default function LeaseDocumentsModal({ leaseId, onClose, leaseLabel }: Pr
   const handleUpload = async () => {
     if (!file) return;
     setUploading(true);
-
-    // Logic: Files must be sent via FormData for Multipart encoding
     const fd = new FormData();
     fd.append("lease", String(leaseId));
     fd.append("doc_type", docType);
@@ -51,126 +46,122 @@ export default function LeaseDocumentsModal({ leaseId, onClose, leaseLabel }: Pr
       await api.post("/documents/lease-documents/", fd, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      setFile(null); // Clear input after success
+      setFile(null);
       loadDocs();
-    } catch (err) {
-      alert(getErrorMessage(err));
-    } finally {
-      setUploading(false);
-    }
+    } catch (err) { alert(getErrorMessage(err)); }
+    finally { setUploading(false); }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("⚠️ Are you sure you want to delete this legal document?")) return;
-
+    if (!window.confirm("⚠️ Delete this legal document?")) return;
     try {
       await api.delete(`/documents/lease-documents/${id}/`);
       loadDocs();
-    } catch (err) {
-      alert("Failed to delete document.");
-    }
+    } catch (err) { alert("Failed to delete."); }
   };
 
   return (
-    <div className="modal d-block" style={{ background: "rgba(0,0,0,.7)", backdropFilter: "blur(8px)" }}>
-      <div className="modal-dialog modal-lg modal-dialog-centered animate__animated animate__zoomIn">
-        <div className="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+    <Modal
+      show={true}
+      onHide={onClose}
+      size="lg"
+      centered
+      fullscreen="sm-down" // 🔥 Fullscreen on mobile
+      scrollable
+    >
+      {/* 1. NATIVE-STYLE APP BAR */}
+      <Modal.Header closeButton className="bg-dark text-white border-0 py-3 px-3">
+        <div>
+          <Modal.Title className="h6 fw-bold mb-0">Legal Archive</Modal.Title>
+          <small className="opacity-75 x-small">{leaseLabel || `Lease #${leaseId}`}</small>
+        </div>
+      </Modal.Header>
 
-          {/* HEADER */}
-          <div className="modal-header bg-dark text-white p-4 border-0">
-            <div>
-              <h5 className="fw-bold mb-0">Legal Documents Archive</h5>
-              <small className="opacity-75">{leaseLabel || `Lease #${leaseId}`}</small>
-            </div>
-            <button className="btn-close btn-close-white" onClick={onClose}></button>
+      <Modal.Body className="p-3 bg-light">
+        {/* 2. THUMB-FRIENDLY UPLOAD SECTION */}
+        <div className="card border-0 shadow-sm rounded-4 p-3 mb-4">
+          <label className="form-label small fw-bold text-primary text-uppercase mb-3">
+            <i className="bi bi-cloud-arrow-up-fill me-2"></i>New Attachment
+          </label>
+          <div className="vstack gap-2">
+            <Form.Select
+              className="rounded-3 bg-light border-0 py-2"
+              value={docType}
+              onChange={e => setDocType(e.target.value)}
+            >
+              {DOCUMENT_CATEGORIES.map(cat => (
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
+              ))}
+            </Form.Select>
+
+            <Form.Control
+              type="file"
+              className="rounded-3 bg-light border-0 py-2"
+              onChange={(e: any) => setFile(e.target.files?.[0] || null)}
+            />
+
+            <Button
+              variant="primary"
+              className="w-100 rounded-pill fw-bold py-2 mt-2 shadow-sm"
+              disabled={!file || uploading}
+              onClick={handleUpload}
+            >
+              {uploading ? <Spinner size="sm" /> : 'CONFIRM UPLOAD'}
+            </Button>
           </div>
+        </div>
 
-          <div className="modal-body p-4 bg-light bg-opacity-50">
-
-            {/* UPLOAD SECTION */}
-            <div className="card border-0 shadow-sm rounded-4 p-4 mb-4">
-              <label className="form-label small fw-bold text-muted text-uppercase mb-3">
-                <i className="bi bi-cloud-upload me-2"></i>Upload New Attachment
-              </label>
-              <div className="row g-3">
-                <div className="col-md-5">
-                  <select
-                    className="form-select border-0 bg-light p-2 rounded-3"
-                    value={docType}
-                    onChange={e => setDocType(e.target.value)}
-                  >
-                    {DOCUMENT_CATEGORIES.map(cat => (
-                      <option key={cat.value} value={cat.value}>{cat.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-7">
-                  <div className="input-group">
-                    <input
-                      type="file"
-                      className="form-control border-0 bg-light p-2 rounded-start-3"
-                      onChange={e => setFile(e.target.files?.[0] || null)}
-                    />
-                    <button
-                      className="btn btn-primary fw-bold px-4"
-                      disabled={!file || uploading}
-                      onClick={handleUpload}
-                    >
-                      {uploading ? <span className="spinner-border spinner-border-sm"></span> : 'UPLOAD'}
-                    </button>
-                  </div>
-                </div>
-              </div>
+        {/* 3. FULL-WIDTH DOCUMENT LIST */}
+        <div className="mx-n1">
+          <h6 className="fw-bold text-muted small text-uppercase mb-3 px-1">Stored Files</h6>
+          {loading ? (
+            <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
+          ) : docs.length === 0 ? (
+            <div className="text-center py-5 text-muted small italic">
+               <i className="bi bi-folder-x fs-1 opacity-25 d-block mb-2"></i>
+               No documents found.
             </div>
-
-            {/* DOCUMENT LIST */}
-            <div className="row g-3">
-              {loading ? (
-                <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
-              ) : docs.length === 0 ? (
-                <div className="text-center py-5 text-muted small italic">
-                   <i className="bi bi-folder-x display-4 opacity-25"></i>
-                   <p className="mt-2">No documents have been uploaded for this lease yet.</p>
-                </div>
-              ) : docs.map(d => (
-                <div key={d.id} className="col-md-6">
-                  <div className="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white hover-shadow transition-all">
-                    <div className="d-flex align-items-center">
-                      <div className="bg-primary bg-opacity-10 p-3 rounded-4 me-3 text-primary">
-                         <i className={`bi bi-file-earmark-${d.file.endsWith('.pdf') ? 'pdf' : 'image'} fs-3`}></i>
-                      </div>
-                      <div className="flex-grow-1 overflow-hidden">
-                         <div className="fw-bold text-truncate small text-uppercase" style={{ fontSize: '0.65rem' }}>
-                            {d.doc_type?.replace('_', ' ')}
-                         </div>
-                         <a
-                           href={d.file}
-                           target="_blank"
-                           rel="noreferrer"
-                           className="small text-decoration-none fw-bold text-primary"
-                         >
-                           Download / View <i className="bi bi-box-arrow-up-right ms-1"></i>
-                         </a>
-                      </div>
-                      <button
-                        className="btn btn-sm btn-outline-danger border-0 rounded-circle"
-                        onClick={() => handleDelete(d.id)}
-                        title="Delete Document"
-                      >
-                        <i className="bi bi-trash-fill"></i>
-                      </button>
+          ) : (
+            <div className="vstack gap-2">
+              {docs.map(d => (
+                <div key={d.id} className="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                  <div className="d-flex align-items-center">
+                    <div className="bg-primary bg-opacity-10 p-2 rounded-3 me-3 text-primary d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
+                       <i className={`bi bi-file-earmark-${d.file.endsWith('.pdf') ? 'pdf' : 'image'} fs-3`}></i>
                     </div>
+                    <div className="flex-grow-1 overflow-hidden">
+                       <div className="fw-bold text-dark small text-uppercase" style={{ fontSize: '0.65rem' }}>
+                          {d.doc_type?.replace('_', ' ')}
+                       </div>
+                       <a
+                         href={d.file}
+                         target="_blank"
+                         rel="noreferrer"
+                         className="fw-bold text-primary small"
+                       >
+                         View Document <i className="bi bi-box-arrow-up-right ms-1"></i>
+                       </a>
+                    </div>
+                    <button
+                      className="btn btn-outline-danger border-0 rounded-circle p-2"
+                      onClick={() => handleDelete(d.id)}
+                    >
+                      <i className="bi bi-trash-fill fs-5"></i>
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="modal-footer border-0 p-3 bg-white">
-            <button className="btn btn-secondary rounded-pill px-4 fw-bold" onClick={onClose}>Finish Review</button>
-          </div>
+          )}
         </div>
-      </div>
-    </div>
+      </Modal.Body>
+
+      {/* 4. STICKY FOOTER */}
+      <Modal.Footer className="border-0 p-3 bg-white shadow-sm">
+        <Button variant="secondary" className="w-100 rounded-pill fw-bold py-2" onClick={onClose}>
+          Exit Archive
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }

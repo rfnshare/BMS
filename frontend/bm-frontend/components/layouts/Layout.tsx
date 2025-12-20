@@ -4,7 +4,6 @@ import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { getCurrentUser, isLoggedIn } from "../../utils/auth";
 
-// 🔥 UPDATED: Interfaces to support groups
 interface MenuItem {
     name: string;
     path: string;
@@ -18,13 +17,12 @@ interface MenuGroup {
 
 interface LayoutProps {
     children: ReactNode;
-    menuItems: MenuGroup[]; // Now expects an array of groups
+    menuItems: MenuGroup[];
 }
 
-// Inside components/layouts/Layout.tsx
-
 export default function Layout({ children, menuItems }: LayoutProps) {
-    const [user, setUser] = useState<any>(null); // 🔥 Store the full user object
+    const [user, setUser] = useState<any>(null);
+    const [showMobileMenu, setShowMobileMenu] = useState(false); // 🔥 NEW: State to control sidebar
     const router = useRouter();
 
     useEffect(() => {
@@ -32,32 +30,37 @@ export default function Layout({ children, menuItems }: LayoutProps) {
             router.replace("/login");
             return;
         }
-
         (async () => {
             try {
-                // Assuming getCurrentUser calls your /api/accounts/me/ endpoint
                 const userData = await getCurrentUser();
                 setUser(userData);
-            } catch (err) {
-                console.error("Failed to fetch user profile");
-            }
+            } catch (err) { console.error("Failed to fetch user"); }
         })();
     }, [router]);
 
+    // 🔥 NEW: Close menu when clicking a link (on route change)
+    useEffect(() => {
+        setShowMobileMenu(false);
+    }, [router.pathname]);
+
     return (
-        <div className="d-flex" style={{ minHeight: "100vh" }}>
-            <div className="sticky-top vh-100 shadow-sm" style={{ zIndex: 1020 }}>
-                <Sidebar menuItems={menuItems} />
-            </div>
+        <div className="d-flex w-100 min-vh-100">
+            {/* 🔥 UPDATED: Pass state and close function */}
+            <Sidebar
+                menuItems={menuItems}
+                show={showMobileMenu}
+                onClose={() => setShowMobileMenu(false)}
+            />
 
-            <div className="flex-grow-1 d-flex flex-column bg-body-tertiary">
-                <div className="sticky-top shadow-sm" style={{ zIndex: 1010 }}>
-                    {/* 🔥 Pass the whole user object to the Topbar */}
-                    <Topbar user={user} />
-                </div>
+            <div className="flex-grow-1 d-flex flex-column bg-body-tertiary min-vw-0">
+                {/* 🔥 UPDATED: Pass toggle function */}
+                <Topbar user={user} onToggleMenu={() => setShowMobileMenu(true)} />
 
-                <main className="p-4 flex-grow-1">{children}</main>
-                {/* ... footer ... */}
+                <main className="p-3 p-md-4 flex-grow-1">
+                    <div className="container-fluid p-0">
+                        {children}
+                    </div>
+                </main>
             </div>
         </div>
     );

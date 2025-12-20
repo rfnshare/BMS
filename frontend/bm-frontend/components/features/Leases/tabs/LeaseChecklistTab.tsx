@@ -9,11 +9,11 @@ const CHECKLIST_ITEMS = [
 
 export default function LeaseChecklistTab({ form, update }: any) {
   return (
-    <div className="row g-3 animate__animated animate__fadeIn">
+    <div className="row g-2 animate__animated animate__fadeIn">
       {CHECKLIST_ITEMS.map((item) => (
-        <div key={item.key} className="col-md-6">
+        <div key={item.key} className="col-12 col-md-6">
           <div
-            className={`p-3 rounded-4 border d-flex align-items-center justify-content-between transition-all ${
+            className={`p-3 rounded-4 border d-flex align-items-center justify-content-between transition-all shadow-sm ${
               form[item.key] ? "bg-success bg-opacity-10 border-success" : "bg-white"
             }`}
           >
@@ -29,6 +29,7 @@ export default function LeaseChecklistTab({ form, update }: any) {
                 type="checkbox"
                 checked={!!form[item.key]}
                 onChange={e => update(item.key, e.target.checked)}
+                style={{ cursor: 'pointer' }}
               />
             </div>
           </div>

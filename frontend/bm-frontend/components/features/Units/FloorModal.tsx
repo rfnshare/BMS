@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Floor, FloorService } from "../../../logic/services/floorService";
+import { Modal, Button, Form } from "react-bootstrap";
 
 interface Props {
   floor: Floor | null;
@@ -17,7 +18,6 @@ export default function FloorModal({ floor, onClose, onSaved }: Props) {
     if (!name || number === "") return;
     setSaving(true);
     const payload = { name, number: Number(number), description: description || null };
-
     try {
       floor ? await FloorService.update(floor.id, payload) : await FloorService.create(payload);
       onSaved();
@@ -27,64 +27,37 @@ export default function FloorModal({ floor, onClose, onSaved }: Props) {
   };
 
   return (
-    <div className="modal d-block" style={{ background: "rgba(0,0,0,.6)", backdropFilter: "blur(5px)" }}>
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content border-0 shadow-lg rounded-4">
+    <Modal show onHide={onClose} centered fullscreen="sm-down">
+      <Modal.Header closeButton className="p-3 bg-light border-0">
+        <Modal.Title className="h6 fw-bold text-dark mb-0">
+          {floor ? "Edit Floor" : "Add New Floor"}
+        </Modal.Title>
+      </Modal.Header>
 
-          <div className="modal-header border-0 pt-4 px-4">
-            <h5 className="modal-title fw-bold text-dark">
-              {floor ? "✏️ Edit Floor Details" : "🏢 Add New Floor"}
-            </h5>
-            <button className="btn-close shadow-none" onClick={onClose}></button>
-          </div>
+      <Modal.Body className="p-4">
+        <Form.Group className="mb-3">
+          <Form.Label className="fw-bold x-small text-muted text-uppercase">Floor Name</Form.Label>
+          <Form.Control className="bg-light border-0" placeholder="e.g. Ground Floor" value={name} onChange={e => setName(e.target.value)} />
+        </Form.Group>
 
-          <div className="modal-body px-4">
-            <div className="row g-3">
-              <div className="col-md-8">
-                <label className="form-label fw-bold small text-muted text-uppercase">Floor Name</label>
-                <input
-                  className="form-control border-2 bg-light shadow-none"
-                  placeholder="e.g. Ground Floor, Level 1"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                />
-              </div>
+        <Form.Group className="mb-3">
+          <Form.Label className="fw-bold x-small text-muted text-uppercase">Level Number</Form.Label>
+          <Form.Control type="number" className="bg-light border-0" placeholder="0" value={number} onChange={e => setNumber(Number(e.target.value))} />
+        </Form.Group>
 
-              <div className="col-md-4">
-                <label className="form-label fw-bold small text-muted text-uppercase">Number</label>
-                <input
-                  type="number"
-                  className="form-control border-2 bg-light shadow-none"
-                  placeholder="0"
-                  value={number}
-                  onChange={e => setNumber(Number(e.target.value))}
-                />
-              </div>
+        <Form.Group>
+          <Form.Label className="fw-bold x-small text-muted text-uppercase">Description</Form.Label>
+          <Form.Control as="textarea" rows={3} className="bg-light border-0" placeholder="Notes..." value={description} onChange={e => setDescription(e.target.value)} />
+        </Form.Group>
+      </Modal.Body>
 
-              <div className="col-12">
-                <label className="form-label fw-bold small text-muted text-uppercase">Description</label>
-                <textarea
-                  className="form-control border-2 bg-light shadow-none"
-                  rows={3}
-                  placeholder="Add any specific notes about this floor..."
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="modal-footer border-0 pb-4 px-4 gap-2">
-            <button className="btn btn-link text-decoration-none text-secondary fw-semibold" onClick={onClose}>
-              Cancel
-            </button>
-            <button className="btn btn-primary px-4 py-2 fw-bold shadow-sm rounded-pill" onClick={save} disabled={saving}>
-              {saving ? <span className="spinner-border spinner-border-sm me-2"></span> : null}
-              {floor ? "Update Floor" : "Create Floor"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <Modal.Footer className="border-0 p-3 bg-light">
+        <Button variant="link" className="text-decoration-none text-muted me-auto d-none d-md-block" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" className="w-100 w-md-auto px-5 fw-bold rounded-pill shadow-sm" onClick={save} disabled={saving}>
+          {saving ? "Saving..." : (floor ? "Update" : "Create")}
+        </Button>
+        <Button variant="outline-secondary" className="w-100 d-md-none mt-2 border-0" onClick={onClose}>Cancel</Button>
+      </Modal.Footer>
+    </Modal>
   );
 }

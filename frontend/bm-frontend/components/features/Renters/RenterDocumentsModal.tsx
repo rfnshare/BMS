@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Renter, RenterService } from '../../../logic/services/renterService';
-import { Spinner, Alert } from 'react-bootstrap';
+import { Spinner, Alert, Modal, Button } from 'react-bootstrap';
 
 interface RenterDoc {
   id: number;
@@ -20,19 +20,14 @@ export default function RenterDocumentsModal({ renter, onClose }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form states for new upload
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [docType, setDocType] = useState('nid');
 
-  // ========================
-  // 1. Fetch Documents
-  // ========================
   const loadDocs = useCallback(async () => {
     if (!renter) return;
     setLoading(true);
     try {
       const data = await RenterService.listDocuments(renter.id);
-      // Handle DRF results array
       setDocuments(data.results || data);
     } catch (err) {
       setError("Failed to load documents.");
@@ -41,42 +36,32 @@ export default function RenterDocumentsModal({ renter, onClose }: Props) {
     }
   }, [renter]);
 
-  useEffect(() => {
-    loadDocs();
-  }, [loadDocs]);
+  useEffect(() => { loadDocs(); }, [loadDocs]);
 
-  // ========================
-  // 2. Upload Logic
-  // ========================
   const handleUpload = async () => {
     if (!selectedFile || !renter) {
       setError("Please select a file first.");
       return;
     }
-
     const formData = new FormData();
     formData.append('file', selectedFile);
     formData.append('doc_type', docType);
-    formData.append('renter', renter.id.toString()); // Backend perform_create needs this
-
+    formData.append('renter', renter.id.toString());
     try {
       setUploading(true);
       setError(null);
       await RenterService.uploadDocument(formData);
-      setSelectedFile(null); // Clear input
-      loadDocs(); // Refresh the list
+      setSelectedFile(null);
+      loadDocs();
     } catch (err) {
-      setError("Upload failed. Check file type and size.");
+      setError("Upload failed. Check file size.");
     } finally {
       setUploading(false);
     }
   };
 
-  // ========================
-  // 3. Delete Logic
-  // ========================
   const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this document?")) {
+    if (window.confirm("Delete this document?")) {
       try {
         await RenterService.deleteDocument(id);
         setDocuments(prev => prev.filter(d => d.id !== id));
@@ -87,77 +72,71 @@ export default function RenterDocumentsModal({ renter, onClose }: Props) {
   };
 
   return (
-    <div className="modal d-block bg-dark bg-opacity-50" tabIndex={-1}>
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content border-0 shadow-lg rounded-4">
-          <div className="modal-header border-0 p-4 bg-light">
-            <h5 className="modal-title fw-bold">
-              <i className="bi bi-files me-2 text-primary"></i>
-              Documents: {renter?.full_name}
-            </h5>
-            <button type="button" className="btn-close" onClick={onClose}></button>
-          </div>
+    <Modal show onHide={onClose} centered fullscreen="sm-down">
+      <Modal.Header closeButton className="bg-light p-3">
+        <Modal.Title className="h6 fw-bold mb-0">
+          <i className="bi bi-files me-2 text-primary"></i>
+          Docs: {renter?.full_name}
+        </Modal.Title>
+      </Modal.Header>
 
-          <div className="modal-body p-4">
-            {error && <Alert variant="danger" className="border-0 small">{error}</Alert>}
+      <Modal.Body className="p-3">
+        {error && <Alert variant="danger" className="py-2 small border-0 mb-3">{error}</Alert>}
 
-            {/* UPLOAD SECTION */}
-            <div className="bg-light p-3 rounded-4 mb-4 border border-dashed text-center">
-              <h6 className="fw-bold small text-muted text-uppercase mb-3">Upload New Record</h6>
-              <div className="vstack gap-2">
-                <select className="form-select form-select-sm" value={docType} onChange={(e) => setDocType(e.target.value)}>
-                  <option value="nid">National ID (NID)</option>
-                  <option value="passport">Passport</option>
-                  <option value="other">Other</option>
-                </select>
-                <input
-                    type="file"
-                    className="form-control form-control-sm"
-                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                />
-                <button
-                  className="btn btn-primary btn-sm w-100 fw-bold"
-                  onClick={handleUpload}
-                  disabled={uploading || !selectedFile}
-                >
-                  {uploading ? <Spinner size="sm" /> : "Upload to Server"}
-                </button>
-              </div>
-            </div>
-
-            {/* LIST SECTION */}
-            <h6 className="fw-bold small text-muted text-uppercase mb-3">Stored Files</h6>
-            <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
-              {loading ? (
-                <div className="text-center py-3"><Spinner animation="border" size="sm" /></div>
-              ) : documents.length === 0 ? (
-                <p className="text-muted small text-center py-3">No documents uploaded yet.</p>
-              ) : (
-                <div className="vstack gap-2">
-                  {documents.map((doc) => (
-                    <div key={doc.id} className="d-flex align-items-center justify-content-between p-2 border rounded-3 bg-white">
-                      <div className="d-flex align-items-center gap-2 overflow-hidden">
-                        <i className="bi bi-file-earmark-check text-success fs-5"></i>
-                        <div className="text-truncate">
-                          <div className="fw-bold small text-capitalize">{doc.doc_type}</div>
-                          <a href={doc.file} target="_blank" rel="noreferrer" className="x-small text-primary">View Document</a>
-                        </div>
-                      </div>
-                      <button className="btn btn-sm text-danger border-0" onClick={() => handleDelete(doc.id)}>
-                        <i className="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="modal-footer border-0 p-3 bg-light">
-            <button className="btn btn-secondary rounded-pill px-4" onClick={onClose}>Close</button>
+        {/* UPLOAD CARD */}
+        <div className="bg-light p-3 rounded-4 mb-4 border border-dashed">
+          <h6 className="fw-bold small text-muted text-uppercase mb-3" style={{fontSize: '0.6rem'}}>Upload New Record</h6>
+          <div className="vstack gap-2">
+            <select className="form-select py-2 small" value={docType} onChange={(e) => setDocType(e.target.value)}>
+              <option value="nid">National ID (NID)</option>
+              <option value="passport">Passport</option>
+              <option value="other">Other</option>
+            </select>
+            <input
+                type="file"
+                className="form-control py-1 px-2 small"
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+            />
+            <Button
+              variant="primary"
+              className="fw-bold rounded-pill w-100 mt-2 py-2 shadow-sm"
+              onClick={handleUpload}
+              disabled={uploading || !selectedFile}
+            >
+              {uploading ? <Spinner size="sm" /> : "Confirm Upload"}
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+
+        {/* LIST SECTION */}
+        <h6 className="fw-bold small text-muted text-uppercase mb-3" style={{fontSize: '0.6rem'}}>Stored Files</h6>
+        <div className="vstack gap-2 overflow-auto" style={{ maxHeight: '40vh' }}>
+          {loading ? (
+            <div className="text-center py-4"><Spinner animation="border" size="sm" /></div>
+          ) : documents.length === 0 ? (
+            <div className="text-center py-4 text-muted small">No documents found.</div>
+          ) : (
+            documents.map((doc) => (
+                <div key={doc.id} className="d-flex align-items-center justify-content-between p-2 border rounded-3 bg-white">
+                    <div className="d-flex align-items-center gap-3 overflow-hidden">
+                        <i className="bi bi-file-earmark-check text-success fs-4"></i>
+                        <div className="text-truncate">
+                            <div className="fw-bold small text-capitalize">{doc.doc_type}</div>
+                            <a href={doc.file} target="_blank" rel="noreferrer" className="x-small text-decoration-none">View File</a>
+                        </div>
+                    </div>
+                    <button className="btn btn-sm text-danger p-2" onClick={() => handleDelete(doc.id)}>
+                        <i className="bi bi-trash fs-5"></i>
+                    </button>
+                </div>
+            ))
+          )}
+        </div>
+      </Modal.Body>
+
+      <Modal.Footer className="bg-light p-3 border-0">
+        <Button variant="outline-secondary" className="w-100 rounded-pill fw-bold" onClick={onClose}>Done</Button>
+      </Modal.Footer>
+    </Modal>
   );
 }

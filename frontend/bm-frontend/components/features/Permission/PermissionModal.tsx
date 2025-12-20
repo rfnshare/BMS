@@ -3,7 +3,6 @@ import { Modal, Button, Form, Row, Col, Badge } from "react-bootstrap";
 import { PermissionService } from "../../../logic/services/permissionService";
 import api from "../../../logic/services/apiClient";
 
-// Mapping backend Apps to their Models based on your project structure
 const APP_MODELS: Record<string, string[]> = {
   buildings: ["Unit", "Floor"],
   expenses: ["Expense"],
@@ -53,71 +52,83 @@ export default function PermissionModal({ rule, onClose, onSuccess }: any) {
   };
 
   return (
-    <Modal show onHide={onClose} centered size="lg">
-      <Modal.Header closeButton className="border-0">
-        <Modal.Title className="fw-bold">{rule ? "Edit Policy" : "New Security Rule"}</Modal.Title>
+    <Modal show onHide={onClose} centered size="lg" fullscreen="sm-down">
+      <Modal.Header closeButton className="border-bottom p-3">
+        <Modal.Title className="h6 fw-bold mb-0">
+            {rule ? "Edit Policy" : "New Security Rule"}
+        </Modal.Title>
       </Modal.Header>
-      <Form onSubmit={handleSubmit}>
-        <Modal.Body className="p-4">
+
+      <Form onSubmit={handleSubmit} className="d-flex flex-column h-100">
+        <Modal.Body className="p-3 p-md-4 flex-grow-1 overflow-auto">
           <Row className="g-3">
-            <Col md={4}>
-              <Form.Label className="small fw-bold">1. System Role</Form.Label>
-              <Form.Select className="rounded-3" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
+            <Col xs={12} md={4}>
+              <Form.Label className="small fw-bold text-muted text-uppercase">1. System Role</Form.Label>
+              <Form.Select className="py-2 rounded-3" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
                 <option value="staff">Staff / Manager</option>
                 <option value="renter">Renter</option>
               </Form.Select>
             </Col>
 
-            <Col md={4}>
-              <Form.Label className="small fw-bold">2. Module (App)</Form.Label>
-              <Form.Select className="rounded-3" value={formData.app_label} onChange={e => setFormData({...formData, app_label: e.target.value, model_name: APP_MODELS[e.target.value]?.[0] || ''})}>
+            <Col xs={6} md={4}>
+              <Form.Label className="small fw-bold text-muted text-uppercase">2. Module (App)</Form.Label>
+              <Form.Select className="py-2 rounded-3" value={formData.app_label} onChange={e => setFormData({...formData, app_label: e.target.value, model_name: APP_MODELS[e.target.value]?.[0] || ''})}>
                 <option value="">Select App...</option>
                 {Object.keys(APP_MODELS).map(app => <option key={app} value={app}>{app.toUpperCase()}</option>)}
               </Form.Select>
             </Col>
 
-            <Col md={4}>
-              <Form.Label className="small fw-bold">3. Resource (Model)</Form.Label>
-              <Form.Select className="rounded-3" value={formData.model_name} disabled={!formData.app_label} onChange={e => setFormData({...formData, model_name: e.target.value})}>
+            <Col xs={6} md={4}>
+              <Form.Label className="small fw-bold text-muted text-uppercase">3. Resource</Form.Label>
+              <Form.Select className="py-2 rounded-3" value={formData.model_name} disabled={!formData.app_label} onChange={e => setFormData({...formData, model_name: e.target.value})}>
                 <option value="">Select Model...</option>
                 {formData.app_label && APP_MODELS[formData.app_label].map(m => <option key={m} value={m}>{m}</option>)}
               </Form.Select>
             </Col>
 
-            <Col md={12} className="mt-4">
-               <div className="bg-light p-3 rounded-4 d-flex justify-content-between border">
-                  {['create', 'read', 'update', 'delete'].map(action => (
-                    <Form.Check
-                      key={action}
-                      type="switch"
-                      label={`Can ${action.toUpperCase()}`}
-                      checked={(formData as any)[`can_${action}`]}
-                      onChange={e => setFormData({...formData, [`can_${action}`]: e.target.checked})}
-                    />
-                  ))}
+            <Col xs={12} className="mt-4">
+               <div className="bg-light p-3 rounded-4 border border-dashed">
+                  <div className="row g-3">
+                    {['create', 'read', 'update', 'delete'].map(action => (
+                      <Col xs={6} key={action}>
+                        <Form.Check
+                          type="switch"
+                          className="fw-bold small"
+                          label={`CAN ${action.toUpperCase()}`}
+                          checked={(formData as any)[`can_${action}`]}
+                          onChange={e => setFormData({...formData, [`can_${action}`]: e.target.checked})}
+                        />
+                      </Col>
+                    ))}
+                  </div>
                </div>
             </Col>
 
-            <Col md={12} className="mt-4">
-              <Form.Label className="small fw-bold">4. Assign to Staff Members</Form.Label>
-              <div className="d-flex flex-wrap gap-2 p-3 border rounded-4" style={{minHeight: '80px'}}>
+            <Col xs={12} className="mt-4">
+              <Form.Label className="small fw-bold text-muted text-uppercase">4. Assign to Staff Members</Form.Label>
+              <div className="d-flex flex-wrap gap-2 p-3 border rounded-4 bg-light bg-opacity-50" style={{minHeight: '80px'}}>
                 {staff.map(u => (
                   <Badge
                     key={u.id}
-                    bg={formData.assigned_to.includes(u.id) ? "primary" : "light"}
-                    className={`p-2 cursor-pointer border ${formData.assigned_to.includes(u.id) ? "" : "text-dark"}`}
+                    bg={formData.assigned_to.includes(u.id) ? "primary" : "white"}
+                    className={`p-2 border rounded-pill ${formData.assigned_to.includes(u.id) ? "" : "text-dark"}`}
                     onClick={() => toggleUser(u.id)}
-                    style={{ cursor: 'pointer' }}
+                    style={{ cursor: 'pointer', fontSize: '0.75rem' }}
                   >
-                    {u.username} ({u.role})
+                    {u.username} <span className="opacity-50 ms-1">({u.role})</span>
                   </Badge>
                 ))}
               </div>
+              <Form.Text className="text-muted x-small">Empty selection means policy applies to ALL users of that role.</Form.Text>
             </Col>
           </Row>
         </Modal.Body>
-        <Modal.Footer className="border-0">
-          <Button variant="dark" type="submit" className="px-5 rounded-pill shadow-sm">Save Access Policy</Button>
+
+        <Modal.Footer className="p-3 bg-light border-top">
+          <Button variant="outline-secondary" className="border-0 d-md-none me-auto" onClick={onClose}>Cancel</Button>
+          <Button variant="dark" type="submit" className="w-100 w-md-auto px-5 py-2 rounded-pill fw-bold shadow-sm">
+            Save Access Policy
+          </Button>
         </Modal.Footer>
       </Form>
     </Modal>

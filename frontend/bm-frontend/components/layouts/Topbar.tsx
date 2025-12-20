@@ -1,184 +1,92 @@
-import {Navbar, Container, Nav, NavDropdown, Badge, Spinner} from "react-bootstrap";
-import {useRouter} from "next/router";
-import {logout} from "../../utils/auth";
-import {useEffect, useState} from "react";
-import {ProfileService} from "../../logic/services/profileService";
+import { Navbar, Container, Nav, NavDropdown, Badge, Image } from "react-bootstrap";
+import { useRouter } from "next/router";
+import { logout } from "../../utils/auth";
 
-// We still need this for the Image URL construction
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+interface TopbarProps {
+    user: any;
+    onToggleMenu: () => void;
+}
 
-export default function Topbar() {
+export default function Topbar({ user, onToggleMenu }: TopbarProps) {
     const router = useRouter();
-    const [userData, setUserData] = useState<any>(null);
-    const [detectedRole, setDetectedRole] = useState<string>("");
-    const [loading, setLoading] = useState(true);
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
-    useEffect(() => {
-        const initData = async () => {
-            try {
-                // Step A: Fetch Profile
-                const data = await ProfileService.getDetailedProfile();
-
-                // Unwrap logic (if DRF returns { results: [...] })
-                const profileData = data.results ? data.results[0] : data;
-                setUserData(profileData);
-
-                // Step B: Detect Role using the Service
-                if (profileData?.email) {
-                    await fetchRole(profileData.email);
-                }
-            } catch (err) {
-                console.error("Topbar: Initialization failed", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        initData();
-    }, []);
-
-    // 🔥 Refactored: Uses ProfileService instead of direct fetch
-    // Inside Topbar.tsx
-    const fetchRole = async (email: string) => {
-        try {
-            // 🔥 Clean and consistent!
-            const result = await ProfileService.detectRole(email);
-
-            if (result.role) {
-                setDetectedRole(result.role.toLowerCase());
-            }
-        } catch (err) {
-            console.error("Service Error:", err);
-        }
-    };
-
-    const isRenter = detectedRole === "renter";
-
-    // Resolve Image Path
-    const getProfileImage = () => {
-        if (!userData) return null;
-
-        let path = null;
-
-        // Logic: Renters use 'profile_pic', Admins use 'profile_picture'
-        if (isRenter) {
-            path = userData.profile_pic || userData.renter_profile?.profile_pic;
-        } else {
-            path = userData.profile_picture;
-        }
-
-        if (!path) return null;
-
-        // Prepend API_URL for local development
-        return path.startsWith('http') ? path : `${API_URL}${path}`;
-    };
-
-    const handleLogout = async () => {
-        await logout();
-        router.push("/login");
-    };
-
-    const userInitial = userData?.username ? userData.username.charAt(0).toUpperCase() : "?";
-    const profileImageUrl = getProfileImage();
-
-    // Name Display Logic
-    const displayName = userData?.full_name || (userData?.first_name ? `${userData.first_name} ${userData.last_name}` : userData?.username);
-
-    // Dynamic Links
-    const profileLink = isRenter ? "/renter-dashboard/profile" : "/admin-dashboard/profile";
-    const notificationLink = isRenter ? "/renter-dashboard/notifications" : "/admin-dashboard/notifications";
+    const isRenter = user?.role?.toLowerCase() === "renter";
+    const profileImageUrl = user?.profile_pic || user?.profile_picture;
+    const fullImgPath = profileImageUrl ? (profileImageUrl.startsWith('http') ? profileImageUrl : `${API_URL}${profileImageUrl}`) : null;
 
     return (
-        <Navbar bg="white" expand="lg" className="border-bottom px-4 py-2 sticky-top shadow-sm"
-                style={{height: '70px', zIndex: 1020}}>
-            <Container fluid>
-                {/* Left Side: Role Badge */}
-                <div className="d-flex align-items-center">
-                    <Badge
-                        bg={isRenter ? "info" : "success"}
-                        className="px-3 py-2 opacity-75 fw-bold text-uppercase rounded-pill shadow-sm"
-                        style={{fontSize: '0.65rem', letterSpacing: '0.5px'}}
-                    >
-                        {detectedRole || "Checking..."}
-                    </Badge>
-                </div>
+        <Navbar bg="white" className="border-bottom sticky-top shadow-sm px-0" style={{ height: '70px' }}>
+            <Container fluid className="d-flex align-items-center justify-content-between px-3">
 
-                <Nav className="ms-auto align-items-center gap-3">
-                    {/* Notification Trigger */}
+                {/* LEFT: TOGGLE & BRAND */}
+                <div className="d-flex align-items-center">
                     <button
-                        className="btn btn-light rounded-circle p-2 position-relative border shadow-sm"
-                        onClick={() => router.push(notificationLink)}
-                        title="Notifications"
+                        className="btn btn-light d-lg-none me-2 border shadow-sm"
+                        type="button"
+                        onClick={onToggleMenu}
+                        aria-label="Toggle navigation"
                     >
-                        <i className="bi bi-bell text-muted"></i>
-                        {/* Optional Red Dot */}
-                        {/* <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style={{ fontSize: '0.5rem' }}>!</span> */}
+                        <i className="bi bi-list fs-4"></i>
                     </button>
 
-                    <div className="vr mx-2 opacity-25 d-none d-md-block" style={{height: '30px'}}></div>
+                    {/* Brand visible only on mobile (since Sidebar shows it on Desktop) */}
+                    <Navbar.Brand className="d-lg-none fw-bold text-success mb-0">
+                        BM <span className="text-dark">PRO</span>
+                    </Navbar.Brand>
+                </div>
 
-                    <div className="d-flex align-items-center">
-                        <div className="text-end me-3 d-none d-md-block">
-                            <div className="fw-bold small text-dark lh-1 mb-1">{displayName || "Loading..."}</div>
-                            <div className="text-muted text-uppercase fw-bold"
-                                 style={{fontSize: '0.6rem'}}>{userData?.email}</div>
+                {/* RIGHT: USER INFO & DROPDOWN */}
+                <Nav className="flex-row align-items-center">
+                    {/* Username: Hidden on mobile to save space */}
+                    <div className="d-none d-sm-block text-end me-3">
+                        <div className="fw-bold small lh-1 mb-1 text-dark">
+                            {user?.username || "Guest User"}
+                        </div>
+                        <Badge bg={isRenter ? "info" : "success"} className="rounded-pill" style={{ fontSize: '0.6rem' }}>
+                            {user?.role?.toUpperCase() || "USER"}
+                        </Badge>
+                    </div>
+
+                    {/* 🔥 FIXED DROPDOWN: Added custom toggle style to handle the click properly */}
+                    <NavDropdown
+                        align="end"
+                        id="user-profile-dropdown"
+                        title={
+                            <div className="d-inline-block p-0 border-0 bg-transparent">
+                                <div className="rounded-circle border border-2 border-white shadow-sm overflow-hidden d-flex align-items-center justify-content-center bg-primary text-white"
+                                     style={{ width: '42px', height: '42px', cursor: 'pointer' }}>
+                                    {fullImgPath ? (
+                                        <Image
+                                            src={fullImgPath}
+                                            className="w-100 h-100 object-fit-cover"
+                                            alt="profile"
+                                        />
+                                    ) : (
+                                        <span className="fw-bold">{user?.username?.[0].toUpperCase() || "U"}</span>
+                                    )}
+                                </div>
+                            </div>
+                        }
+                    >
+                        <div className="px-3 py-2 d-sm-none border-bottom mb-2 bg-light">
+                            <div className="fw-bold small text-dark">{user?.username}</div>
+                            <small className="text-muted">{user?.role}</small>
                         </div>
 
-                        <NavDropdown
-                            title={
-                                <div className="position-relative">
-                                    <div
-                                        className={`rounded-circle border overflow-hidden d-flex align-items-center justify-content-center fw-bold text-white shadow-sm bg-gradient ${isRenter ? 'bg-info' : 'bg-primary'}`}
-                                        style={{width: '42px', height: '42px', transition: 'all 0.3s ease'}}
-                                    >
-                                        {loading ? (
-                                            <Spinner animation="border" size="sm"/>
-                                        ) : profileImageUrl ? (
-                                            <img
-                                                src={profileImageUrl}
-                                                alt="Avatar"
-                                                className="w-100 h-100 object-fit-cover"
-                                                onError={(e) => {
-                                                    e.currentTarget.style.display = 'none';
-                                                }}
-                                            />
-                                        ) : (
-                                            <span style={{fontSize: '1.2rem'}}>{userInitial}</span>
-                                        )}
-                                    </div>
-                                    <span
-                                        className="position-absolute bottom-0 end-0 p-1 border border-white rounded-circle bg-white shadow-sm"
-                                        style={{width: '12px', height: '12px'}}>
-                    <div className="bg-success rounded-circle w-100 h-100"></div>
-                  </span>
-                                </div>
-                            }
-                            id="profile-dropdown"
-                            align="end"
-                            className="no-caret"
+                        <NavDropdown.Item onClick={() => router.push(isRenter ? "/renter-dashboard/profile" : "/admin-dashboard/profile")}>
+                            <i className="bi bi-person me-2"></i> Profile
+                        </NavDropdown.Item>
+
+                        <NavDropdown.Divider />
+
+                        <NavDropdown.Item
+                            onClick={async () => { await logout(); router.push("/login"); }}
+                            className="text-danger fw-bold"
                         >
-                            <div className="px-3 py-2 bg-light border-bottom mb-2">
-                                <div className="fw-bold small text-dark">Signed in as</div>
-                                <div className="text-muted truncate small"
-                                     style={{maxWidth: '150px'}}>{userData?.username}</div>
-                            </div>
-
-                            <NavDropdown.Item onClick={() => router.push(profileLink)}>
-                                <i className="bi bi-person-circle me-2 text-primary"></i>My Profile
-                            </NavDropdown.Item>
-
-                            {!isRenter && (
-                                <NavDropdown.Item onClick={() => router.push("/admin-dashboard/reports")}>
-                                    <i className="bi bi-shield-lock me-2 text-primary"></i>Admin Panel
-                                </NavDropdown.Item>
-                            )}
-
-                            <NavDropdown.Divider/>
-                            <NavDropdown.Item onClick={handleLogout} className="text-danger fw-bold">
-                                <i className="bi bi-box-arrow-right me-2"></i>Sign Out
-                            </NavDropdown.Item>
-                        </NavDropdown>
-                    </div>
+                            <i className="bi bi-box-arrow-right me-2"></i> Logout
+                        </NavDropdown.Item>
+                    </NavDropdown>
                 </Nav>
             </Container>
         </Navbar>

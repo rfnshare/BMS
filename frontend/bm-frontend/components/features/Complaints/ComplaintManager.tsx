@@ -13,7 +13,7 @@ export default function ComplaintManager() {
     priority: "",
     search: "",
     page: 1,
-    ordering: "-priority" // High priority first
+    ordering: "-priority"
   });
 
   const [activeModal, setActiveModal] = useState<{ type: 'edit' | 'create' | null, data: any }>({ type: null, data: null });
@@ -32,7 +32,6 @@ export default function ComplaintManager() {
 
   useEffect(() => { loadComplaints(); }, [filters.status, filters.priority, filters.page, filters.search]);
 
-  // 🔥 Feature: Delete
   const handleDelete = async (id: number) => {
     if (confirm("⚠️ Are you sure you want to delete this ticket?")) {
       try {
@@ -44,7 +43,6 @@ export default function ComplaintManager() {
     }
   };
 
-  // Helpers for Badges
   const getStatusBadge = (status: string) => {
     const map: any = {
         'pending': 'bg-warning-subtle text-warning border-warning',
@@ -66,60 +64,105 @@ export default function ComplaintManager() {
   };
 
   return (
-    <div className="bg-white">
-      {/* HEADER */}
-      <div className="p-4 border-bottom">
-        <div className="d-flex justify-content-between align-items-center mb-4">
+    <div className="bg-white rounded-4 shadow-sm overflow-hidden">
+      {/* HEADER & RESPONSIVE FILTERS */}
+      <div className="p-3 p-md-4 border-bottom">
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
                 <h5 className="fw-bold text-dark m-0">Maintenance & Complaints</h5>
                 <p className="text-muted small m-0">Track issues reported by renters.</p>
             </div>
-            <button className="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" onClick={() => setActiveModal({ type: 'create', data: null })}>
+            <button className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm w-100 w-md-auto" onClick={() => setActiveModal({ type: 'create', data: null })}>
                 <i className="bi bi-plus-lg me-2"></i>New Ticket
             </button>
         </div>
 
-        {/* FILTERS */}
-        <div className="d-flex gap-2 flex-wrap">
-            <input
-                type="text"
-                className="form-control form-control-sm bg-light border-0 px-3 rounded-pill"
-                placeholder="Search..."
-                style={{width: '200px'}}
-                value={filters.search}
-                onChange={e => setFilters({...filters, search: e.target.value, page: 1})}
-            />
-
-            {/* 🔥 FIX: Changed 'px-3' to 'ps-3 pe-5' to fix arrow overlap */}
-            <select
-                className="form-select form-select-sm bg-light border-0 ps-3 pe-5 rounded-pill w-auto"
-                value={filters.priority}
-                onChange={e => setFilters({...filters, priority: e.target.value, page: 1})}
-            >
-                <option value="">All Priorities</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-            </select>
-
-            {/* 🔥 FIX: Changed 'px-3' to 'ps-3 pe-5' */}
-            <select
-                className="form-select form-select-sm bg-light border-0 ps-3 pe-5 rounded-pill w-auto"
-                value={filters.status}
-                onChange={e => setFilters({...filters, status: e.target.value, page: 1})}
-            >
-                <option value="">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
-            </select>
+        <div className="row g-2">
+            <div className="col-12 col-md-4">
+                <div className="input-group input-group-sm">
+                    <span className="input-group-text bg-light border-0 ps-3"><i className="bi bi-search text-muted"></i></span>
+                    <input
+                        type="text"
+                        className="form-control bg-light border-0 pe-3"
+                        placeholder="Search tickets..."
+                        value={filters.search}
+                        onChange={e => setFilters({...filters, search: e.target.value, page: 1})}
+                    />
+                </div>
+            </div>
+            <div className="col-6 col-md-4">
+                <select
+                    className="form-select form-select-sm bg-light border-0 ps-3 pe-5 rounded-pill"
+                    value={filters.priority}
+                    onChange={e => setFilters({...filters, priority: e.target.value, page: 1})}
+                >
+                    <option value="">All Priorities</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                </select>
+            </div>
+            <div className="col-6 col-md-4">
+                <select
+                    className="form-select form-select-sm bg-light border-0 ps-3 pe-5 rounded-pill"
+                    value={filters.status}
+                    onChange={e => setFilters({...filters, status: e.target.value, page: 1})}
+                >
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                </select>
+            </div>
         </div>
       </div>
 
-      {/* TABLE */}
-      <div className="table-responsive">
+      {/* MOBILE LIST VIEW (Cards) - Shown on screens < 768px */}
+      <div className="d-block d-md-none">
+        {loading ? (
+            <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
+        ) : (
+            data.results.map((c: any) => (
+                <div key={c.id} className="p-3 border-bottom position-relative">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                        <span className={`badge rounded-pill border x-small ${getPriorityBadge(c.priority)}`}>
+                            {c.priority.toUpperCase()}
+                        </span>
+                        <div className="btn-group">
+                            <button className="btn btn-sm btn-light border py-1" onClick={() => setActiveModal({type: 'edit', data: c})}>
+                                <i className="bi bi-pencil-square text-primary"></i>
+                            </button>
+                            <button className="btn btn-sm btn-light border text-danger py-1" onClick={() => handleDelete(c.id)}>
+                                <i className="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="fw-bold text-dark small mb-1">{c.title}</div>
+                    <div className="d-flex justify-content-between align-items-end mt-2">
+                        <div>
+                            <div className="text-muted" style={{fontSize: '0.75rem'}}>
+                                <i className="bi bi-house-door me-1"></i>{c.unit_name || 'General'}
+                            </div>
+                            <div className="text-muted" style={{fontSize: '0.75rem'}}>
+                                <i className="bi bi-person me-1"></i>{c.renter_name || 'No Renter'}
+                            </div>
+                        </div>
+                        <div className="text-end">
+                            <span className={`badge rounded-pill border x-small d-block mb-1 ${getStatusBadge(c.status)}`}>
+                                {c.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                            <small className="text-muted x-small">{new Date(c.created_at).toLocaleDateString()}</small>
+                        </div>
+                    </div>
+                </div>
+            ))
+        )}
+      </div>
+
+      {/* DESKTOP TABLE VIEW - Shown on screens >= 768px */}
+      <div className="d-none d-md-block table-responsive">
         <table className="table table-hover align-middle mb-0">
           <thead className="bg-light">
              <tr className="text-muted x-small fw-bold text-uppercase">
@@ -168,7 +211,6 @@ export default function ComplaintManager() {
                             >
                                 <i className="bi bi-pencil-square text-primary"></i>
                             </button>
-                            {/* 🔥 Feature: Delete Button */}
                             <button
                                 className="btn btn-sm btn-white text-danger"
                                 title="Delete Ticket"
@@ -184,17 +226,17 @@ export default function ComplaintManager() {
         </table>
       </div>
 
-      {/* 🔥 Feature: Pagination */}
-      <div className="p-3 border-top d-flex justify-content-between align-items-center">
+      {/* RESPONSIVE PAGINATION */}
+      <div className="p-3 border-top d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
         <span className="text-muted x-small">Total Records: {data.count}</span>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 w-100 w-md-auto">
           <button
-            className="btn btn-sm btn-light border rounded-pill px-3"
+            className="btn btn-sm btn-light border rounded-pill px-4 flex-grow-1"
             disabled={!data.previous}
             onClick={() => setFilters({...filters, page: filters.page - 1})}
           >Prev</button>
           <button
-            className="btn btn-sm btn-light border rounded-pill px-3"
+            className="btn btn-sm btn-light border rounded-pill px-4 flex-grow-1"
             disabled={!data.next}
             onClick={() => setFilters({...filters, page: filters.page + 1})}
           >Next</button>

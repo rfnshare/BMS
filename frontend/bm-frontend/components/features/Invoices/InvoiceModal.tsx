@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Modal, Button, Form, Row, Col, Alert } from "react-bootstrap";
 import { InvoiceService } from "../../../logic/services/invoiceService";
 import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
-import api from "../../../logic/services/apiClient"; // Adjust path to your api client
+import api from "../../../logic/services/apiClient";
 
 interface InvoiceModalProps {
   invoice?: any; // If present, we are in EDIT mode
@@ -12,11 +12,7 @@ interface InvoiceModalProps {
 
 export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModalProps) {
   const [loading, setLoading] = useState(false);
-
-  // FIX TS2345: Explicitly type the state as an array of 'any' objects
   const [leases, setLeases] = useState<any[]>([]);
-
-  // State for the nice UI error box
   const [serverError, setServerError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -26,18 +22,14 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
     due_date: invoice?.due_date || "",
     description: invoice?.description || "",
     status: invoice?.status || "unpaid",
-    invoice_month: invoice?.invoice_month || "", // Backend format: YYYY-MM-01
-    _ui_month: invoice?.invoice_month?.substring(0, 7) || "", // UI format: YYYY-MM
+    invoice_month: invoice?.invoice_month || "",
+    _ui_month: invoice?.invoice_month?.substring(0, 7) || "",
   });
 
-  // 1. HYDRATION: Load Active Leases & Fetch Names
   useEffect(() => {
     (async () => {
       try {
-        // Fetch only active leases
         const { data } = await api.get("/leases/leases/", { params: { status: "active", page_size: 100 } });
-
-        // Parallel fetch to get Renter and Unit names
         const hydratedLeases = await Promise.all(data.results.map(async (lease: any) => {
           try {
              const [renterRes, unitRes] = await Promise.all([
@@ -60,36 +52,25 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
     })();
   }, []);
 
-  // 2. LOGIC: Auto-Calculate Total Amount when Lease Selected
   const handleLeaseSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     setServerError(null);
     const leaseId = e.target.value;
-
-    // Update state first
     setFormData(prev => ({ ...prev, lease: leaseId }));
-
     if (!leaseId) return;
 
     try {
-      // Fetch full details to get 'lease_rents'
       const { data: fullLease } = await api.get(`/leases/leases/${leaseId}/`);
       const rents = fullLease.lease_rents || [];
-
-      // FIX TS7006: JSDoc type cast for the accumulator
-      const totalAmount = rents.reduce((/** @type {number} */ sum: number, item: any) => {
-          return sum + parseFloat(item.amount || "0");
-      }, 0);
-
-      setFormData(prev => ({ ...prev, lease: leaseId, amount: totalAmount }));
+      const totalAmount = rents.reduce((sum: number, item: any) => sum + parseFloat(item.amount || "0"), 0);
+      setFormData(prev => ({ ...prev, amount: totalAmount }));
     } catch (err) {
       console.error("Error calculating lease total", err);
     }
   };
 
-  // 3. LOGIC: Date Automation (Month Picker -> Dates & Description)
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setServerError(null);
-    const selectedMonthStr = e.target.value; // "2025-02"
+    const selectedMonthStr = e.target.value;
 
     if (!selectedMonthStr) {
       setFormData(prev => ({ ...prev, invoice_month: "", _ui_month: "" }));
@@ -97,12 +78,8 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
     }
 
     const [year, month] = selectedMonthStr.split('-');
-
-    // Auto-set dates
     const invoiceMonthDate = `${selectedMonthStr}-01`;
     const dueDate = `${selectedMonthStr}-10`;
-
-    // Auto-generate description
     const dateObj = new Date(parseInt(year), parseInt(month) - 1);
     const monthName = dateObj.toLocaleString('default', { month: 'short', year: 'numeric' });
     const description = `Rent For ${monthName}`;
@@ -116,17 +93,12 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
     }));
   };
 
-  // 4. SUBMIT: With "Unique Set" Error Handling
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setServerError(null);
 
-    // Prepare payload (remove _ui_month)
-    const payload = {
-        ...formData,
-        // Ensure we send the correct fields expected by backend
-    };
+    const payload = { ...formData };
     // @ts-ignore
     delete payload._ui_month;
 
@@ -138,16 +110,10 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
       }
       onSaved();
     } catch (err: any) {
-        // Check for the specific duplicate error from backend
-        if (err.response && err.response.data && err.response.data.non_field_errors) {
+        if (err.response?.data?.non_field_errors) {
             const errorMsg = JSON.stringify(err.response.data.non_field_errors);
-            if (errorMsg.includes("unique set")) {
-                setServerError("⚠️ An invoice for this Lease and Month already exists.");
-            } else {
-                setServerError(err.response.data.non_field_errors[0]);
-            }
+            setServerError(errorMsg.includes("unique set") ? "⚠️ An invoice for this Lease and Month already exists." : err.response.data.non_field_errors[0]);
         } else {
-            // Fallback
             setServerError(getErrorMessage(err));
         }
     } finally {
@@ -156,47 +122,61 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
   };
 
   return (
-    <Modal show onHide={onClose} size="lg" centered>
-      <Modal.Header closeButton className="bg-light">
-        <Modal.Title className="fw-bold">{invoice ? "Edit Invoice" : "Create New Invoice"}</Modal.Title>
+    /* 🔥 fullscreen="sm-down" ensures a great mobile experience */
+    <Modal show onHide={onClose} size="lg" centered fullscreen="sm-down">
+      <Modal.Header closeButton className="bg-white border-bottom p-3">
+        <Modal.Title className="fw-bold h6 mb-0">
+            {invoice ? "Update Invoice" : "Create New Invoice"}
+        </Modal.Title>
       </Modal.Header>
 
-      <Form onSubmit={handleSubmit}>
-        <Modal.Body className="p-4">
-
-          {/* 🔥 UI ERROR BOX */}
+      <Form onSubmit={handleSubmit} className="d-flex flex-column h-100">
+        <Modal.Body className="p-3 p-md-4 flex-grow-1 overflow-auto">
           {serverError && (
-            <Alert variant="danger" className="d-flex align-items-center">
-               <i className="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+            <Alert variant="danger" className="d-flex align-items-center py-2 small rounded-3">
+               <i className="bi bi-exclamation-triangle-fill me-2"></i>
                <div>{serverError}</div>
             </Alert>
           )}
 
           <Row className="g-3">
-            <Col md={12}>
+            <Col xs={12}>
               <Form.Group>
-                <Form.Label className="small fw-bold">Target Lease / Renter</Form.Label>
+                <Form.Label className="small fw-bold text-muted text-uppercase">Target Lease / Renter</Form.Label>
                 <Form.Select
                   required
-                  className={serverError ? "border-danger" : ""}
+                  className={`py-2 rounded-3 ${serverError ? "border-danger" : ""}`}
                   value={formData.lease}
                   onChange={handleLeaseSelect}
                 >
                   <option value="">Select Lease...</option>
                   {leases.map(l => (
                     <option key={l.id} value={l.id}>
-                       {l.renterName} — {l.unitName} (Lease #{l.id})
+                       {l.renterName} ({l.unitName})
                     </option>
                   ))}
                 </Form.Select>
-                <Form.Text className="text-muted">Selecting a lease will auto-calculate the total amount.</Form.Text>
               </Form.Group>
             </Col>
 
-            <Col md={6}>
+            <Col xs={12} md={6}>
               <Form.Group>
-                <Form.Label className="small fw-bold">Invoice Type</Form.Label>
+                <Form.Label className="small fw-bold text-muted text-uppercase">Billing Month</Form.Label>
+                <Form.Control
+                  type="month"
+                  required
+                  className={`py-2 rounded-3 ${serverError ? "border-danger" : ""}`}
+                  value={formData._ui_month}
+                  onChange={handleMonthChange}
+                />
+              </Form.Group>
+            </Col>
+
+            <Col xs={12} md={6}>
+              <Form.Group>
+                <Form.Label className="small fw-bold text-muted text-uppercase">Invoice Type</Form.Label>
                 <Form.Select
+                  className="py-2 rounded-3"
                   value={formData.invoice_type}
                   onChange={e => setFormData({...formData, invoice_type: e.target.value})}
                 >
@@ -208,49 +188,38 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
               </Form.Group>
             </Col>
 
-            {/* Smart Date Picker */}
-            <Col md={6}>
+            <Col xs={6} md={6}>
               <Form.Group>
-                <Form.Label className="small fw-bold text-primary">Billing Month</Form.Label>
-                <Form.Control
-                  type="month"
-                  className={serverError ? "border-danger" : ""}
-                  value={formData._ui_month}
-                  onChange={handleMonthChange}
-                />
-                <Form.Text className="text-muted x-small">Sets Invoice Date to 1st, Due Date to 10th.</Form.Text>
-              </Form.Group>
-            </Col>
-
-            <Col md={6}>
-              <Form.Group>
-                <Form.Label className="small fw-bold">Total Amount (৳)</Form.Label>
+                <Form.Label className="small fw-bold text-muted text-uppercase">Amount (৳)</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
                   required
+                  className="py-2 rounded-3"
                   value={formData.amount}
                   onChange={e => setFormData({...formData, amount: e.target.value})}
                 />
               </Form.Group>
             </Col>
 
-            <Col md={6}>
+            <Col xs={6} md={6}>
               <Form.Group>
-                <Form.Label className="small fw-bold">Due Date</Form.Label>
+                <Form.Label className="small fw-bold text-muted text-uppercase">Due Date</Form.Label>
                 <Form.Control
                   type="date"
                   required
+                  className="py-2 rounded-3"
                   value={formData.due_date}
                   onChange={e => setFormData({...formData, due_date: e.target.value})}
                 />
               </Form.Group>
             </Col>
 
-            <Col md={6}>
+            <Col xs={12} md={6}>
                <Form.Group>
-                <Form.Label className="small fw-bold">Status</Form.Label>
+                <Form.Label className="small fw-bold text-muted text-uppercase">Payment Status</Form.Label>
                 <Form.Select
+                  className="py-2 rounded-3"
                   value={formData.status}
                   onChange={e => setFormData({...formData, status: e.target.value})}
                 >
@@ -261,13 +230,14 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
               </Form.Group>
             </Col>
 
-            <Col md={12}>
+            <Col xs={12}>
               <Form.Group>
-                <Form.Label className="small fw-bold">Internal Description / Notes</Form.Label>
+                <Form.Label className="small fw-bold text-muted text-uppercase">Internal Description</Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={2}
-                  placeholder="Rent description will appear here..."
+                  className="rounded-3"
+                  placeholder="Notes for renter..."
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
                 />
@@ -275,10 +245,21 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
             </Col>
           </Row>
         </Modal.Body>
-        <Modal.Footer className="bg-light">
-          <Button variant="white" className="border px-4 rounded-pill" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" type="submit" className="px-4 rounded-pill shadow-sm" disabled={loading}>
+
+        <Modal.Footer className="border-top p-3 bg-light">
+          <Button variant="outline-secondary" className="border-0 d-md-none me-auto" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            type="submit"
+            className="w-100 w-md-auto px-5 py-2 fw-bold rounded-pill shadow-sm"
+            disabled={loading}
+          >
             {loading ? "Processing..." : invoice ? "Update Invoice" : "Generate Invoice"}
+          </Button>
+          <Button variant="secondary" className="d-none d-md-block" onClick={onClose}>
+            Cancel
           </Button>
         </Modal.Footer>
       </Form>
