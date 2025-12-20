@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Renter, RenterService } from "../../../logic/services/renterService";
 import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
-import { Modal, Button, Spinner } from "react-bootstrap";
+import { Modal, Button, Spinner, Row, Col, Form } from "react-bootstrap";
 
 interface Props {
   renter: Renter | null;
@@ -16,6 +16,7 @@ export default function RenterModal({ renter, onClose, onSaved }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 🔥 RESTORED ALL FIELDS
   const [form, setForm] = useState<any>({
     full_name: renter?.full_name ?? "",
     email: renter?.email ?? "",
@@ -73,31 +74,34 @@ export default function RenterModal({ renter, onClose, onSaved }: Props) {
   };
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
-    { key: "basic", label: "Info", icon: "person" },
-    { key: "address", label: "Address", icon: "geo-alt" },
+    { key: "basic", label: "Primary", icon: "person-vcard" },
+    { key: "address", label: "Location", icon: "geo-alt" },
     { key: "residence", label: "History", icon: "clock-history" },
     { key: "emergency", label: "Work", icon: "briefcase" },
-    { key: "uploads", label: "Docs", icon: "shield-check" },
+    { key: "uploads", label: "Docs", icon: "shield-lock" },
   ];
 
+  const Label = ({ children }: any) => <label className="form-label small fw-bold text-muted text-uppercase mb-1">{children}</label>;
+
   return (
-    <Modal show onHide={onClose} size="xl" centered scrollable fullscreen="sm-down">
-      <Modal.Header closeButton className="bg-white border-0 pt-4 px-3 px-md-4">
+    <Modal show onHide={onClose} size="xl" centered scrollable fullscreen="sm-down" contentClassName="border-0 shadow-lg rounded-4">
+      <Modal.Header closeButton className="bg-white border-0 pt-3 px-3">
         <Modal.Title className="fw-bold h5 mb-0">
-          {renter ? "Update Renter" : "Add Renter"}
+          {renter ? "Update Profile" : "New Renter"}
         </Modal.Title>
       </Modal.Header>
 
+      {/* SWIPEABLE TAB NAV */}
       <div className="bg-white px-2 px-md-4 border-bottom sticky-top" style={{ top: 0, zIndex: 1020 }}>
-        <ul className="nav nav-pills nav-fill p-1 bg-light rounded-pill mb-3 overflow-auto flex-nowrap">
-          {tabs.map((tab) => (
-            <li className="nav-item" key={tab.key}>
+        <ul className="nav nav-pills nav-fill p-1 bg-light rounded-pill mb-3 overflow-auto flex-nowrap no-scrollbar">
+          {tabs.map((t) => (
+            <li className="nav-item" key={t.key}>
               <button
-                className={`nav-link rounded-pill py-2 fw-bold small d-flex align-items-center justify-content-center gap-2 ${activeTab === tab.key ? "active shadow-sm" : "text-secondary"}`}
-                onClick={() => setActiveTab(tab.key)}
+                className={`nav-link rounded-pill py-2 fw-bold small d-flex align-items-center justify-content-center gap-2 ${activeTab === t.key ? "active shadow-sm" : "text-secondary"}`}
+                onClick={() => setActiveTab(t.key)}
               >
-                <i className={`bi bi-${tab.icon}`}></i>
-                <span className="d-none d-sm-inline">{tab.label}</span>
+                <i className={`bi bi-${t.icon}`}></i>
+                <span className="d-none d-md-inline">{t.label}</span>
               </button>
             </li>
           ))}
@@ -107,74 +111,191 @@ export default function RenterModal({ renter, onClose, onSaved }: Props) {
       <Modal.Body className="p-3 p-md-4">
         {error && <div className="alert alert-danger border-0 small mb-4">{error}</div>}
 
+        {/* TAB 1: PRIMARY INFO */}
         {activeTab === "basic" && (
-          <div className="row g-3">
-            <div className="col-12 col-md-6">
-              <label className="form-label small fw-bold text-muted text-uppercase">Full Name</label>
-              <input className="form-control bg-light py-2" value={form.full_name} onChange={e => update("full_name", e.target.value)} />
-            </div>
-            <div className="col-6 col-md-3">
-              <label className="form-label small fw-bold text-muted text-uppercase">Phone</label>
-              <input className="form-control bg-light py-2" type="tel" value={form.phone_number} onChange={e => update("phone_number", e.target.value)} />
-            </div>
-            <div className="col-6 col-md-3">
-              <label className="form-label small fw-bold text-muted text-uppercase">Status</label>
-              <select className="form-select bg-light py-2 fw-bold" value={form.status} onChange={e => update("status", e.target.value)}>
-                <option value="prospective">Prospective</option>
-                <option value="active">Active</option>
-                <option value="former">Former</option>
+          <Row className="g-3">
+            <Col xs={12} md={6}>
+              <Label>Full Name</Label>
+              <input className="form-control bg-light py-2" style={{fontSize: '1rem'}} value={form.full_name} onChange={e => update("full_name", e.target.value)} />
+            </Col>
+            <Col xs={6} md={3}>
+              <Label>Phone Number</Label>
+              <input className="form-control bg-light py-2 font-monospace" style={{fontSize: '1rem'}} value={form.phone_number} onChange={e => update("phone_number", e.target.value)} />
+            </Col>
+            <Col xs={6} md={3}>
+              <Label>Alternate Phone</Label>
+              <input className="form-control bg-light py-2 font-monospace" style={{fontSize: '1rem'}} value={form.alternate_phone} onChange={e => update("alternate_phone", e.target.value)} />
+            </Col>
+            <Col xs={12} md={6}>
+              <Label>Email Address</Label>
+              <input className="form-control bg-light py-2" style={{fontSize: '1rem'}} value={form.email} onChange={e => update("email", e.target.value)} />
+            </Col>
+            <Col xs={6} md={3}>
+              <Label>Date of Birth</Label>
+              <input type="date" className="form-control bg-light py-2" style={{fontSize: '1rem'}} value={form.date_of_birth} onChange={e => update("date_of_birth", e.target.value)} />
+            </Col>
+            <Col xs={6} md={3}>
+              <Label>Gender</Label>
+              <select className="form-select bg-light py-2" value={form.gender} onChange={e => update("gender", e.target.value)}>
+                <option value="">Select...</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
               </select>
-            </div>
-            <div className="col-12">
-               <label className="form-label small fw-bold text-primary text-uppercase">Notify Via</label>
-               <select className="form-select border-primary-subtle py-2" value={form.notification_preference} onChange={e => update("notification_preference", e.target.value)}>
-                <option value="none">None</option>
-                <option value="email">Email</option>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="both">Both</option>
-              </select>
-            </div>
-          </div>
+            </Col>
+            <Col xs={6} md={4}>
+                <Label>Marital Status</Label>
+                <select className="form-select bg-light py-2" value={form.marital_status} onChange={e => update("marital_status", e.target.value)}>
+                    <option value="single">Single</option>
+                    <option value="married">Married</option>
+                    <option value="divorced">Divorced</option>
+                </select>
+            </Col>
+            <Col xs={6} md={4}>
+                <Label>Notification Channel</Label>
+                <select className="form-select border-primary-subtle py-2 fw-bold" value={form.notification_preference} onChange={e => update("notification_preference", e.target.value)}>
+                    <option value="none">None</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="email">Email</option>
+                    <option value="both">Both</option>
+                </select>
+            </Col>
+            <Col xs={12} md={4}>
+                <Label>Nationality</Label>
+                <input className="form-control bg-light py-2" value={form.nationality} onChange={e => update("nationality", e.target.value)} />
+            </Col>
+
+            {form.marital_status === "married" && (
+                <Col xs={12} className="bg-primary-subtle rounded-4 p-3 animate__animated animate__fadeIn">
+                    <Row className="g-2">
+                        <Col md={6}>
+                            <Label>Spouse Name</Label>
+                            <input className="form-control border-white" value={form.spouse_name} onChange={e => update("spouse_name", e.target.value)} />
+                        </Col>
+                        <Col md={6}>
+                            <Label>Spouse Phone</Label>
+                            <input className="form-control border-white font-monospace" value={form.spouse_phone} onChange={e => update("spouse_phone", e.target.value)} />
+                        </Col>
+                    </Row>
+                </Col>
+            )}
+          </Row>
         )}
 
-        {/* Other tabs follow same 'row g-3' and 'col-12 col-md-X' pattern */}
+        {/* TAB 2: ADDRESS */}
         {activeTab === "address" && (
-            <div className="row g-3">
-                <div className="col-12">
-                    <label className="form-label small fw-bold text-muted text-uppercase">Present Address</label>
-                    <textarea className="form-control bg-light" rows={3} value={form.present_address} onChange={e => update("present_address", e.target.value)} />
-                </div>
-                <div className="col-12">
-                    <label className="form-label small fw-bold text-muted text-uppercase">Permanent Address</label>
-                    <textarea className="form-control bg-light" rows={3} value={form.permanent_address} onChange={e => update("permanent_address", e.target.value)} />
-                </div>
-            </div>
+            <Row className="g-3">
+                <Col xs={12}>
+                    <Label>Present Address</Label>
+                    <textarea className="form-control bg-light" rows={3} style={{fontSize: '1rem'}} value={form.present_address} onChange={e => update("present_address", e.target.value)} />
+                </Col>
+                <Col xs={12}>
+                    <Label>Permanent Address</Label>
+                    <textarea className="form-control bg-light" rows={3} style={{fontSize: '1rem'}} value={form.permanent_address} onChange={e => update("permanent_address", e.target.value)} />
+                </Col>
+            </Row>
         )}
 
+        {/* TAB 3: RESIDENCE HISTORY */}
+        {activeTab === "residence" && (
+            <Row className="g-3">
+                <Col xs={12}>
+                    <Label>Previous Rental Address</Label>
+                    <textarea className="form-control bg-light" rows={2} value={form.previous_address} onChange={e => update("previous_address", e.target.value)} />
+                </Col>
+                <Col xs={12} md={6}>
+                    <Label>Landlord Name</Label>
+                    <input className="form-control bg-light" value={form.landlord_name} onChange={e => update("landlord_name", e.target.value)} />
+                </Col>
+                <Col xs={12} md={6}>
+                    <Label>Landlord Phone</Label>
+                    <input className="form-control bg-light font-monospace" value={form.landlord_phone} onChange={e => update("landlord_phone", e.target.value)} />
+                </Col>
+                <Col xs={6}>
+                    <Label>Stayed From</Label>
+                    <input type="date" className="form-control bg-light" value={form.from_date} onChange={e => update("from_date", e.target.value)} />
+                </Col>
+                <Col xs={6}>
+                    <Label>Stayed To</Label>
+                    <input type="date" className="form-control bg-light" value={form.to_date} onChange={e => update("to_date", e.target.value)} />
+                </Col>
+                <Col xs={12}>
+                    <Label>Reason for Leaving</Label>
+                    <input className="form-control bg-light" value={form.reason_for_leaving} onChange={e => update("reason_for_leaving", e.target.value)} />
+                </Col>
+            </Row>
+        )}
+
+        {/* TAB 4: WORK & EMERGENCY */}
+        {activeTab === "emergency" && (
+            <Row className="g-3">
+                <Col xs={12} md={6}>
+                    <Label>Occupation</Label>
+                    <input className="form-control bg-light" value={form.occupation} onChange={e => update("occupation", e.target.value)} />
+                </Col>
+                <Col xs={12} md={6}>
+                    <Label>Company Name</Label>
+                    <input className="form-control bg-light" value={form.company} onChange={e => update("company", e.target.value)} />
+                </Col>
+                <Col xs={12}>
+                    <Label>Office Address</Label>
+                    <input className="form-control bg-light" value={form.office_address} onChange={e => update("office_address", e.target.value)} />
+                </Col>
+                <div className="border-top my-3 opacity-10"></div>
+                <Col xs={12} md={4}>
+                    <Label>Emergency Contact Name</Label>
+                    <input className="form-control bg-primary bg-opacity-10 border-0" value={form.emergency_contact_name} onChange={e => update("emergency_contact_name", e.target.value)} />
+                </Col>
+                <Col xs={6} md={4}>
+                    <Label>Relation</Label>
+                    <input className="form-control bg-primary bg-opacity-10 border-0" value={form.relation} onChange={e => update("relation", e.target.value)} />
+                </Col>
+                <Col xs={6} md={4}>
+                    <Label>Emergency Phone</Label>
+                    <input className="form-control bg-primary bg-opacity-10 border-0 font-monospace" value={form.emergency_contact_phone} onChange={e => update("emergency_contact_phone", e.target.value)} />
+                </Col>
+            </Row>
+        )}
+
+        {/* TAB 5: UPLOADS */}
         {activeTab === "uploads" && (
-            <div className="row g-4 text-center">
-                <div className="col-12 col-md-6">
-                  <div className="p-3 border border-2 border-dashed rounded-4 bg-light">
-                    <label className="form-label fw-bold text-primary small text-uppercase mb-3">Profile Photo</label>
-                    <input type="file" className="form-control border-0 bg-transparent mb-2" accept="image/*" capture="user" onChange={e => setProfilePic(e.target.files?.[0] || null)} />
+            <Row className="g-4 text-center">
+                <Col xs={12} md={6}>
+                  <div className="p-4 border border-2 border-dashed rounded-4 bg-light">
+                    <Label>Profile Photograph</Label>
+                    <div className="mb-3 d-flex justify-content-center">
+                        {profilePic ? (
+                            <img src={URL.createObjectURL(profilePic)} className="rounded-circle shadow-sm border border-4 border-white" style={{ width: "100px", height: "100px", objectFit: "cover" }} />
+                        ) : renter?.profile_pic ? (
+                            <img src={renter.profile_pic} className="rounded-circle shadow-sm border border-4 border-white" style={{ width: "100px", height: "100px", objectFit: "cover" }} />
+                        ) : (
+                            <div className="rounded-circle bg-white d-flex align-items-center justify-content-center text-muted border shadow-sm" style={{ width: "100px", height: "100px" }}>No Photo</div>
+                        )}
+                    </div>
+                    <input type="file" className="form-control border-0 bg-transparent" accept="image/*" onChange={e => setProfilePic(e.target.files?.[0] || null)} />
                   </div>
-                </div>
-                <div className="col-12 col-md-6">
-                  <div className="p-3 border border-2 border-dashed rounded-4 bg-light">
-                    <label className="form-label fw-bold text-primary small text-uppercase mb-3">NID Scan</label>
-                    <input type="file" className="form-control border-0 bg-transparent" accept=".pdf,.jpg" onChange={e => setNidScan(e.target.files?.[0] || null)} />
+                </Col>
+                <Col xs={12} md={6}>
+                  <div className="p-4 border border-2 border-dashed rounded-4 bg-light h-100 d-flex flex-column justify-content-center">
+                    <Label>NID Scan (PDF/JPG)</Label>
+                    {nidScan ? (
+                        <div className="alert alert-success py-2 px-3 small fw-bold mb-3">✅ {nidScan.name}</div>
+                    ) : renter?.nid_scan ? (
+                        <a href={renter.nid_scan} target="_blank" rel="noreferrer" className="btn btn-outline-primary btn-sm rounded-pill mb-3">View Stored NID</a>
+                    ) : (
+                        <div className="py-4 text-muted small italic">Ready for upload</div>
+                    )}
+                    <input type="file" className="form-control border-0 bg-transparent" accept=".pdf,.jpg,.png" onChange={e => setNidScan(e.target.files?.[0] || null)} />
                   </div>
-                </div>
-            </div>
+                </Col>
+            </Row>
         )}
       </Modal.Body>
 
-      <Modal.Footer className="bg-light p-3 border-0">
+      <Modal.Footer className="bg-light p-3 border-0 shadow-lg">
         <Button variant="link" className="text-muted text-decoration-none me-auto d-none d-md-block" onClick={onClose}>Discard</Button>
         <Button variant="primary" className="rounded-pill px-5 py-2 fw-bold w-100 w-md-auto shadow-sm" disabled={loading} onClick={save}>
-          {loading ? <Spinner size="sm" className="me-2"/> : (renter ? "Update" : "Save")}
+          {loading ? <Spinner size="sm" className="me-2"/> : (renter ? "Update Profile" : "Create Profile")}
         </Button>
-        <Button variant="outline-secondary" className="border-0 w-100 d-md-none mt-2" onClick={onClose}>Cancel</Button>
       </Modal.Footer>
     </Modal>
   );
