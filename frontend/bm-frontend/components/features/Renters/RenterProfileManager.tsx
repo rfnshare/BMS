@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { Renter, RenterService } from "../../../logic/services/renterService";
 import { UnitService } from "../../../logic/services/unitService";
 import api from "../../../logic/services/apiClient";
-import { Badge, Spinner, Row, Col, Card } from "react-bootstrap";
+import { Badge, Spinner } from "react-bootstrap";
 import RenterModal from "./RenterModal";
 import RenterDocumentsModal from "./RenterDocumentsModal";
 
@@ -24,17 +24,25 @@ export default function RenterProfileManager() {
     if (!id) return;
     setLoading(true);
     try {
+      // 1. Fetch Renter Basic Info
       const renterData = await RenterService.get(Number(id));
       setRenter(renterData);
 
+      // 2. Fetch Leases filtered by Renter
       const leaseRes = await api.get(`/leases/leases/?renter=${id}`);
       const results = leaseRes.data.results || [];
+
+      // 🔥 Logic: Prioritize finding the 'active' lease
       const activeLease = results.find((l: any) => l.status === "active");
+
+      // If no active lease, find the most recent 'terminated' one as history
       const lastTerminated = !activeLease ? results.find((l: any) => l.status === "terminated") : null;
+
       const displayLease = activeLease || lastTerminated;
 
       if (displayLease) {
         setLease(displayLease);
+        // 3. Fetch Unit details based on the selected lease
         const unitData = await UnitService.retrieve(displayLease.unit);
         setUnit(unitData);
       } else {
@@ -42,6 +50,7 @@ export default function RenterProfileManager() {
         setUnit(null);
       }
     } catch (err) {
+      console.error("Load Error:", err);
       setError("Failed to load full profile data");
     } finally {
       setLoading(false);
@@ -58,133 +67,206 @@ export default function RenterProfileManager() {
     </div>
   );
 
-  if (error) return <div className="alert alert-danger m-3">{error}</div>;
+  if (error) return <div className="alert alert-danger m-4 border-0 shadow-sm">{error}</div>;
   if (!renter) return null;
 
-  const InfoBlock = ({ label, value, icon }: { label: string; value?: any; icon: string }) => (
-    <div className="col-12 col-md-6 col-lg-4 mb-3 mb-md-4">
+  const InfoRow = ({ label, value, icon }: { label: string; value?: any; icon?: string }) => (
+    <div className="col-md-6 col-lg-4 mb-4">
       <div className="d-flex align-items-center gap-2 mb-1">
-        <i className={`bi bi-${icon} text-primary opacity-75 small`}></i>
-        <span className="fw-bold text-uppercase text-muted" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>{label}</span>
+        {icon && <i className={`bi bi-${icon} text-primary opacity-75`}></i>}
+        <span className="fw-bold text-uppercase text-muted small" style={{ letterSpacing: '0.5px' }}>{label}</span>
       </div>
-      <div className="small text-dark fw-bold text-capitalize">
-        {value || <span className="text-muted fw-normal italic">N/A</span>}
+      <div className="fs-6 text-dark fw-medium text-capitalize">
+        {value || <span className="text-light-emphasis">Not Provided</span>}
       </div>
     </div>
   );
 
   return (
-    <div className="container-fluid py-3 bg-light min-vh-100 px-2 px-md-3">
-      {/* 1. COMPACT MOBILE HEADER */}
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-3">
-        <div className="bg-primary" style={{ background: 'linear-gradient(45deg, #0d6efd, #0099ff)', height: '80px' }}></div>
-        <div className="card-body px-3 pt-0 pb-3">
-          <div className="d-flex flex-column flex-md-row align-items-center align-items-md-end gap-3" style={{ marginTop: '-40px' }}>
+    <div className="container-fluid py-4 bg-light min-vh-100">
+      {/* 1. HEADER CARD */}
+      <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div className="bg-primary p-5" style={{ background: 'linear-gradient(45deg, #0d6efd, #0099ff)', height: '120px' }}></div>
+        <div className="card-body px-4 pt-0 pb-4">
+          <div className="d-flex flex-column flex-md-row align-items-center align-items-md-end gap-4" style={{ marginTop: '-60px' }}>
             <img
               src={renter.profile_pic || "/avatar.png"}
               alt={renter.full_name}
-              className="rounded-circle border border-4 border-white shadow-sm bg-white"
-              style={{ width: 100, height: 100, objectFit: "cover" }}
+              className="rounded-circle border border-5 border-white shadow-sm"
+              style={{ width: 140, height: 140, objectFit: "cover", backgroundColor: 'white' }}
             />
-            <div className="flex-grow-1 text-center text-md-start pb-1">
-              <h4 className="fw-bold mb-1">{renter.full_name}</h4>
-              <div className="d-flex flex-wrap justify-content-center justify-content-md-start gap-2">
-                <Badge pill bg={renter.status === "active" ? "success" : "secondary"} className="x-small">
-                  {renter.status?.toUpperCase()}
-                </Badge>
-                {renter.is_active && <Badge pill bg="primary" className="x-small">VERIFIED</Badge>}
+            <div className="flex-grow-1 text-center text-md-start pb-2">
+              <div className="d-flex flex-column flex-md-row align-items-center gap-2">
+                <h2 className="fw-bold mb-0">{renter.full_name}</h2>
+                <div className="d-flex gap-2">
+                  <Badge pill bg={renter.status === "active" ? "success" : "secondary"} className="px-3 py-2">
+                    {renter.status?.toUpperCase()}
+                  </Badge>
+                  {renter.is_active && (
+                    <Badge pill bg="primary" className="px-3 py-2">
+                      <i className="bi bi-patch-check-fill me-1"></i> VERIFIED
+                    </Badge>
+                  )}
+                </div>
               </div>
+              <p className="text-muted mb-0 d-flex align-items-center gap-2 justify-content-center justify-content-md-start">
+                <i className="bi bi-geo-alt"></i> {renter.present_address}
+              </p>
             </div>
-            <button className="btn btn-primary rounded-pill px-4 btn-sm fw-bold w-100 w-md-auto" onClick={() => setShowEditModal(true)}>
-              Edit Profile
-            </button>
+            <div className="d-flex gap-2 pb-2">
+              <button className="btn btn-primary rounded-pill px-4 shadow-sm" onClick={() => setShowEditModal(true)}>
+                <i className="bi bi-pencil-square me-2"></i>Edit Profile
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <Row className="g-3">
-        <Col lg={8}>
-          {/* LEASE CARD */}
+      <div className="row g-4">
+        <div className="col-lg-8">
+          {/* 🔥 DYNAMIC LEASE & UNIT INFO */}
           {lease ? (
-            <div className={`card border-0 shadow-sm rounded-4 mb-3 border-start border-4 ${lease.status === 'active' ? 'border-success' : 'border-secondary'}`}>
-              <div className="card-body p-3">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h6 className="fw-bold mb-0"><i className="bi bi-house-door me-2"></i>Current Unit</h6>
-                  <button className="btn btn-sm btn-light border rounded-pill px-3 x-small fw-bold" onClick={() => router.push(`/admin-dashboard/leases?viewId=${lease.id}`)}>
-                    Details
+            <div className={`card border-0 shadow-sm rounded-4 mb-4 overflow-hidden border-start border-4 ${lease.status === 'active' ? 'border-success' : 'border-secondary opacity-75'}`}>
+              <div className="card-body p-4">
+                <div className="d-flex justify-content-between align-items-start mb-3">
+                  <div>
+                    <h5 className={`fw-bold mb-0 ${lease.status === 'active' ? 'text-success' : 'text-secondary'}`}>
+                      <i className={`bi ${lease.status === 'active' ? 'bi-house-check-fill' : 'bi-house-x-fill'} me-2`}></i>
+                      {lease.status === 'active' ? 'Active Lease' : 'Terminated Lease'}
+                    </h5>
+                    <small className="text-muted">Lease ID: #{lease.id}</small>
+                  </div>
+                  <button className={`btn btn-sm rounded-pill px-3 fw-bold ${lease.status === 'active' ? 'btn-outline-success' : 'btn-outline-secondary'}`}
+                          onClick={() => router.push(`/admin-dashboard/leases?viewId=${lease.id}`)}>
+                    View Records <i className="bi bi-arrow-right small"></i>
                   </button>
                 </div>
-                <div className="row g-2">
-                  <div className="col-6">
-                    <small className="text-muted x-small fw-bold text-uppercase d-block">Unit</small>
-                    <div className="fw-bold small">{unit?.name || '---'}</div>
+                <div className="row g-3">
+                  <div className="col-md-4">
+                    <small className="text-muted fw-bold text-uppercase x-small d-block">Unit & Floor</small>
+                    <span className="fw-bold fs-5">{unit?.name || '---'}</span>
+                    <div className="small text-muted">Floor: {unit?.floor || '---'}</div>
                   </div>
-                  <div className="col-6">
-                    <small className="text-muted x-small fw-bold text-uppercase d-block">Rent</small>
-                    <div className="fw-bold small text-danger">৳{Number(lease.rent_amount).toLocaleString()}</div>
+                  <div className="col-md-4">
+                    <small className="text-muted fw-bold text-uppercase x-small d-block">
+                        {lease.status === 'active' ? 'Monthly Rent' : 'Final Balance'}
+                    </small>
+                    <span className={`fw-bold fs-5 ${Number(lease.current_balance) > 0 ? 'text-danger' : 'text-dark'}`}>
+                        ৳{Number(lease.status === 'active' ? lease.rent_amount : lease.current_balance).toLocaleString()}
+                    </span>
+                    <div className="small text-muted">Status: <span className="text-capitalize">{lease.deposit_status}</span></div>
+                  </div>
+                  <div className="col-md-4">
+                    <small className="text-muted fw-bold text-uppercase x-small d-block">
+                        {lease.status === 'active' ? 'Lease Dates' : 'Termination Date'}
+                    </small>
+                    <span className="fw-bold">
+                        {lease.status === 'active'
+                          ? new Date(lease.start_date).toLocaleDateString()
+                          : new Date(lease.termination_date).toLocaleDateString()}
+                    </span>
+                    <div className="small text-muted">To: {lease.end_date || 'N/A'}</div>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="alert alert-info rounded-4 border-0 p-3 small mb-3">
-              <i className="bi bi-info-circle me-2"></i> No active lease found.
+            <div className="alert alert-info rounded-4 border-0 shadow-sm p-4 d-flex align-items-center mb-4">
+              <i className="bi bi-info-circle-fill fs-3 me-3"></i>
+              <div>
+                <h6 className="fw-bold mb-0">No Active Lease Found</h6>
+                <small>This renter is currently not assigned to any building units.</small>
+              </div>
             </div>
           )}
 
-          {/* IDENTITY & PROFESSION */}
-          <div className="card border-0 shadow-sm rounded-4 mb-3 p-3">
-            <h6 className="fw-bold mb-3 text-uppercase small text-primary">Identity & Profession</h6>
-            <div className="row">
-              <InfoBlock label="Email" value={renter.email} icon="envelope" />
-              <InfoBlock label="Phone" value={renter.phone_number} icon="telephone" />
-              <InfoBlock label="Occupation" value={renter.occupation} icon="briefcase" />
-              <InfoBlock label="Company" value={renter.company} icon="building" />
+          {/* PERSONAL & PROFESSIONAL INFO (Unchanged) */}
+          <div className="card border-0 shadow-sm rounded-4 mb-4">
+            <div className="card-header bg-transparent border-0 pt-4 px-4">
+              <h5 className="fw-bold mb-0">Identity & Profession</h5>
+            </div>
+            <div className="card-body p-4">
+              <div className="row">
+                <InfoRow label="Email Address" value={renter.email} icon="envelope" />
+                <InfoRow label="Phone Number" value={renter.phone_number} icon="telephone" />
+                <InfoRow label="Date of Birth" value={renter.date_of_birth} icon="calendar-event" />
+                <InfoRow label="Gender" value={renter.gender} icon="person" />
+                <InfoRow label="Marital Status" value={renter.marital_status} icon="heart" />
+                <InfoRow label="Occupation" value={renter.occupation} icon="briefcase" />
+                <InfoRow label="Company" value={renter.company} icon="building" />
+                <InfoRow label="Work Address" value={renter.office_address} icon="geo" />
+                <InfoRow label="Notification" value={renter.notification_preference} icon="bell" />
+              </div>
             </div>
           </div>
 
-          {/* RESIDENCE HISTORY */}
-          <div className="card border-0 shadow-sm rounded-4 mb-3 p-3">
-            <h6 className="fw-bold mb-3 text-uppercase small text-primary">Residence History</h6>
-            <InfoBlock label="Permanent Address" value={renter.permanent_address} icon="house-lock" />
-            <InfoBlock label="Previous Landlord" value={renter.landlord_name} icon="person-badge" />
-            <InfoBlock label="Landlord Phone" value={renter.landlord_phone} icon="phone" />
+          <div className="card border-0 shadow-sm rounded-4">
+            <div className="card-header bg-transparent border-0 pt-4 px-4">
+              <h5 className="fw-bold mb-0">Residence History</h5>
+            </div>
+            <div className="card-body p-4">
+              <div className="row border-bottom mb-4 pb-2">
+                <InfoRow label="Permanent Address" value={renter.permanent_address} icon="house-lock" />
+                <InfoRow label="Previous Address" value={renter.previous_address} icon="geo-alt" />
+                <InfoRow label="Previous Landlord" value={renter.landlord_name} icon="person-badge" />
+              </div>
+              <div className="row">
+                <InfoRow label="Landlord Phone" value={renter.landlord_phone} icon="phone" />
+                <InfoRow label="Reason for Leaving" value={renter.reason_for_leaving} icon="chat-left-text" />
+                <InfoRow label="Stay Duration" value={`${renter.from_date || ''} to ${renter.to_date || ''}`} icon="clock-history" />
+              </div>
+            </div>
           </div>
-        </Col>
+        </div>
 
         {/* RIGHT COLUMN */}
-        <Col lg={4}>
-          <div className="card border-0 shadow-sm rounded-4 mb-3 bg-danger-subtle border-start border-danger border-4 p-3">
-            <h6 className="fw-bold text-danger x-small text-uppercase mb-2">Emergency Contact</h6>
-            <div className="fw-bold small">{renter.emergency_contact_name} ({renter.relation})</div>
-            <div className="fw-bold mt-1 small"><i className="bi bi-telephone-fill me-1"></i> {renter.emergency_contact_phone}</div>
+        <div className="col-lg-4">
+          <div className="card border-0 shadow-sm rounded-4 mb-4 bg-danger-subtle border-start border-danger border-4">
+            <div className="card-body p-4">
+              <h6 className="fw-bold text-danger mb-3">Emergency Contact</h6>
+              <div className="fw-bold fs-5">{renter.emergency_contact_name}</div>
+              <div className="text-danger-emphasis small mb-2">{renter.relation}</div>
+              <div className="d-flex align-items-center gap-2 fw-bold text-dark">
+                <i className="bi bi-telephone-fill"></i> {renter.emergency_contact_phone}
+              </div>
+            </div>
           </div>
 
-          <div className="card border-0 shadow-sm rounded-4 p-3">
-            <div className="d-flex justify-content-between mb-3">
-              <h6 className="fw-bold mb-0 small text-uppercase">Documents</h6>
+          <div className="card border-0 shadow-sm rounded-4">
+            <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between">
+              <h5 className="fw-bold mb-0">Documents</h5>
               <i className="bi bi-shield-check text-success"></i>
             </div>
-            <div className="vstack gap-2">
+            <div className="card-body p-4">
               {renter.nid_scan && (
-                <a href={renter.nid_scan} target="_blank" rel="noreferrer" className="p-2 border rounded-3 bg-light text-decoration-none d-flex align-items-center gap-2">
-                  <i className="bi bi-card-text text-primary fs-5"></i>
-                  <span className="small fw-bold text-dark">NID Card</span>
-                </a>
+                <div className="d-flex align-items-center p-3 border rounded-3 mb-3 bg-light">
+                  <i className="bi bi-card-text fs-3 text-primary me-3"></i>
+                  <div className="flex-grow-1">
+                    <div className="fw-bold small">NID Card Scan</div>
+                    <a href={renter.nid_scan} target="_blank" rel="noreferrer" className="text-decoration-none small">View Identification</a>
+                  </div>
+                </div>
               )}
+
               {renter.documents?.map((doc: any) => (
-                <a key={doc.id} href={doc.file} target="_blank" rel="noreferrer" className="p-2 border rounded-3 text-decoration-none d-flex align-items-center gap-2">
-                  <i className="bi bi-file-earmark-text text-secondary fs-5"></i>
-                  <span className="small text-dark text-truncate">{doc.doc_type}</span>
-                </a>
+                <div key={doc.id} className="d-flex align-items-center p-3 border rounded-3 mb-2">
+                  <i className={`bi ${doc.file.endsWith('.docx') || doc.file.endsWith('.pdf') ? 'bi-file-earmark-pdf' : 'bi-image'} fs-3 text-secondary me-3`}></i>
+                  <div className="flex-grow-1 overflow-hidden">
+                    <div className="fw-bold small text-capitalize text-truncate">{doc.doc_type}</div>
+                    <a href={doc.file} target="_blank" rel="noreferrer" className="text-decoration-none small">Download File</a>
+                  </div>
+                </div>
               ))}
-              <button className="btn btn-outline-secondary w-100 rounded-pill btn-sm fw-bold mt-2" onClick={() => setShowDocModal(true)}>
-                Manage Docs
-              </button>
+
+              <div className="mt-4 pt-3 border-top">
+                <button className="btn btn-outline-secondary w-100 rounded-pill btn-sm fw-bold" onClick={() => setShowDocModal(true)}>
+                  Manage Documents
+                </button>
+              </div>
             </div>
           </div>
-        </Col>
-      </Row>
+        </div>
+      </div>
 
       {showEditModal && <RenterModal renter={renter} onClose={() => setShowEditModal(false)} onSaved={() => loadAllData()} />}
       {showDocModal && <RenterDocumentsModal renter={renter} onClose={() => setShowDocModal(false)} />}
