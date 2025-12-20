@@ -8,13 +8,20 @@ export interface Unit {
   id: number;
   floor: number;
   name?: string;
-  unit_number?: string; // if present in your backend
+  unit_number?: string;
   unit_type: UnitType;
   status: StatusEnum;
   monthly_rent?: string | null;
   security_deposit?: string | null;
   remarks?: string | null;
   documents?: UnitDocument[];
+  prepaid_electricity_meter_no?: string | null;
+  prepaid_electricity_old_meter_no?: string | null;
+  prepaid_electricity_customer_no?: string | null;
+  prepaid_gas_meter_customer_code?: string | null;
+  prepaid_gas_meter_prepaid_code?: string | null;
+  prepaid_gas_meter_no?: string | null;
+  prepaid_gas_card_no?: string | null;
 }
 
 export interface UnitDocument {

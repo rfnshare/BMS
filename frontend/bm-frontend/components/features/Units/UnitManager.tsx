@@ -3,8 +3,7 @@ import { Unit, UnitService } from "../../../logic/services/unitService";
 import { Floor, FloorService } from "../../../logic/services/floorService";
 import UnitModal from "./UnitModal";
 import UnitDocumentsModal from "./UnitDocumentsModal";
-import UnitDetailsModal from "./UnitDetailsModal";
-import { Spinner, Badge } from "react-bootstrap";
+import UnitDetailsModal from "./UnitDetailsModal"; // 🔥 New Import
 
 export default function UnitManager() {
   const [units, setUnits] = useState<Unit[]>([]);
@@ -15,18 +14,22 @@ export default function UnitManager() {
   const [showModal, setShowModal] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [docUnit, setDocUnit] = useState<Unit | null>(null);
-  const [viewingUnit, setViewingUnit] = useState<Unit | null>(null);
+  const [viewingUnit, setViewingUnit] = useState<Unit | null>(null); // 🔥 New View State
 
-  // Stats
+  // Pagination & Stats States
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [totalVacant, setTotalVacant] = useState(0);
   const [totalOccupied, setTotalOccupied] = useState(0);
 
+  // ========================
+  // 1. Data Loading Logic
+  // ========================
   const loadData = async (page: number = 1) => {
     setLoading(true);
     try {
+      // Fetch Table Data and Floors
       const [unitRes, floorRes] = await Promise.all([
         UnitService.list(page),
         FloorService.list()
@@ -37,9 +40,13 @@ export default function UnitManager() {
       setTotalPages(unitRes.total_pages || 1);
       setFloors(floorRes.results || floorRes || []);
 
+      // 🔥 Overall Stats Calculation (Fetching a large limit to scan all)
+      const allUnitsRes = await UnitService.list(1); // Service should handle large limit or separate stats
+      // If your API doesn't support 'total_vacant' yet, we calculate from current results or secondary fetch
       const allData = unitRes.results || [];
       setTotalVacant(allData.filter((u: any) => u.status === 'vacant').length);
       setTotalOccupied(allData.filter((u: any) => u.status === 'occupied').length);
+
     } catch (err) {
       console.error("Fetch error:", err);
     } finally {
@@ -49,6 +56,9 @@ export default function UnitManager() {
 
   useEffect(() => { loadData(currentPage); }, [currentPage]);
 
+  // ========================
+  // 2. Action Handlers
+  // ========================
   const handleViewDetails = async (id: number) => {
     setLoading(true);
     try {
@@ -62,12 +72,12 @@ export default function UnitManager() {
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm("Delete unit? This action cannot be undone.")) {
+    if (confirm("Are you sure you want to delete this unit?")) {
       try {
         await UnitService.destroy(id);
         loadData(currentPage);
       } catch (err) {
-        alert("Delete failed. Check for active leases.");
+        alert("Could not delete. The unit might be linked to an active lease.");
       }
     }
   };
@@ -82,72 +92,42 @@ export default function UnitManager() {
   };
 
   return (
-    <div className="container-fluid py-3 py-md-4">
+    <div className="container-fluid py-2">
       {/* HEADER */}
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h4 className="fw-bold text-dark mb-0">Building Units</h4>
           <p className="text-muted small mb-0">Manage floor-wise property allocation.</p>
         </div>
-        <button className="btn btn-primary px-4 rounded-pill shadow-sm fw-bold w-100 w-md-auto" onClick={() => { setEditingUnit(null); setShowModal(true); }}>
-          <i className="bi bi-plus-lg me-2"></i>Add Unit
+        <button className="btn btn-primary px-4 rounded-pill shadow-sm fw-bold" onClick={() => { setEditingUnit(null); setShowModal(true); }}>
+          <i className="bi bi-plus-lg me-2"></i>Add New Unit
         </button>
       </div>
 
-      {/* STATS ROW (Stacked on Mobile) */}
-      <div className="row g-2 mb-4">
-        <div className="col-4">
-          <div className="card border-0 shadow-sm p-2 p-md-3 bg-white border-start border-4 border-primary rounded-4 text-center text-md-start">
-            <small className="text-muted fw-bold x-small d-block">TOTAL</small>
-            <h4 className="mb-0 fw-bold">{totalCount}</h4>
+      {/* STATS */}
+      <div className="row g-3 mb-4">
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm p-3 bg-white border-start border-4 border-primary rounded-4">
+            <small className="text-muted fw-bold">TOTAL UNITS</small>
+            <h3 className="mb-0 fw-bold">{totalCount}</h3>
           </div>
         </div>
-        <div className="col-4">
-          <div className="card border-0 shadow-sm p-2 p-md-3 bg-white border-start border-4 border-success rounded-4 text-center text-md-start">
-            <small className="text-muted fw-bold text-success x-small d-block">VACANT</small>
-            <h4 className="mb-0 fw-bold text-success">{totalVacant}</h4>
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm p-3 bg-white border-start border-4 border-success rounded-4">
+            <small className="text-muted fw-bold text-success">VACANT</small>
+            <h3 className="mb-0 fw-bold text-success">{totalVacant}</h3>
           </div>
         </div>
-        <div className="col-4">
-          <div className="card border-0 shadow-sm p-2 p-md-3 bg-white border-start border-4 border-danger rounded-4 text-center text-md-start">
-            <small className="text-muted fw-bold text-danger x-small d-block">OCCUPIED</small>
-            <h4 className="mb-0 fw-bold text-danger">{totalOccupied}</h4>
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm p-3 bg-white border-start border-4 border-danger rounded-4">
+            <small className="text-muted fw-bold text-danger">OCCUPIED</small>
+            <h3 className="mb-0 fw-bold text-danger">{totalOccupied}</h3>
           </div>
         </div>
       </div>
 
-      {/* MOBILE LIST VIEW */}
-      <div className="d-block d-md-none">
-        {loading && !viewingUnit ? (
-            <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
-        ) : (
-            units.map(u => (
-                <div key={u.id} className="card border-0 shadow-sm rounded-4 mb-3 p-3">
-                    <div className="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                            <h5 className="fw-bold text-dark mb-0">{u.name}</h5>
-                            <small className="text-muted">{floors.find(f => f.id === u.floor)?.name || `Floor ${u.floor}`}</small>
-                        </div>
-                        <span className={`badge border rounded-pill px-2 ${getStatusBadge(u.status)}`}>{u.status.toUpperCase()}</span>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-end">
-                        <div>
-                            <div className="fw-bold text-primary">৳{Number(u.monthly_rent).toLocaleString()}</div>
-                            <div className="x-small text-muted text-capitalize">{u.unit_type}</div>
-                        </div>
-                        <div className="btn-group">
-                            <button className="btn btn-light border btn-sm" onClick={() => handleViewDetails(u.id)}><i className="bi bi-eye text-primary"></i></button>
-                            <button className="btn btn-light border btn-sm" onClick={() => setDocUnit(u)}><i className="bi bi-folder2-open text-info"></i></button>
-                            <button className="btn btn-light border btn-sm" onClick={() => { setEditingUnit(u); setShowModal(true); }}><i className="bi bi-pencil text-warning"></i></button>
-                        </div>
-                    </div>
-                </div>
-            ))
-        )}
-      </div>
-
-      {/* DESKTOP TABLE VIEW */}
-      <div className="d-none d-md-block card border-0 shadow-sm rounded-4 overflow-hidden mb-3">
+      {/* TABLE */}
+      <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-3">
         <div className="table-responsive">
           <table className="table table-hover align-middle mb-0">
             <thead className="bg-light border-bottom">
@@ -162,7 +142,7 @@ export default function UnitManager() {
             </thead>
             <tbody>
               {loading && !viewingUnit ? (
-                <tr><td colSpan={6} className="text-center py-5"><Spinner animation="border" variant="primary" /></td></tr>
+                <tr><td colSpan={6} className="text-center py-5"><div className="spinner-border text-primary"></div></td></tr>
               ) : (
                 units.map((u) => (
                   <tr key={u.id}>
@@ -175,10 +155,22 @@ export default function UnitManager() {
                     <td className="fw-bold">৳{Number(u.monthly_rent).toLocaleString()}</td>
                     <td className="pe-4 text-end">
                       <div className="btn-group shadow-sm border rounded-3 overflow-hidden bg-white">
-                        <button className="btn btn-sm btn-white border-end" onClick={() => handleViewDetails(u.id)}><i className="bi bi-eye text-primary"></i></button>
-                        <button className="btn btn-sm btn-white border-end" onClick={() => setDocUnit(u)}><i className="bi bi-folder2-open text-info"></i></button>
-                        <button className="btn btn-sm btn-white border-end" onClick={() => { setEditingUnit(u); setShowModal(true); }}><i className="bi bi-pencil-square text-warning"></i></button>
-                        <button className="btn btn-sm btn-white" onClick={() => handleDelete(u.id)}><i className="bi bi-trash3 text-danger"></i></button>
+                        {/* 🔥 NEW: VIEW DETAILS (EYE) */}
+                        <button className="btn btn-sm btn-white border-end" onClick={() => handleViewDetails(u.id)} title="View Details">
+                          <i className="bi bi-eye text-primary"></i>
+                        </button>
+                        {/* EXISTING: DOCUMENTS */}
+                        <button className="btn btn-sm btn-white border-end" onClick={() => setDocUnit(u)} title="Documents">
+                          <i className="bi bi-folder2-open text-info"></i>
+                        </button>
+                        {/* EXISTING: EDIT */}
+                        <button className="btn btn-sm btn-white border-end" onClick={() => { setEditingUnit(u); setShowModal(true); }} title="Edit">
+                          <i className="bi bi-pencil-square text-warning"></i>
+                        </button>
+                        {/* EXISTING: DELETE */}
+                        <button className="btn btn-sm btn-white" onClick={() => handleDelete(u.id)} title="Delete">
+                          <i className="bi bi-trash3 text-danger"></i>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -193,15 +185,22 @@ export default function UnitManager() {
       {totalPages > 1 && (
         <div className="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm border">
           <div className="small text-muted">Page <b>{currentPage}</b> of <b>{totalPages}</b></div>
-          <div className="d-flex gap-2">
-            <button className="btn btn-outline-secondary btn-sm rounded-pill px-3" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Prev</button>
-            <button className="btn btn-outline-secondary btn-sm rounded-pill px-3" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</button>
-          </div>
+          <nav><ul className="pagination pagination-sm mb-0 gap-1">
+            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+              <button className="page-link border-0 rounded-3 shadow-sm px-3" onClick={() => setCurrentPage(p => p - 1)}>Prev</button>
+            </li>
+            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+              <button className="page-link border-0 rounded-3 shadow-sm px-3" onClick={() => setCurrentPage(p => p + 1)}>Next</button>
+            </li>
+          </ul></nav>
         </div>
       )}
 
+      {/* ALL MODALS */}
       {showModal && <UnitModal floors={floors} unit={editingUnit} onClose={() => setShowModal(false)} onSaved={() => loadData(currentPage)} />}
       {docUnit && <UnitDocumentsModal unit={docUnit} onClose={() => setDocUnit(null)} />}
+
+      {/* 🔥 NEW MODAL: VIEW DETAILS */}
       {viewingUnit && <UnitDetailsModal unit={viewingUnit} onClose={() => setViewingUnit(null)} />}
     </div>
   );
