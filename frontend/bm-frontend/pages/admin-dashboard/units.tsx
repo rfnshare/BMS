@@ -107,7 +107,7 @@ export default function UnitsPage() {
         <div className="mt-4 p-3 bg-white rounded-4 d-flex align-items-center gap-3 border shadow-sm">
           <i className="bi bi-info-circle-fill text-primary fs-5"></i>
           <p className="mb-0 small text-muted">
-            <strong>SQA Note:</strong> Always create <strong>Floors</strong> first. Units rely on Floor IDs to establish the building hierarchy in the database.
+            <strong>Note:</strong> Always create <strong>Floors</strong> first. Units rely on Floor to establish the building hierarchy in the system.
           </p>
         </div>
 
