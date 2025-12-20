@@ -4,25 +4,14 @@ import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { getCurrentUser, isLoggedIn } from "../../utils/auth";
 
-interface MenuItem {
-    name: string;
-    path: string;
-    icon: string;
-}
-
-interface MenuGroup {
-    group: string;
-    items: MenuItem[];
-}
-
 interface LayoutProps {
     children: ReactNode;
-    menuItems: MenuGroup[];
+    menuItems: any[];
 }
 
 export default function Layout({ children, menuItems }: LayoutProps) {
     const [user, setUser] = useState<any>(null);
-    const [showMobileMenu, setShowMobileMenu] = useState(false); // 🔥 NEW: State to control sidebar
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -38,26 +27,30 @@ export default function Layout({ children, menuItems }: LayoutProps) {
         })();
     }, [router]);
 
-    // 🔥 NEW: Close menu when clicking a link (on route change)
     useEffect(() => {
         setShowMobileMenu(false);
     }, [router.pathname]);
 
     return (
-        <div className="d-flex w-100 min-vh-100">
-            {/* 🔥 UPDATED: Pass state and close function */}
+        /* 🔥 FIXED: Lock height to viewport to keep scrollbar internal */
+        <div className="d-flex w-100 vh-100 overflow-hidden bg-body-tertiary">
+
             <Sidebar
                 menuItems={menuItems}
                 show={showMobileMenu}
                 onClose={() => setShowMobileMenu(false)}
             />
 
-            <div className="flex-grow-1 d-flex flex-column bg-body-tertiary min-vw-0">
-                {/* 🔥 UPDATED: Pass toggle function */}
+            {/* 🔥 FIXED: Added min-width: 0 and overflow-y: auto
+                This prevents the 'growing navbar' by containing the scroll
+                inside this div only.
+            */}
+            <div className="flex-grow-1 d-flex flex-column min-vw-0 shadow-sm" style={{ minWidth: 0 }}>
+
                 <Topbar user={user} onToggleMenu={() => setShowMobileMenu(true)} />
 
-                <main className="p-3 p-md-4 flex-grow-1">
-                    <div className="container-fluid p-0">
+                <main className="flex-grow-1 overflow-y-auto overflow-x-hidden p-0">
+                    <div className="container-fluid p-3 p-md-4">
                         {children}
                     </div>
                 </main>
