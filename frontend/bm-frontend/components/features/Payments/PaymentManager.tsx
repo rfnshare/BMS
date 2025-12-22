@@ -2,15 +2,20 @@ import { useEffect, useState, useCallback } from "react";
 import { PaymentService } from "../../../logic/services/paymentService";
 import { InvoiceService } from "../../../logic/services/invoiceService";
 import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
+import { useNotify } from "../../../logic/context/NotificationContext"; // ✅ Added
 import BulkPaymentModal from "./BulkPaymentModal";
 import PaymentModal from "./PaymentModal";
 import EditPaymentModal from "./EditPaymentModal";
-import { Modal, Button, Table, Badge, Spinner, InputGroup, Form } from "react-bootstrap";
+import { Modal, Button, Table, Badge, Spinner, InputGroup, Form, Row, Col } from "react-bootstrap";
 
 export default function PaymentManager() {
+    const { success, error: notifyError } = useNotify(); // ✅ Initialize Notifications
+
+    // 1. DATA STATE
     const [data, setData] = useState<any>({ results: [], count: 0, next: null, previous: null });
     const [loading, setLoading] = useState(true);
 
+    // 2. FILTER STATE
     const [filters, setFilters] = useState({
         method: "",
         search: "",
@@ -19,6 +24,7 @@ export default function PaymentManager() {
         ordering: "-id"
     });
 
+    // 3. CACHE & MODAL STATE
     const [cache, setCache] = useState<{ [key: number]: { renter: string, unit: string } }>({});
     const [lookupCache, setLookupCache] = useState<{ [key: number]: { renter: string, unit: string } }>({});
 
@@ -31,6 +37,7 @@ export default function PaymentManager() {
     const [lookupLoading, setLookupLoading] = useState(false);
     const [invoiceSearch, setInvoiceSearch] = useState("");
 
+    // --- LOGIC: HYDRATION ---
     const hydrateData = useCallback(async (items: any[], isLookup = false) => {
         const uniqueLeaseIds = [...new Set(items.map(i => i.lease))].filter(Boolean);
         const currentCache = isLookup ? lookupCache : cache;
@@ -66,6 +73,7 @@ export default function PaymentManager() {
         else setCache(prev => ({ ...prev, ...updateMap }));
     }, [cache, lookupCache]);
 
+    // --- LOGIC: API CALLS ---
     const loadPayments = async () => {
         setLoading(true);
         try {
@@ -73,7 +81,7 @@ export default function PaymentManager() {
             setData(res);
             if (res.results) await hydrateData(res.results);
         } catch (err: any) {
-            alert(getErrorMessage(err));
+            notifyError(getErrorMessage(err));
         } finally {
             setLoading(false);
         }
@@ -106,114 +114,101 @@ export default function PaymentManager() {
     }, [invoiceSearch, showInvoiceLookup]);
 
     const handleDelete = async (id: number) => {
-        if (confirm("⚠️ Reverse this transaction?")) {
+        if (window.confirm("⚠️ Reverse this transaction? This will restore the invoice balance.")) {
             try {
                 await PaymentService.destroy(id);
+                success("Transaction reversed successfully."); // ✅ Notification
                 loadPayments();
             } catch (err: any) {
-                alert(getErrorMessage(err));
+                notifyError(getErrorMessage(err));
             }
         }
     };
 
     return (
-        <div className="bg-white rounded-4 shadow-sm overflow-hidden border">
-            {/* HEADER & FILTERS */}
-            <div className="p-3 p-md-4 border-bottom bg-white">
-                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-                    <h5 className="fw-bold text-dark m-0 text-center text-md-start">Payment History</h5>
-                    <div className="d-flex gap-2">
-                        <button className="btn btn-primary rounded-pill px-3 fw-bold shadow-sm flex-grow-1"
-                                onClick={() => setShowInvoiceLookup(true)}>
-                            <i className="bi bi-receipt me-1"></i> Pay Invoice
-                        </button>
-                        <button className="btn btn-success rounded-pill px-3 fw-bold shadow-sm flex-grow-1"
-                                onClick={() => setShowBulkModal(true)}>
-                            <i className="bi bi-cash-stack me-1"></i> Bulk
-                        </button>
+        <div className="animate__animated animate__fadeIn">
+            {/* 1. HEADER CARD (Blueprint DNA) */}
+            <div className="card border-0 shadow-sm rounded-4 mb-4 border-start border-4 border-success bg-white">
+                <div className="card-body p-3 p-md-4">
+                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                        <div>
+                            <h4 className="fw-bold mb-1 text-dark">Payment History</h4>
+                            <p className="text-muted x-small mb-0 text-uppercase fw-bold ls-1">Revenue & Collection Control</p>
+                        </div>
+                        <div className="d-flex gap-2">
+                            <button className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm py-2"
+                                    onClick={() => setShowInvoiceLookup(true)}>
+                                <i className="bi bi-receipt me-2"></i>Pay Invoice
+                            </button>
+                            <button className="btn btn-success rounded-pill px-4 fw-bold shadow-sm py-2"
+                                    onClick={() => setShowBulkModal(true)}>
+                                <i className="bi bi-cash-stack me-2"></i>Bulk
+                            </button>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div className="row g-2">
-                    <div className="col-12 col-md-4">
+            {/* 2. FILTER SECTION */}
+            <div className="card border-0 shadow-sm rounded-4 mb-4 p-3 bg-white">
+                <Row className="g-2">
+                    <Col xs={12} md={4}>
                         <InputGroup size="sm" className="bg-light rounded-pill overflow-hidden border-0">
                             <InputGroup.Text className="bg-light border-0 ps-3"><i className="bi bi-search text-muted"></i></InputGroup.Text>
-                            <Form.Control className="bg-light border-0" placeholder="Search reference..."
-                                          value={filters.search}
-                                          onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })} />
+                            <Form.Control
+                                className="bg-light border-0"
+                                placeholder="Search reference..."
+                                value={filters.search}
+                                onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                            />
                         </InputGroup>
-                    </div>
-                    <div className="col-12 col-md-3">
-                        <Form.Select size="sm" className="bg-light border-0 rounded-pill ps-3" value={filters.method}
-                                     onChange={(e) => setFilters({ ...filters, method: e.target.value, page: 1 })}>
+                    </Col>
+                    <Col xs={12} md={3}>
+                        <Form.Select
+                            size="sm"
+                            className="bg-light border-0 rounded-pill ps-3"
+                            value={filters.method}
+                            onChange={(e) => setFilters({ ...filters, method: e.target.value, page: 1 })}
+                        >
                             <option value="">All Methods</option>
                             {PaymentService.getMethods().map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </Form.Select>
-                    </div>
-                </div>
+                    </Col>
+                </Row>
             </div>
 
-            {/* MOBILE LIST VIEW */}
-            <div className="d-block d-md-none">
-                {loading ? (
-                    <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
-                ) : data.results.map((pay: any) => (
-                    <div key={pay.id} className="p-3 border-bottom">
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <div className="fw-bold text-dark">{pay.payment_date}</div>
-                                <div className="text-muted x-small">Transaction ID: #{pay.id}</div>
-                            </div>
-                            <div className="text-end">
-                                <div className="fw-bold text-success h5 mb-0">৳{Number(pay.amount).toLocaleString()}</div>
-                                <div className="badge bg-light text-dark border fw-normal x-small">{pay.method}</div>
-                            </div>
-                        </div>
-                        <div className="d-flex justify-content-between align-items-end">
-                            <div>
-                                <div className="fw-bold text-primary small">{cache[pay.lease]?.renter || "..."}</div>
-                                <div className="text-muted x-small">Unit: {cache[pay.lease]?.unit || "..."}</div>
-                            </div>
-                            <div className="btn-group">
-                                <button className="btn btn-sm btn-light border py-1" onClick={() => setEditingPayment(pay)}><i className="bi bi-pencil-square text-warning"></i></button>
-                                <button className="btn btn-sm btn-light border py-1" onClick={() => handleDelete(pay.id)}><i className="bi bi-trash text-danger"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* DESKTOP TABLE VIEW */}
-            <div className="d-none d-md-block table-responsive">
+            {/* 3. DATA TABLE (Desktop) */}
+            <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-3 d-none d-md-block">
                 <table className="table table-hover align-middle mb-0">
                     <thead className="bg-light border-bottom">
                         <tr className="text-muted x-small fw-bold text-uppercase">
-                            <th className="ps-4 py-3">Date</th>
+                            <th className="ps-4 py-3">Date & ID</th>
                             <th>Payer</th>
-                            <th>Unit</th>
                             <th>Amount</th>
-                            <th>Ref</th>
+                            <th>Method & Ref</th>
                             <th className="pe-4 text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan={6} className="text-center py-5"><Spinner animation="border" variant="primary" /></td></tr>
+                            <tr><td colSpan={5} className="text-center py-5"><Spinner animation="border" variant="success" size="sm" /></td></tr>
                         ) : data.results.map((pay: any) => (
                             <tr key={pay.id}>
                                 <td className="ps-4">
                                     <div className="fw-bold text-dark small">{pay.payment_date}</div>
-                                    <div className="x-small text-muted">#{pay.id}</div>
+                                    <div className="x-small text-muted">TXN-#{pay.id}</div>
                                 </td>
                                 <td>
                                     <div className="fw-bold small text-primary">{cache[pay.lease]?.renter || "..."}</div>
-                                    <div className="text-muted x-small font-monospace">L-{pay.lease}</div>
+                                    <div className="text-muted x-small">Unit: {cache[pay.lease]?.unit || "..."}</div>
                                 </td>
-                                <td><Badge bg="light" className="text-dark border fw-normal">{cache[pay.lease]?.unit || "..."}</Badge></td>
                                 <td className="fw-bold text-success">৳{Number(pay.amount).toLocaleString()}</td>
-                                <td className="small text-muted font-monospace">{pay.transaction_reference || "-"}</td>
+                                <td>
+                                    <Badge bg="light" className="text-dark border fw-normal mb-1">{pay.method.toUpperCase()}</Badge>
+                                    <div className="x-small text-muted font-monospace">{pay.transaction_reference || "-"}</div>
+                                </td>
                                 <td className="pe-4 text-end">
-                                    <div className="btn-group shadow-sm border rounded-3 overflow-hidden">
+                                    <div className="btn-group shadow-sm border rounded-3 overflow-hidden bg-white">
                                         <button className="btn btn-sm btn-white border-end" onClick={() => setEditingPayment(pay)}><i className="bi bi-pencil-square text-warning"></i></button>
                                         <button className="btn btn-sm btn-white text-danger" onClick={() => handleDelete(pay.id)}><i className="bi bi-trash"></i></button>
                                     </div>
@@ -224,37 +219,94 @@ export default function PaymentManager() {
                 </table>
             </div>
 
-            {/* RESPONSIVE PAGINATION */}
-            <div className="p-3 border-top d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-                <span className="text-muted x-small">Records: {data.count}</span>
-                <div className="d-flex gap-2 w-100 w-md-auto">
-                    <Button variant="outline-secondary" size="sm" className="flex-grow-1" disabled={!data.previous} onClick={() => setFilters({ ...filters, page: filters.page - 1 })}>Prev</Button>
-                    <Button variant="outline-secondary" size="sm" className="flex-grow-1" disabled={!data.next} onClick={() => setFilters({ ...filters, page: filters.page + 1 })}>Next</Button>
+            {/* 4. MOBILE CARDS */}
+            <div className="d-block d-md-none">
+                {loading ? (
+                    <div className="text-center py-5"><Spinner animation="border" variant="success" /></div>
+                ) : data.results.map((pay: any) => (
+                    <div key={pay.id} className="p-3 bg-white border-bottom mb-2 rounded-4 shadow-sm border mx-2">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <div className="fw-bold text-dark">{pay.payment_date}</div>
+                                <div className="text-muted x-small">#{pay.id}</div>
+                            </div>
+                            <div className="text-end">
+                                <div className="fw-bold text-success">৳{Number(pay.amount).toLocaleString()}</div>
+                                <Badge bg="light" className="text-dark border x-small">{pay.method}</Badge>
+                            </div>
+                        </div>
+                        <div className="small mb-3">
+                            <div className="fw-bold text-primary">{cache[pay.lease]?.renter || "..."}</div>
+                            <div className="text-muted x-small">{cache[pay.lease]?.unit || "..."}</div>
+                        </div>
+                        <div className="btn-group w-100 shadow-sm border rounded-pill overflow-hidden bg-white">
+                            <button className="btn btn-white py-2 border-end" onClick={() => setEditingPayment(pay)}><i className="bi bi-pencil-square text-warning"></i></button>
+                            <button className="btn btn-white py-2 text-danger" onClick={() => handleDelete(pay.id)}><i className="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* 5. PAGINATION */}
+            <div className="p-3 bg-white rounded-4 shadow-sm border d-flex justify-content-between align-items-center mt-3">
+                <span className="text-muted x-small fw-bold">RECORDS: {data.count}</span>
+                <div className="d-flex gap-2">
+                    <button className="btn btn-outline-secondary btn-sm rounded-pill px-4 fw-bold" disabled={!data.previous} onClick={() => setFilters({ ...filters, page: filters.page - 1 })}>Prev</button>
+                    <button className="btn btn-outline-secondary btn-sm rounded-pill px-4 fw-bold" disabled={!data.next} onClick={() => setFilters({ ...filters, page: filters.page + 1 })}>Next</button>
                 </div>
             </div>
 
-            {/* MODALS */}
-            {showBulkModal && <BulkPaymentModal onClose={() => setShowBulkModal(false)} onSuccess={() => { setShowBulkModal(false); loadPayments(); }} />}
-            {activePaymentInvoice && <PaymentModal invoice={activePaymentInvoice} onClose={() => setActivePaymentInvoice(null)} onSuccess={() => { setActivePaymentInvoice(null); loadPayments(); }} />}
-            {editingPayment && <EditPaymentModal payment={editingPayment} onClose={() => setEditingPayment(null)} onSuccess={() => { setEditingPayment(null); loadPayments(); }} />}
+            {/* --- MODAL CONNECTIONS --- */}
 
-            {/* INVOICE LOOKUP MODAL (Mobile Responsive) */}
-            <Modal show={showInvoiceLookup} onHide={() => setShowInvoiceLookup(false)} size="lg" centered fullscreen="sm-down">
-                <Modal.Header closeButton className="bg-primary text-white sticky-top">
-                    <Modal.Title className="h6 fw-bold mb-0">Select Invoice</Modal.Title>
+            {showBulkModal && (
+                <BulkPaymentModal
+                    onClose={() => setShowBulkModal(false)}
+                    onSuccess={() => { setShowBulkModal(false); success("Bulk payments recorded!"); loadPayments(); }}
+                />
+            )}
+
+            {activePaymentInvoice && (
+                <PaymentModal
+                    invoice={activePaymentInvoice}
+                    onClose={() => setActivePaymentInvoice(null)}
+                    onSuccess={() => { setActivePaymentInvoice(null); success("Payment successful!"); loadPayments(); }}
+                />
+            )}
+
+            {editingPayment && (
+                <EditPaymentModal
+                    payment={editingPayment}
+                    onClose={() => setEditingPayment(null)}
+                    onSuccess={() => { setEditingPayment(null); success("Record updated."); loadPayments(); }}
+                />
+            )}
+
+            {/* INVOICE LOOKUP MODAL */}
+            <Modal show={showInvoiceLookup} onHide={() => setShowInvoiceLookup(false)} size="lg" centered fullscreen="sm-down" contentClassName="border-0 shadow-lg rounded-4 overflow-hidden">
+                <Modal.Header closeButton className="bg-primary text-white sticky-top border-0">
+                    <Modal.Title className="h6 fw-bold mb-0 text-uppercase">Select Due Invoice</Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="p-0 bg-light">
-                    <div className="p-3 border-bottom bg-white sticky-top" style={{ top: '0', zIndex: 10 }}>
-                        <Form.Control type="text" placeholder="Search Renter or Unit..." value={invoiceSearch} onChange={(e) => setInvoiceSearch(e.target.value)} autoFocus />
+                    <div className="p-3 border-bottom bg-white sticky-top shadow-sm" style={{ top: '0', zIndex: 10 }}>
+                        <Form.Control
+                            type="text"
+                            className="bg-light border-0 rounded-pill px-3"
+                            placeholder="Search Renter or Unit..."
+                            value={invoiceSearch}
+                            onChange={(e) => setInvoiceSearch(e.target.value)}
+                            autoFocus
+                        />
                     </div>
-                    <div>
+                    <div className="p-2">
                         {lookupLoading ? (
                             <div className="text-center p-5"><Spinner animation="border" variant="primary" /></div>
                         ) : (
                             unpaidInvoices.map(inv => {
                                 const remaining = (Number(inv.amount) || 0) - (Number(inv.paid_amount) || 0);
                                 return (
-                                    <div key={inv.id} className="p-3 bg-white border-bottom" onClick={() => { setShowInvoiceLookup(false); setActivePaymentInvoice(inv); }} style={{ cursor: 'pointer' }}>
+                                    <div key={inv.id} className="p-3 bg-white border rounded-4 mb-2 shadow-sm"
+                                         onClick={() => { setShowInvoiceLookup(false); setActivePaymentInvoice(inv); }}
+                                         style={{ cursor: 'pointer' }}>
                                         <div className="d-flex justify-content-between align-items-start">
                                             <div>
                                                 <div className="fw-bold text-primary small">{inv.invoice_number}</div>
@@ -262,8 +314,8 @@ export default function PaymentManager() {
                                                 <div className="text-muted x-small">Unit: {lookupCache[inv.lease]?.unit || "..."}</div>
                                             </div>
                                             <div className="text-end">
-                                                <div className="fw-bold text-danger">৳{remaining.toLocaleString()}</div>
-                                                <Badge bg={inv.status === 'partially_paid' ? "info-xs" : "danger-xs"} className="x-small">
+                                                <div className="fw-bold text-danger h5 mb-0">৳{remaining.toLocaleString()}</div>
+                                                <Badge pill className={inv.status === 'partially_paid' ? "bg-info-subtle text-info border" : "bg-danger-subtle text-danger border"}>
                                                     {inv.status === 'partially_paid' ? "PARTIAL" : "DUE"}
                                                 </Badge>
                                             </div>
@@ -271,6 +323,9 @@ export default function PaymentManager() {
                                     </div>
                                 );
                             })
+                        )}
+                        {!lookupLoading && unpaidInvoices.length === 0 && (
+                            <div className="text-center p-5 text-muted small">No unpaid invoices found.</div>
                         )}
                     </div>
                 </Modal.Body>
