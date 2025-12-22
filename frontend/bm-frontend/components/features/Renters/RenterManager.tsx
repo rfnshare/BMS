@@ -151,8 +151,10 @@ export default function RenterManager() {
                         <div className="mt-1 opacity-50">UID: #{r.id}</div>
                     </div>
                     <div className="btn-group shadow-sm border rounded-pill overflow-hidden bg-white">
-                        <button className="btn btn-sm btn-white px-2 border-end" onClick={() => router.push(`/admin-dashboard/renters/${r.id}`)}><i className="bi bi-speedometer2 text-primary"></i></button>
-                        <button className="btn btn-sm btn-white px-2" onClick={() => setActiveModal({type: 'edit', data: r})}><i className="bi bi-pencil-square text-warning"></i></button>
+                        <button className="btn btn-sm btn-white px-3 border-end" onClick={() => router.push(`/admin-dashboard/renters/${r.id}`)} title="Dashboard"><i className="bi bi-speedometer2 text-primary"></i></button>
+                          <button className="btn btn-sm btn-white px-3 border-end" onClick={() => setActiveModal({type: 'docs', data: r})} title="Vault"><i className="bi bi-shield-lock text-info"></i></button>
+                          <button className="btn btn-sm btn-white px-3 border-end" onClick={() => setActiveModal({type: 'edit', data: r})} title="Edit Profile"><i className="bi bi-pencil-square text-warning"></i></button>
+                          <button className="btn btn-sm btn-white px-3 text-danger" onClick={async () => { if(confirm("Permanent purge this resident record?")) { await RenterService.destroy(r.id); success("Record purged."); load(); }}} title="Purge"><i className="bi bi-trash3"></i></button>
                     </div>
                 </div>
               </div>
