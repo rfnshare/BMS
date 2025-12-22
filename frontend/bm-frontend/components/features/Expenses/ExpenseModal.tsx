@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
-import { Modal, Button, Form, Alert, Row, Col } from "react-bootstrap";
+import { Modal, Button, Form, Alert, Row, Col, Spinner } from "react-bootstrap";
 import { ExpenseService } from "../../../logic/services/expenseService";
 import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
+import { useNotify } from "../../../logic/context/NotificationContext"; // ✅ Notification Integration
 
 interface ExpenseModalProps {
-  expense: any; // If null, create mode
+  expense: any;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 export default function ExpenseModal({ expense, onClose, onSuccess }: ExpenseModalProps) {
+  const { success: notifySuccess, error: notifyError } = useNotify(); // ✅ Use context
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [leases, setLeases] = useState<any[]>([]);
@@ -24,7 +26,7 @@ export default function ExpenseModal({ expense, onClose, onSuccess }: ExpenseMod
     attachment: null as File | null,
   });
 
-  // Load Active Leases & Hydrate Names for Dropdown
+  // Hydrate Lease Dropdown
   useEffect(() => {
     (async () => {
         try {
@@ -64,47 +66,62 @@ export default function ExpenseModal({ expense, onClose, onSuccess }: ExpenseMod
     try {
       if (expense?.id) {
         await ExpenseService.update(expense.id, formData);
+        notifySuccess("Expense updated successfully!"); // ✅ Professional Notification
       } else {
         await ExpenseService.create(formData);
+        notifySuccess("Expense record saved!"); // ✅ Professional Notification
       }
-      alert("✅ Expense Saved!");
-      onSuccess();
+      onSuccess(); // Triggers table refresh
+      onClose();   // ✅ FIXED: Auto-close modal on success
     } catch (err: any) {
-      setError(getErrorMessage(err));
+      const msg = getErrorMessage(err);
+      setError(msg);
+      notifyError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    /* 🔥 fullscreen="sm-down" turns the modal into a full-page view on mobile */
-    <Modal show onHide={onClose} size="lg" centered fullscreen="sm-down">
-      <Modal.Header closeButton className="bg-white border-bottom p-3">
-        <Modal.Title className="fw-bold h6 mb-0">
-            {expense ? "Edit Expense" : "Record New Expense"}
+    <Modal
+        show
+        onHide={onClose}
+        size="lg"
+        centered
+        fullscreen="sm-down"
+        contentClassName="border-0 shadow-lg rounded-4 overflow-hidden"
+    >
+      <Modal.Header closeButton className="border-0 bg-white p-3">
+        <Modal.Title className="fw-bold x-small text-uppercase text-muted ls-wide">
+            {expense ? "Modify Expense Entry" : "Record New Operational Cost"}
         </Modal.Title>
       </Modal.Header>
 
       <Form onSubmit={handleSubmit} className="d-flex flex-column h-100">
-        <Modal.Body className="p-3 p-md-4 flex-grow-1 overflow-auto">
-          {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
+        <Modal.Body className="p-3 p-md-4 flex-grow-1 overflow-auto bg-white">
+          {error && (
+            <Alert variant="danger" className="py-2 small rounded-3 border-0 bg-danger-subtle text-danger d-flex align-items-center mb-4">
+                <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                {error}
+            </Alert>
+          )}
 
           <Row className="g-3">
             <Col xs={12}>
-              <Form.Label className="small fw-bold text-muted">TITLE <span className="text-danger">*</span></Form.Label>
+              <Form.Label className="x-small fw-bold text-muted text-uppercase">Title / Subject <span className="text-danger">*</span></Form.Label>
               <Form.Control
                 type="text" required
-                className="py-2 rounded-3"
-                placeholder="e.g. Generator Fuel, AC Repair"
+                className="bg-light border-0 py-2 rounded-3"
+                placeholder="e.g. Electrician Bill, Lift Servicing"
                 value={formData.title}
                 onChange={e => setFormData({...formData, title: e.target.value})}
               />
             </Col>
 
             <Col xs={12} md={6}>
-              <Form.Label className="small fw-bold text-muted">CATEGORY</Form.Label>
+              <Form.Label className="x-small fw-bold text-muted text-uppercase">Category</Form.Label>
               <Form.Select
-                className="py-2 rounded-3 shadow-none"
+                className="bg-light border-0 py-2 rounded-3 shadow-none"
                 value={formData.category}
                 onChange={e => setFormData({...formData, category: e.target.value})}
               >
@@ -115,33 +132,33 @@ export default function ExpenseModal({ expense, onClose, onSuccess }: ExpenseMod
             </Col>
 
             <Col xs={12} md={6}>
-              <Form.Label className="small fw-bold text-muted">AMOUNT (৳)</Form.Label>
+              <Form.Label className="x-small fw-bold text-muted text-uppercase">Amount (৳)</Form.Label>
               <Form.Control
                 type="number" step="0.01" required
-                className="py-2 rounded-3"
+                className="bg-light border-0 py-2 rounded-3 fw-bold text-danger"
                 value={formData.amount}
                 onChange={e => setFormData({...formData, amount: e.target.value})}
               />
             </Col>
 
             <Col xs={6} md={6}>
-              <Form.Label className="small fw-bold text-muted">DATE</Form.Label>
+              <Form.Label className="x-small fw-bold text-muted text-uppercase">Date of Expense</Form.Label>
               <Form.Control
                 type="date" required
-                className="py-2 rounded-3"
+                className="bg-light border-0 py-2 rounded-3"
                 value={formData.date}
                 onChange={e => setFormData({...formData, date: e.target.value})}
               />
             </Col>
 
             <Col xs={6} md={6}>
-              <Form.Label className="small fw-bold text-muted">RELATED LEASE</Form.Label>
+              <Form.Label className="x-small fw-bold text-muted text-uppercase">Link to Lease (Optional)</Form.Label>
               <Form.Select
-                className="py-2 rounded-3"
+                className="bg-light border-0 py-2 rounded-3"
                 value={formData.lease}
                 onChange={e => setFormData({...formData, lease: e.target.value})}
               >
-                <option value="">-- General --</option>
+                <option value="">General Expense</option>
                 {leases.map(l => (
                   <option key={l.id} value={l.id}>{l.label}</option>
                 ))}
@@ -149,31 +166,30 @@ export default function ExpenseModal({ expense, onClose, onSuccess }: ExpenseMod
             </Col>
 
             <Col xs={12}>
-                {/* 🔥 capture="environment" enables mobile camera for direct receipt photo */}
-                <Form.Label className="small fw-bold text-muted">RECEIPT / ATTACHMENT</Form.Label>
+                <Form.Label className="x-small fw-bold text-muted text-uppercase">Receipt Image</Form.Label>
                 <Form.Control
                     type="file"
                     accept="image/*"
                     capture="environment"
-                    className="py-2 rounded-3"
+                    className="bg-light border-0 py-2 rounded-3"
                     onChange={handleFileChange}
                 />
-                <Form.Text className="text-muted small">Snap a photo of the bill or receipt.</Form.Text>
+                <Form.Text className="text-muted x-small">Snap a photo of the receipt using your camera.</Form.Text>
 
                 {expense?.attachment && !formData.attachment && (
-                   <div className="mt-2 p-2 bg-light rounded-3 d-flex align-items-center">
-                      <i className="bi bi-paperclip me-2 text-primary"></i>
-                      <a href={expense.attachment} target="_blank" rel="noreferrer" className="small text-decoration-none">View Existing Receipt</a>
+                   <div className="mt-2 p-2 bg-danger-subtle rounded-3 d-flex align-items-center">
+                      <i className="bi bi-paperclip me-2 text-danger"></i>
+                      <a href={expense.attachment} target="_blank" rel="noreferrer" className="x-small text-danger fw-bold text-decoration-none">Review Current Receipt</a>
                    </div>
                 )}
             </Col>
 
             <Col xs={12}>
-              <Form.Label className="small fw-bold text-muted">DESCRIPTION</Form.Label>
+              <Form.Label className="x-small fw-bold text-muted text-uppercase">Description</Form.Label>
               <Form.Control
                 as="textarea" rows={2}
-                className="rounded-3"
-                placeholder="Optional notes..."
+                className="bg-light border-0 rounded-3 small"
+                placeholder="Breakdown of costs..."
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value})}
               />
@@ -181,8 +197,8 @@ export default function ExpenseModal({ expense, onClose, onSuccess }: ExpenseMod
           </Row>
         </Modal.Body>
 
-        <Modal.Footer className="border-top p-3 bg-light">
-          <Button variant="outline-secondary" className="border-0 d-md-none me-auto" onClick={onClose}>
+        <Modal.Footer className="border-0 p-3 bg-light rounded-bottom-4">
+          <Button variant="white" className="border shadow-sm rounded-pill px-4 d-md-none me-auto fw-bold" onClick={onClose}>
             Cancel
           </Button>
           <Button
@@ -191,9 +207,10 @@ export default function ExpenseModal({ expense, onClose, onSuccess }: ExpenseMod
             disabled={loading}
             className="w-100 w-md-auto px-5 py-2 fw-bold rounded-pill shadow-sm"
           >
-            {loading ? "Saving..." : expense ? "Update Expense" : "Save Record"}
+            {loading ? <Spinner size="sm" className="me-2" /> : <i className="bi bi-save2 me-2"></i>}
+            {loading ? "Processing..." : expense ? "Update Entry" : "Record Expense"}
           </Button>
-          <Button variant="secondary" onClick={onClose} className="d-none d-md-block">
+          <Button variant="secondary" onClick={onClose} className="d-none d-md-block rounded-pill px-4 border-0">
             Cancel
           </Button>
         </Modal.Footer>
