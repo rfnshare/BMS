@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { Modal, Button, Form, InputGroup, Spinner } from "react-bootstrap";
 import api from "../../../logic/services/apiClient";
 import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
+import { useNotify } from "../../../logic/context/NotificationContext"; // ✅ Global Notify
 
 interface Props {
   lease: any;
@@ -9,25 +11,23 @@ interface Props {
 }
 
 export default function LeaseRentChangeModal({ lease, onClose, onSaved }: Props) {
+  const { success, error: notifyError } = useNotify(); // ✅ Professional feedback
+
   const [newAmount, setNewAmount] = useState<string>("");
   const [remarks, setRemarks] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const currentTotal = Number(lease.rent_amount || 0);
   const difference = Number(newAmount) - currentTotal;
 
   const handleApplyChange = async () => {
     if (!newAmount || Number(newAmount) <= 0) {
-      setError("Please enter a valid new rent amount.");
+      notifyError("Please enter a valid monthly amount.");
       return;
     }
 
     setLoading(true);
-    setError(null);
-
     try {
-      // Logic: This hits your LeaseRentHistory endpoint
       await api.post("/leases/lease-rent-history/", {
         lease: lease.id,
         old_rent: currentTotal,
@@ -35,104 +35,108 @@ export default function LeaseRentChangeModal({ lease, onClose, onSaved }: Props)
         effective_date: new Date().toISOString().split('T')[0],
         remarks: remarks,
       });
-      
+
+      success(`Rent updated for Unit ${lease.unit?.name || 'Lease'}`);
       onSaved();
     } catch (err) {
-      setError(getErrorMessage(err));
+      notifyError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="modal d-block" style={{ background: "rgba(0,0,0,.6)", backdropFilter: "blur(4px)" }}>
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
-          
-          {/* HEADER */}
-          <div className="modal-header bg-dark text-white p-4 border-0">
-            <div className="d-flex align-items-center gap-3">
-              <div className="bg-primary rounded-circle p-2">
-                <i className="bi bi-graph-up-arrow text-white"></i>
-              </div>
-              <div>
-                <h5 className="modal-title fw-bold mb-0">Adjust Monthly Rent</h5>
-                <p className="mb-0 small opacity-75">Update contract value for Unit {lease.unit?.name}</p>
-              </div>
-            </div>
-            <button className="btn-close btn-close-white" onClick={onClose}></button>
+    <Modal
+      show
+      onHide={onClose}
+      centered
+      contentClassName="border-0 shadow-lg rounded-4 overflow-hidden"
+    >
+      {/* 1. HEADER: Blueprint Dark Theme */}
+      <Modal.Header closeButton className="bg-dark text-white p-3 p-md-4 border-0">
+        <div className="d-flex align-items-center gap-3">
+          <div className="bg-primary bg-opacity-20 rounded-3 p-2">
+            <i className="bi bi-graph-up-arrow fs-5 text-primary"></i>
           </div>
-
-          <div className="modal-body p-4 bg-light bg-opacity-50">
-            {error && <div className="alert alert-danger border-0 rounded-3 mb-3">{error}</div>}
-
-            {/* COMPARISON CARDS */}
-            <div className="row g-3 mb-4 text-center">
-              <div className="col-6">
-                <div className="bg-white p-3 rounded-4 shadow-sm border-bottom border-3 border-secondary">
-                  <small className="text-muted fw-bold text-uppercase" style={{ fontSize: '0.65rem' }}>Current Rent</small>
-                  <div className="h4 fw-bold mb-0">৳{currentTotal.toLocaleString()}</div>
-                </div>
-              </div>
-              <div className="col-6">
-                <div className={`bg-white p-3 rounded-4 shadow-sm border-bottom border-3 ${difference >= 0 ? 'border-success' : 'border-danger'}`}>
-                  <small className="text-muted fw-bold text-uppercase" style={{ fontSize: '0.65rem' }}>New Rent</small>
-                  <div className={`h4 fw-bold mb-0 ${newAmount ? 'text-dark' : 'text-muted opacity-25'}`}>
-                    ৳{newAmount ? Number(newAmount).toLocaleString() : '0'}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* INPUT SECTION */}
-            <div className="card border-0 shadow-sm rounded-4 p-4">
-              <div className="mb-4">
-                <label className="form-label fw-bold small text-muted text-uppercase">New Monthly Amount</label>
-                <div className="input-group input-group-lg">
-                  <span className="input-group-text bg-light border-0">৳</span>
-                  <input 
-                    type="number" 
-                    className="form-control bg-light border-0 fw-bold" 
-                    placeholder="Enter amount"
-                    value={newAmount}
-                    onChange={(e) => setNewAmount(e.target.value)}
-                  />
-                </div>
-                {newAmount && (
-                   <div className={`mt-2 small fw-bold ${difference >= 0 ? 'text-success' : 'text-danger'}`}>
-                      <i className={`bi bi-caret-${difference >= 0 ? 'up' : 'down'}-fill`}></i>
-                      {difference >= 0 ? 'Increase' : 'Decrease'} of ৳{Math.abs(difference).toLocaleString()}
-                   </div>
-                )}
-              </div>
-
-              <div className="mb-0">
-                <label className="form-label fw-bold small text-muted text-uppercase">Reason for Change</label>
-                <textarea 
-                  className="form-control bg-light border-0 rounded-3" 
-                  rows={3} 
-                  placeholder="e.g., Annual increment, market rate adjustment..."
-                  value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
-                />
-              </div>
+          <div>
+            <Modal.Title className="h6 fw-bold mb-0">Adjust Monthly Rent</Modal.Title>
+            <div className="text-white opacity-50 fw-bold text-uppercase" style={{ fontSize: '0.6rem', letterSpacing: '1px' }}>
+               UNIT: {lease.unit?.name || 'Active Lease'}
             </div>
           </div>
-
-          {/* FOOTER */}
-          <div className="modal-footer border-0 p-4 bg-white">
-            <button className="btn btn-light rounded-pill px-4 fw-bold" onClick={onClose}>Cancel</button>
-            <button 
-              className="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" 
-              onClick={handleApplyChange}
-              disabled={loading || !newAmount}
-            >
-              {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : "Update & Record"}
-            </button>
-          </div>
-
         </div>
-      </div>
-    </div>
+      </Modal.Header>
+
+      <Modal.Body className="p-4 bg-light">
+        {/* 2. COMPARISON SECTION: Blueprint Rounded Cards */}
+        <div className="row g-2 mb-4">
+          <div className="col-6">
+            <div className="bg-white p-3 rounded-4 shadow-sm border-start border-3 border-secondary text-center">
+              <div className="text-muted fw-bold text-uppercase ls-1 mb-1" style={{ fontSize: '0.6rem' }}>Current Rent</div>
+              <div className="h5 fw-bold mb-0">৳{currentTotal.toLocaleString()}</div>
+            </div>
+          </div>
+          <div className="col-6">
+            <div className={`bg-white p-3 rounded-4 shadow-sm border-start border-3 text-center ${difference >= 0 ? 'border-success' : 'border-danger'}`}>
+              <div className="text-muted fw-bold text-uppercase ls-1 mb-1" style={{ fontSize: '0.6rem' }}>Target Rent</div>
+              <div className={`h5 fw-bold mb-0 ${newAmount ? 'text-dark' : 'text-muted opacity-25'}`}>
+                ৳{newAmount ? Number(newAmount).toLocaleString() : '0'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. INPUT SECTION: Blueprint Pill Inputs */}
+        <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
+          <div className="mb-4">
+            <Form.Label className="text-muted small fw-bold text-uppercase ls-1">1. Set New Amount</Form.Label>
+            <InputGroup className="bg-light rounded-pill overflow-hidden border-0">
+              <InputGroup.Text className="bg-light border-0 ps-3 fw-bold text-primary">৳</InputGroup.Text>
+              <Form.Control
+                type="number"
+                className="bg-light border-0 fw-bold py-2 shadow-none"
+                placeholder="Enter amount"
+                value={newAmount}
+                onChange={(e) => setNewAmount(e.target.value)}
+              />
+            </InputGroup>
+            {newAmount && (
+               <div className={`mt-2 ps-2 small fw-bold ${difference >= 0 ? 'text-success' : 'text-danger'}`}>
+                  <i className={`bi bi-caret-${difference >= 0 ? 'up-fill' : 'down-fill'} me-1`}></i>
+                  {difference >= 0 ? 'Increase' : 'Decrease'} of ৳{Math.abs(difference).toLocaleString()}
+               </div>
+            )}
+          </div>
+
+          <div className="mb-0">
+            <Form.Label className="text-muted small fw-bold text-uppercase ls-1">2. Adjustment Notes</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              className="bg-light border-0 rounded-4 p-3 small shadow-none"
+              placeholder="Reason for change (e.g. Annual Increment)..."
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+            />
+          </div>
+        </div>
+      </Modal.Body>
+
+      {/* 4. FOOTER: Pill Buttons */}
+      <Modal.Footer className="border-0 p-3 bg-white d-flex justify-content-end gap-2 px-md-4">
+        <Button variant="light" className="rounded-pill px-4 border text-muted small fw-bold" onClick={onClose}>
+            Cancel
+        </Button>
+        <Button
+          variant="primary"
+          className="rounded-pill px-5 fw-bold shadow-sm"
+          onClick={handleApplyChange}
+          disabled={loading || !newAmount}
+        >
+          {loading ? <Spinner size="sm" animation="border" className="me-2" /> : null}
+          Commit Changes
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }
