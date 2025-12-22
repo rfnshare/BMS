@@ -190,8 +190,9 @@ export default function LeaseManager() {
                                 {l.status?.toUpperCase()}
                             </Badge>
                             <div className="btn-group">
-                                <Button variant="light" size="sm" className="border py-1" onClick={() => setActiveModal({type: 'edit', data: l})}><i className="bi bi-pencil-square text-warning"></i></Button>
-                                <Button variant="light" size="sm" className="border text-danger py-1" onClick={() => confirmDelete(l.id)}><i className="bi bi-trash"></i></Button>
+                                    <Button variant="white" className="btn-sm border-end" onClick={() => setActiveModal({type: "view", data: l.id})}><i className="bi bi-eye"></i></Button>
+                                    <Button variant="white" className="btn-sm border-end" onClick={() => setActiveModal({type: "edit", data: l})}><i className="bi bi-pencil-square text-warning"></i></Button>
+                                    <Button variant="white" className="btn-sm text-danger" onClick={() => confirmDelete(l.id)}><i className="bi bi-trash"></i></Button>
                             </div>
                         </div>
                         <div className="fw-bold text-dark mb-1">#LS-{l.id.toString().padStart(4, '0')} — {renterMap.get(l.renter)?.full_name}</div>
