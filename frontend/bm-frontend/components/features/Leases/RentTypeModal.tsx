@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Modal, Button, Form, Spinner } from "react-bootstrap";
+import { Modal, Button, Form, Spinner, Row, Col } from "react-bootstrap";
 import { RentType, RentTypeService } from "../../../logic/services/rentTypeService";
 import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
-import { useNotify } from "../../../logic/context/NotificationContext"; // ✅ Global Notify
+import { useNotify } from "../../../logic/context/NotificationContext";
 
 interface Props {
   rentType?: RentType;
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function RentTypeModal({ rentType, onClose, onSaved }: Props) {
-  const { error: notifyError } = useNotify(); // ✅ Professional Error Handling
+  const { error: notifyError } = useNotify();
 
   const [form, setForm] = useState({
     name: rentType?.name || "",
@@ -22,11 +22,9 @@ export default function RentTypeModal({ rentType, onClose, onSaved }: Props) {
 
   const [loading, setLoading] = useState(false);
 
-  // 1. Logic: Handle Data Submission
   const handleSave = async () => {
-    // SQA Best Practice: Client-side validation
     if (!form.name || !form.code) {
-        notifyError("Both Name and System Code are required.");
+        notifyError("Validation Error: Category Name and System Code are mandatory.");
         return;
     }
 
@@ -37,7 +35,6 @@ export default function RentTypeModal({ rentType, onClose, onSaved }: Props) {
       } else {
         await RentTypeService.create(form);
       }
-      // Manager handles the success toast, refresh, and closing
       onSaved();
     } catch (err) {
       notifyError(getErrorMessage(err));
@@ -51,81 +48,100 @@ export default function RentTypeModal({ rentType, onClose, onSaved }: Props) {
       show
       onHide={onClose}
       centered
+      fullscreen="sm-down" // ✅ Mobile-friendly fullscreen
       contentClassName="border-0 shadow-lg rounded-4 overflow-hidden"
     >
-      {/* 2. HEADER: Blueprint Dark Theme */}
-      <Modal.Header closeButton className="bg-dark text-white p-3 p-md-4 border-0">
-        <div className="d-flex align-items-center gap-2">
+      {/* 1. HEADER: Blueprint Dark Theme */}
+      <Modal.Header closeButton closeVariant="white" className="bg-dark text-white p-3 p-md-4 border-0">
+        <div className="d-flex align-items-center gap-3">
+          <div className="bg-primary bg-opacity-20 rounded-3 p-2">
             <i className={`bi ${rentType ? 'bi-pencil-square text-warning' : 'bi-folder-plus text-primary'} fs-5`}></i>
-            <Modal.Title className="h6 fw-bold mb-0">
-              {rentType ? "Modify Rent Category" : "Configure New Category"}
+          </div>
+          <div>
+            <Modal.Title className="h6 fw-bold mb-0 text-uppercase ls-1">
+              {rentType ? "Modify Rent Category" : "Establish New Category"}
             </Modal.Title>
+            <div className="text-white opacity-50 fw-bold text-uppercase" style={{ fontSize: '0.6rem', letterSpacing: '1px' }}>
+               Financial Configuration Portal
+            </div>
+          </div>
         </div>
       </Modal.Header>
 
-      <Modal.Body className="p-4 bg-white">
-        {/* 3. FORM FIELDS: Blueprint Pill Styling */}
-        <div className="mb-4">
-          <Form.Label className="text-muted small fw-bold text-uppercase ls-1">1. Category Name</Form.Label>
-          <Form.Control
-            className="rounded-pill bg-light border-0 py-2 ps-3 fw-bold small shadow-none"
-            placeholder="e.g., Security Deposit, Service Charge"
-            value={form.name}
-            onChange={e => setForm({ ...form, name: e.target.value })}
-          />
-        </div>
+      <Modal.Body className="p-4 bg-light">
+        <div className="card border-0 shadow-sm p-4 rounded-4 bg-white">
 
-        <div className="mb-4">
-          <Form.Label className="text-muted small fw-bold text-uppercase ls-1">2. System Code</Form.Label>
-          <Form.Control
-            className="rounded-pill bg-light border-0 py-2 ps-3 font-monospace small shadow-none"
-            placeholder="e.g., SD-01, UT-GAS"
-            value={form.code}
-            onChange={e => setForm({ ...form, code: e.target.value })}
-          />
-          <div className="x-small text-muted mt-2 ps-2">Unique identifier used for ledger reporting.</div>
-        </div>
+          {/* 2. FORM FIELDS: Blueprint Pill Styling */}
+          <Form.Group className="mb-4">
+            <Form.Label className="x-small fw-bold text-muted text-uppercase ls-1 mb-1">
+              Category Identity <span className="text-danger">*</span>
+            </Form.Label>
+            <Form.Control
+              className="rounded-pill bg-light border-0 py-2 ps-3 fw-bold small shadow-none"
+              placeholder="e.g. Service Charge, Utility"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+            />
+          </Form.Group>
 
-        <div className="mb-4">
-          <Form.Label className="text-muted small fw-bold text-uppercase ls-1">3. Detailed Description</Form.Label>
-          <Form.Control
-            as="textarea"
-            rows={3}
-            className="rounded-4 bg-light border-0 p-3 small shadow-none"
-            placeholder="What does this specific charge cover?"
-            value={form.description}
-            onChange={e => setForm({ ...form, description: e.target.value })}
-          />
-        </div>
+          <Form.Group className="mb-4">
+            <Form.Label className="x-small fw-bold text-muted text-uppercase ls-1 mb-1">
+              System Ledger Code <span className="text-danger">*</span>
+            </Form.Label>
+            <Form.Control
+              className="rounded-pill bg-light border-0 py-2 ps-3 font-monospace small shadow-none"
+              placeholder="e.g. SRV-01"
+              value={form.code}
+              onChange={e => setForm({ ...form, code: e.target.value })}
+            />
+            <div className="x-small text-muted mt-2 ps-2 italic">Used for unique identification in financial reports.</div>
+          </Form.Group>
 
-        {/* 4. STATUS TOGGLE: Blueprint Dashed Box */}
-        <div className="bg-light p-3 rounded-4 d-flex align-items-center justify-content-between border border-dashed">
-          <div>
-            <h6 className="mb-0 fw-bold small">Category Visibility</h6>
-            <span className="text-muted" style={{fontSize: '0.65rem'}}>Visible during lease creation</span>
+          <Form.Group className="mb-4">
+            <Form.Label className="x-small fw-bold text-muted text-uppercase ls-1 mb-1">Detailed Description</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              className="rounded-4 bg-light border-0 p-3 small shadow-none fw-bold"
+              placeholder="Provide context for this charge type..."
+              value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+            />
+          </Form.Group>
+
+          {/* 3. STATUS TOGGLE: Blueprint Dashed Box */}
+          <div className="bg-light p-3 rounded-4 d-flex align-items-center justify-content-between border border-dashed border-primary border-opacity-25">
+            <div>
+              <h6 className="mb-0 fw-bold small text-dark">Category Visibility</h6>
+              <span className="text-muted fw-bold text-uppercase ls-1" style={{fontSize: '0.55rem'}}>Available in active leases</span>
+            </div>
+            <Form.Check
+              type="switch"
+              className="fs-4 custom-switch"
+              checked={form.is_active}
+              onChange={e => setForm({ ...form, is_active: e.target.checked })}
+            />
           </div>
-          <Form.Check
-            type="switch"
-            className="fs-4"
-            checked={form.is_active}
-            onChange={e => setForm({ ...form, is_active: e.target.checked })}
-          />
         </div>
       </Modal.Body>
 
-      {/* 5. FOOTER: Pill Buttons */}
-      <Modal.Footer className="border-0 p-3 bg-white d-flex justify-content-end gap-2 px-md-4">
-        <Button variant="light" className="rounded-pill px-4 border text-muted small fw-bold" onClick={onClose}>
-          Cancel
+      {/* 4. FOOTER: Pill Buttons */}
+      <Modal.Footer className="border-0 p-3 bg-white d-flex flex-column flex-md-row justify-content-end gap-2 px-md-4">
+        <Button
+          variant="light"
+          className="w-100 w-md-auto rounded-pill px-4 border text-muted small fw-bold ls-1"
+          onClick={onClose}
+        >
+          DISCARD
         </Button>
         <Button
           variant={rentType ? "warning" : "primary"}
-          className="rounded-pill px-5 fw-bold shadow-sm"
+          className="w-100 w-md-auto rounded-pill px-5 fw-bold shadow-sm ls-1"
           onClick={handleSave}
           disabled={loading}
         >
-          {loading ? <Spinner size="sm" animation="border" className="me-2" /> : null}
-          {rentType ? "Update Category" : "Establish Category"}
+          {loading ? <Spinner size="sm" animation="border" className="me-2" /> : <i className="bi bi-shield-check me-2"></i>}
+          {rentType ? "UPDATE CATEGORY" : "ESTABLISH CATEGORY"}
         </Button>
       </Modal.Footer>
     </Modal>

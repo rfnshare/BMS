@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { RenterService } from "../../../logic/services/renterService";
-import { Row, Col, Card, Spinner, Badge, Image } from "react-bootstrap";
+import { Row, Col, Card, Spinner, Badge, Image, Button } from "react-bootstrap";
 
 export default function RenterProfileManager() {
   const [profile, setProfile] = useState<any>(null);
@@ -10,7 +10,6 @@ export default function RenterProfileManager() {
     const loadProfile = async () => {
       try {
         const data = await RenterService.getProfile();
-        // 🔥 Fix: Since response has a 'results' array, we take the first item
         const renterData = data.results ? data.results[0] : data;
         setProfile(renterData);
       } catch (error) {
@@ -22,148 +21,206 @@ export default function RenterProfileManager() {
     loadProfile();
   }, []);
 
-  if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
-  if (!profile) return <div className="alert alert-warning">Profile information not found.</div>;
+  const Label = ({ children }: { children: React.ReactNode }) => (
+    <label className="x-small fw-bold text-muted text-uppercase mb-1 ls-1 d-block">
+      {children}
+    </label>
+  );
+
+  if (loading) return (
+    <div className="text-center py-5 vstack gap-3 animate__animated animate__fadeIn">
+      <Spinner animation="grow" variant="primary" size="sm" />
+      <p className="text-muted fw-bold x-small text-uppercase ls-1">Retrieving Registry Data...</p>
+    </div>
+  );
+
+  if (!profile) return (
+    <div className="alert bg-warning bg-opacity-10 border-warning text-warning rounded-4 p-4 fw-bold ls-1">
+      <i className="bi bi-exclamation-shield me-2"></i> RESIDENT DATA NOT FOUND IN LOCAL REGISTRY.
+    </div>
+  );
 
   return (
-    <Row className="g-4">
-      {/* 1. Personal Identity Card */}
-      <Col lg={4}>
-        <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
-          <div className="bg-primary p-4 text-center text-white">
-            <div className="position-relative d-inline-block mb-3">
-              {/* 🔥 Updated: Using profile_pic from response */}
-              {profile.profile_pic ? (
-                <Image
-                  src={profile.profile_pic}
-                  roundedCircle
-                  className="shadow-sm border border-3 border-white"
-                  style={{ width: '100px', height: '100px', objectFit: 'cover' }}
-                />
-              ) : (
-                <div className="rounded-circle bg-white text-primary d-inline-flex align-items-center justify-content-center shadow-sm" style={{ width: '100px', height: '100px' }}>
-                  <i className="bi bi-person-fill display-4"></i>
-                </div>
-              )}
+    <div className="animate__animated animate__fadeIn pb-5">
+
+      {/* 1. INDUSTRIAL HEADER (Blueprint DNA) */}
+      <div className="card border-0 shadow-sm rounded-4 mb-4 border-start border-4 border-primary bg-white">
+        <div className="card-body p-3 p-md-4">
+          <div className="d-flex flex-column flex-md-row align-items-center gap-3">
+            <div className="d-flex align-items-center gap-3">
+              <div className="bg-primary bg-opacity-10 p-2 rounded-3 text-primary border border-primary border-opacity-10 d-none d-md-block">
+                <i className="bi bi-person-vcard fs-4"></i>
+              </div>
+              <div>
+                <h4 className="fw-bold mb-1 text-dark text-uppercase ls-1">Resident Registry</h4>
+                <p className="text-muted x-small mb-0 text-uppercase fw-bold ls-1 opacity-75">
+                    Official Verification & Identity Record
+                </p>
+              </div>
             </div>
-            <h5 className="fw-bold mb-0">{profile.full_name}</h5>
-            <small className="opacity-75">ID: #00{profile.id} | {profile.gender}</small>
+            <div className="ms-md-auto d-flex gap-2">
+                <Badge bg="success" className="bg-opacity-10 text-success border border-success border-opacity-10 px-3 py-2 rounded-pill x-small fw-bold ls-1">
+                    <i className="bi bi-patch-check-fill me-1"></i> VERIFIED RESIDENT
+                </Badge>
+            </div>
           </div>
-          <Card.Body className="p-4">
-            <div className="text-center mb-4 vstack gap-2">
-               <Badge bg={profile.status === 'active' ? "success-subtle" : "warning-subtle"} className={`text-${profile.status === 'active' ? 'success' : 'warning'} rounded-pill px-3 py-2 border`}>
-                 {profile.status.toUpperCase()}
-               </Badge>
-               <small className="text-muted">Member since {new Date(profile.created_at).toLocaleDateString()}</small>
-            </div>
+        </div>
+      </div>
 
-            <div className="vstack gap-3 pt-3 border-top">
-               <div>
-                  <label className="x-small text-muted fw-bold text-uppercase d-block mb-1">Marital Status</label>
-                  <div className="fw-bold text-dark text-capitalize">{profile.marital_status}</div>
-               </div>
-               <div>
-                  <label className="x-small text-muted fw-bold text-uppercase d-block mb-1">Date of Birth</label>
-                  <div className="fw-bold text-dark">{profile.date_of_birth || 'N/A'}</div>
-               </div>
-               <div>
-                  <label className="x-small text-muted fw-bold text-uppercase d-block mb-1">Emergency Contact</label>
-                  <div className="fw-bold text-dark">{profile.emergency_contact_name} ({profile.relation})</div>
-                  <div className="small text-muted">{profile.emergency_contact_phone}</div>
-               </div>
-            </div>
-          </Card.Body>
-        </Card>
-      </Col>
-
-      {/* 2. Detailed Information */}
-      <Col lg={8}>
-        <Card className="border-0 shadow-sm rounded-4 p-4 mb-4">
-          <h6 className="fw-bold text-dark mb-4 pb-2 border-bottom">Contact & Professional Details</h6>
-          <Row className="g-4">
-            <Col md={6}>
-              <div className="d-flex align-items-center gap-3 mb-4">
-                <div className="bg-light p-2 rounded-3 text-primary"><i className="bi bi-telephone-fill"></i></div>
-                <div>
-                  <div className="text-muted x-small fw-bold">Phone Number</div>
-                  <div className="fw-bold">{profile.phone_number}</div>
-                  {profile.alternate_phone && <small className="text-muted">Alt: {profile.alternate_phone}</small>}
-                </div>
-              </div>
-              <div className="d-flex align-items-center gap-3">
-                <div className="bg-light p-2 rounded-3 text-primary"><i className="bi bi-envelope-fill"></i></div>
-                <div>
-                  <div className="text-muted x-small fw-bold">Email Address</div>
-                  <div className="fw-bold">{profile.email}</div>
-                </div>
-              </div>
-            </Col>
-            <Col md={6}>
-              <div className="d-flex align-items-center gap-3 mb-4">
-                <div className="bg-light p-2 rounded-3 text-primary"><i className="bi bi-briefcase-fill"></i></div>
-                <div>
-                  <div className="text-muted x-small fw-bold">Occupation</div>
-                  <div className="fw-bold">{profile.occupation}</div>
-                  <small className="text-muted">{profile.company}</small>
-                </div>
-              </div>
-              <div className="d-flex align-items-center gap-3">
-                <div className="bg-light p-2 rounded-3 text-primary"><i className="bi bi-geo-alt-fill"></i></div>
-                <div>
-                  <div className="text-muted x-small fw-bold">Addresses</div>
-                  <div className="small fw-bold lh-sm mb-1">Present: {profile.present_address}</div>
-                  <div className="small text-muted lh-sm">Perm: {profile.permanent_address}</div>
-                </div>
-              </div>
-            </Col>
-          </Row>
-        </Card>
-
-        {/* 3. Documents & NID Section */}
-        <Card className="border-0 shadow-sm rounded-4 p-4">
-          <h6 className="fw-bold text-dark mb-4 pb-2 border-bottom">Identification Documents</h6>
-          <Row className="align-items-center">
-            <Col md={6}>
-               <div className="mb-3">
-                  <label className="x-small text-muted fw-bold text-uppercase d-block mb-1">NID Scan Copy</label>
-                  {profile.nid_scan ? (
-                    <a href={profile.nid_scan} target="_blank" rel="noreferrer">
-                      <Image
-                        src={profile.nid_scan}
-                        className="rounded-3 border shadow-sm img-fluid"
-                        style={{ maxHeight: '180px' }}
-                      />
-                    </a>
-                  ) : (
-                    <div className="p-4 bg-light rounded-3 text-center border border-dashed">
-                      <i className="bi bi-file-earmark-text display-6 text-muted"></i>
-                      <div className="small text-muted mt-2">No NID uploaded</div>
+      <Row className="g-4">
+        {/* 2. IDENTITY SUMMARY CARD */}
+        <Col lg={4}>
+          <Card className="border-0 shadow-sm rounded-4 overflow-hidden bg-white border-start border-4 border-primary h-100">
+            <div className="position-relative" style={{ height: '100px', background: 'linear-gradient(45deg, #1a1a1a, #333)' }}>
+               <div className="position-absolute start-50 top-100 translate-middle">
+                  <div className="bg-white p-1 rounded-circle shadow-sm border border-4 border-white">
+                    <div className="rounded-circle overflow-hidden bg-light d-flex align-items-center justify-content-center"
+                         style={{ width: '100px', height: '100px' }}>
+                        {profile.profile_pic ? (
+                            <Image src={profile.profile_pic} className="w-100 h-100 object-fit-cover" />
+                        ) : (
+                            <span className="display-6 fw-bold text-primary opacity-25">{profile.full_name?.charAt(0)}</span>
+                        )}
                     </div>
-                  )}
+                  </div>
                </div>
-            </Col>
-            <Col md={6}>
-              <div className="bg-light p-4 rounded-4">
-                <h6 className="fw-bold small mb-3"><i className="bi bi-clock-history me-2"></i>Previous Residency</h6>
-                <div className="vstack gap-2 small">
-                  <div className="d-flex justify-content-between">
-                    <span className="text-muted">Previous Address:</span>
-                    <span className="fw-bold">{profile.previous_address || 'None'}</span>
-                  </div>
-                  <div className="d-flex justify-content-between">
-                    <span className="text-muted">Stay Duration:</span>
-                    <span>{profile.from_date} to {profile.to_date}</span>
-                  </div>
-                  <div className="d-flex justify-content-between">
-                    <span className="text-muted">Previous Landlord:</span>
-                    <span className="fw-bold">{profile.landlord_name}</span>
-                  </div>
-                </div>
+            </div>
+
+            <Card.Body className="pt-5 mt-4 text-center px-4 pb-4">
+              <h5 className="fw-bold mb-0 text-dark ls-1">{profile.full_name.toUpperCase()}</h5>
+              <div className="text-muted x-small fw-bold font-monospace ls-1 mb-3">REG-ID: #00{profile.id}</div>
+
+              <div className="vstack gap-4 pt-4 border-top text-start">
+                 <div className="row g-2">
+                    <Col xs={6}>
+                        <Label>Marital Status</Label>
+                        <div className="fw-bold text-dark small text-uppercase">{profile.marital_status}</div>
+                    </Col>
+                    <Col xs={6}>
+                        <Label>Gender</Label>
+                        <div className="fw-bold text-dark small text-uppercase">{profile.gender}</div>
+                    </Col>
+                 </div>
+
+                 <div>
+                    <Label>Emergency Response Contact</Label>
+                    <div className="p-3 bg-light rounded-4 border border-dashed">
+                        <div className="fw-bold text-primary small text-uppercase mb-1">{profile.emergency_contact_name}</div>
+                        <div className="x-small text-muted fw-bold ls-1 mb-2">RELATION: {profile.relation?.toUpperCase()}</div>
+                        <div className="fw-bold font-monospace text-dark small"><i className="bi bi-phone me-1"></i>{profile.emergency_contact_phone}</div>
+                    </div>
+                 </div>
+
+                 <div>
+                    <Label>Member Since</Label>
+                    <div className="fw-bold text-dark font-monospace small">{new Date(profile.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                 </div>
               </div>
-            </Col>
-          </Row>
-        </Card>
-      </Col>
-    </Row>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        {/* 3. PROFESSIONAL & LEGAL REGISTRY */}
+        <Col lg={8}>
+          <div className="vstack gap-4">
+
+            {/* Professional & Contact Details */}
+            <Card className="border-0 shadow-sm rounded-4 p-4 bg-white border-start border-4 border-info">
+              <h6 className="fw-bold text-info mb-4 text-uppercase ls-1 border-bottom pb-2">
+                <i className="bi bi-briefcase me-2"></i>Professional & Contact Protocol
+              </h6>
+              <Row className="g-4">
+                <Col md={6}>
+                    <div className="vstack gap-4">
+                        <div className="d-flex align-items-start gap-3">
+                            <div className="bg-light p-2 rounded-3 text-info border"><i className="bi bi-phone"></i></div>
+                            <div>
+                                <Label>Contact Channel</Label>
+                                <div className="fw-bold text-dark font-monospace">{profile.phone_number}</div>
+                                {profile.alternate_phone && <small className="text-muted font-monospace x-small">ALT: {profile.alternate_phone}</small>}
+                            </div>
+                        </div>
+                        <div className="d-flex align-items-start gap-3">
+                            <div className="bg-light p-2 rounded-3 text-info border"><i className="bi bi-envelope-at"></i></div>
+                            <div>
+                                <Label>Electronic Mail</Label>
+                                <div className="fw-bold text-dark small">{profile.email}</div>
+                            </div>
+                        </div>
+                    </div>
+                </Col>
+                <Col md={6}>
+                    <div className="vstack gap-4">
+                        <div className="d-flex align-items-start gap-3">
+                            <div className="bg-light p-2 rounded-3 text-info border"><i className="bi bi-building-gear"></i></div>
+                            <div>
+                                <Label>Career / Occupation</Label>
+                                <div className="fw-bold text-dark small text-uppercase">{profile.occupation}</div>
+                                <div className="text-muted x-small fw-bold opacity-75">{profile.company?.toUpperCase()}</div>
+                            </div>
+                        </div>
+                        <div className="d-flex align-items-start gap-3">
+                            <div className="bg-light p-2 rounded-3 text-info border"><i className="bi bi-geo"></i></div>
+                            <div>
+                                <Label>Address Registry</Label>
+                                <div className="x-small fw-bold text-dark mb-1">PRESENT: {profile.present_address}</div>
+                                <div className="x-small text-muted fw-bold">PERM: {profile.permanent_address}</div>
+                            </div>
+                        </div>
+                    </div>
+                </Col>
+              </Row>
+            </Card>
+
+            {/* Legal Identification Documents */}
+            <Card className="border-0 shadow-sm rounded-4 p-4 bg-white border-start border-4 border-dark">
+              <h6 className="fw-bold text-dark mb-4 text-uppercase ls-1 border-bottom pb-2">
+                <i className="bi bi-shield-lock me-2"></i>Identification Documents
+              </h6>
+              <Row className="g-4 align-items-center">
+                <Col md={5}>
+                   <Label>Government NID Audit</Label>
+                   {profile.nid_scan ? (
+                     <div className="position-relative group">
+                        <Image src={profile.nid_scan} className="rounded-4 border shadow-sm img-fluid" style={{ maxHeight: '200px' }} />
+                        <a href={profile.nid_scan} target="_blank" rel="noreferrer"
+                           className="position-absolute top-50 start-50 translate-middle btn btn-dark btn-sm rounded-pill px-3 opacity-0 group-hover-opacity-100 transition-all shadow-lg">
+                           <i className="bi bi-zoom-in me-1"></i> VIEW FULL SCAN
+                        </a>
+                     </div>
+                   ) : (
+                     <div className="p-4 bg-light rounded-4 text-center border border-dashed vstack gap-2">
+                       <i className="bi bi-file-earmark-x text-muted fs-3"></i>
+                       <div className="x-small fw-bold text-muted text-uppercase ls-1">No NID Record Logged</div>
+                     </div>
+                   )}
+                </Col>
+                <Col md={7}>
+                  <div className="bg-light p-4 rounded-4 border">
+                    <h6 className="fw-bold x-small text-uppercase ls-1 mb-3 text-primary">
+                        <i className="bi bi-clock-history me-2"></i>Residency History Audit
+                    </h6>
+                    <div className="vstack gap-3">
+                        <div className="d-flex justify-content-between align-items-center border-bottom pb-2">
+                            <span className="x-small fw-bold text-muted text-uppercase ls-1">Previous Registry</span>
+                            <span className="fw-bold text-dark small text-end">{profile.previous_address || 'None Logged'}</span>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center border-bottom pb-2">
+                            <span className="x-small fw-bold text-muted text-uppercase ls-1">Tenancy Span</span>
+                            <span className="fw-bold text-dark font-monospace small">{profile.from_date} <i className="bi bi-arrow-right mx-1"></i> {profile.to_date}</span>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center">
+                            <span className="x-small fw-bold text-muted text-uppercase ls-1">Landlord Registry</span>
+                            <span className="fw-bold text-dark small">{profile.landlord_name || 'N/A'}</span>
+                        </div>
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </Card>
+          </div>
+        </Col>
+      </Row>
+    </div>
   );
 }

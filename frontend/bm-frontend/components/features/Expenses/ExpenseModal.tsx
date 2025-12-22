@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
-import { Modal, Button, Form, Alert, Row, Col, Spinner } from "react-bootstrap";
+import { useEffect, useState } from "react";
+import { Modal, Button, Form, Row, Col, Alert, Spinner } from "react-bootstrap";
 import { ExpenseService } from "../../../logic/services/expenseService";
 import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
-import { useNotify } from "../../../logic/context/NotificationContext"; // ✅ Notification Integration
+import { useNotify } from "../../../logic/context/NotificationContext";
+import api from "../../../logic/services/apiClient";
 
 interface ExpenseModalProps {
   expense: any;
@@ -11,7 +12,7 @@ interface ExpenseModalProps {
 }
 
 export default function ExpenseModal({ expense, onClose, onSuccess }: ExpenseModalProps) {
-  const { success: notifySuccess, error: notifyError } = useNotify(); // ✅ Use context
+  const { success: notifySuccess, error: notifyError } = useNotify();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [leases, setLeases] = useState<any[]>([]);
@@ -26,7 +27,6 @@ export default function ExpenseModal({ expense, onClose, onSuccess }: ExpenseMod
     attachment: null as File | null,
   });
 
-  // Hydrate Lease Dropdown
   useEffect(() => {
     (async () => {
         try {
@@ -37,18 +37,11 @@ export default function ExpenseModal({ expense, onClose, onSuccess }: ExpenseMod
                         ExpenseService.getRenter(l.renter),
                         ExpenseService.getUnit(l.unit)
                     ]);
-                    return {
-                        id: l.id,
-                        label: `${r.full_name} (${u.name || 'Unit '+u.unit_number})`
-                    };
-                } catch {
-                    return { id: l.id, label: `Lease #${l.id}` };
-                }
+                    return { id: l.id, label: `${r.full_name} (${u.name})` };
+                } catch { return { id: l.id, label: `Lease #${l.id}` }; }
             }));
             setLeases(hydrated);
-        } catch (e) {
-            console.error("Failed to load leases", e);
-        }
+        } catch (e) { console.error("Lease Hydration Error", e); }
     })();
   }, []);
 
@@ -62,156 +55,174 @@ export default function ExpenseModal({ expense, onClose, onSuccess }: ExpenseMod
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     try {
       if (expense?.id) {
         await ExpenseService.update(expense.id, formData);
-        notifySuccess("Expense updated successfully!"); // ✅ Professional Notification
+        notifySuccess("Expense record synchronized.");
       } else {
         await ExpenseService.create(formData);
-        notifySuccess("Expense record saved!"); // ✅ Professional Notification
+        notifySuccess("Expense committed to ledger.");
       }
-      onSuccess(); // Triggers table refresh
-      onClose();   // ✅ FIXED: Auto-close modal on success
+      onSuccess();
+      onClose();
     } catch (err: any) {
       const msg = getErrorMessage(err);
       setError(msg);
       notifyError(msg);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
+
+  const Label = ({ children, required }: { children: React.ReactNode; required?: boolean }) => (
+    <Form.Label className="x-small fw-bold text-muted text-uppercase mb-1 ls-1">
+      {children} {required && <span className="text-danger">*</span>}
+    </Form.Label>
+  );
 
   return (
     <Modal
-        show
-        onHide={onClose}
-        size="lg"
-        centered
+        show onHide={onClose} size="lg" centered
         fullscreen="sm-down"
         contentClassName="border-0 shadow-lg rounded-4 overflow-hidden"
     >
-      <Modal.Header closeButton className="border-0 bg-white p-3">
-        <Modal.Title className="fw-bold x-small text-uppercase text-muted ls-wide">
-            {expense ? "Modify Expense Entry" : "Record New Operational Cost"}
-        </Modal.Title>
+      {/* 1. HEADER: Blueprint Dark Theme (Expense Variant) */}
+      <Modal.Header closeButton closeVariant="white" className="bg-dark text-white p-3 p-md-4 border-0">
+        <div className="d-flex align-items-center gap-3">
+          <div className="bg-danger bg-opacity-20 rounded-3 p-2">
+            <i className={`bi ${expense ? 'bi-pencil-square text-warning' : 'bi-wallet2 text-danger'} fs-5`}></i>
+          </div>
+          <div>
+            <Modal.Title className="h6 fw-bold mb-0 text-uppercase ls-1">
+                {expense ? "Modify Expense Entry" : "Record Operational Cost"}
+            </Modal.Title>
+            <div className="text-white opacity-50 fw-bold text-uppercase" style={{ fontSize: '0.6rem', letterSpacing: '1px' }}>
+                Operational Expenditure Portal
+            </div>
+          </div>
+        </div>
       </Modal.Header>
 
       <Form onSubmit={handleSubmit} className="d-flex flex-column h-100">
-        <Modal.Body className="p-3 p-md-4 flex-grow-1 overflow-auto bg-white">
+        <Modal.Body className="p-4 bg-light">
           {error && (
-            <Alert variant="danger" className="py-2 small rounded-3 border-0 bg-danger-subtle text-danger d-flex align-items-center mb-4">
-                <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                {error}
+            <Alert variant="danger" className="border-0 shadow-sm rounded-4 small mb-4 animate__animated animate__shakeX">
+                <i className="bi bi-exclamation-triangle-fill me-2"></i>{error}
             </Alert>
           )}
 
-          <Row className="g-3">
-            <Col xs={12}>
-              <Form.Label className="x-small fw-bold text-muted text-uppercase">Title / Subject <span className="text-danger">*</span></Form.Label>
-              <Form.Control
-                type="text" required
-                className="bg-light border-0 py-2 rounded-3"
-                placeholder="e.g. Electrician Bill, Lift Servicing"
-                value={formData.title}
-                onChange={e => setFormData({...formData, title: e.target.value})}
-              />
-            </Col>
+          <div className="vstack gap-4">
+            {/* 2. COST IDENTIFICATION CARD */}
+            <div className="card border-0 shadow-sm p-3 p-md-4 rounded-4 bg-white border-start border-4 border-primary">
+                <h6 className="fw-bold text-primary mb-3 text-uppercase small ls-1 border-bottom pb-2">
+                    <i className="bi bi-tag me-2"></i>Expense Identification
+                </h6>
+                <Row className="g-3">
+                    <Col xs={12}>
+                        <Label required>Title / Subject</Label>
+                        <Form.Control
+                            type="text" required
+                            className="rounded-pill bg-light border-0 py-2 ps-3 fw-bold small shadow-none"
+                            placeholder="e.g. Electrician Bill, Lift Repair"
+                            value={formData.title}
+                            onChange={e => setFormData({...formData, title: e.target.value})}
+                        />
+                    </Col>
+                    <Col md={6}>
+                        <Label required>Category</Label>
+                        <Form.Select
+                            className="rounded-pill bg-light border-0 py-2 ps-3 fw-bold small shadow-none"
+                            value={formData.category}
+                            onChange={e => setFormData({...formData, category: e.target.value})}
+                        >
+                            {ExpenseService.getCategories().map(c => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                            ))}
+                        </Form.Select>
+                    </Col>
+                    <Col md={6}>
+                        <Label>Associated Lease (Optional)</Label>
+                        <Form.Select
+                            className="rounded-pill bg-light border-0 py-2 ps-3 small shadow-none"
+                            value={formData.lease}
+                            onChange={e => setFormData({...formData, lease: e.target.value})}
+                        >
+                            <option value="">General Property Expense</option>
+                            {leases.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+                        </Form.Select>
+                    </Col>
+                </Row>
+            </div>
 
-            <Col xs={12} md={6}>
-              <Form.Label className="x-small fw-bold text-muted text-uppercase">Category</Form.Label>
-              <Form.Select
-                className="bg-light border-0 py-2 rounded-3 shadow-none"
-                value={formData.category}
-                onChange={e => setFormData({...formData, category: e.target.value})}
-              >
-                {ExpenseService.getCategories().map(c => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </Form.Select>
-            </Col>
-
-            <Col xs={12} md={6}>
-              <Form.Label className="x-small fw-bold text-muted text-uppercase">Amount (৳)</Form.Label>
-              <Form.Control
-                type="number" step="0.01" required
-                className="bg-light border-0 py-2 rounded-3 fw-bold text-danger"
-                value={formData.amount}
-                onChange={e => setFormData({...formData, amount: e.target.value})}
-              />
-            </Col>
-
-            <Col xs={6} md={6}>
-              <Form.Label className="x-small fw-bold text-muted text-uppercase">Date of Expense</Form.Label>
-              <Form.Control
-                type="date" required
-                className="bg-light border-0 py-2 rounded-3"
-                value={formData.date}
-                onChange={e => setFormData({...formData, date: e.target.value})}
-              />
-            </Col>
-
-            <Col xs={6} md={6}>
-              <Form.Label className="x-small fw-bold text-muted text-uppercase">Link to Lease (Optional)</Form.Label>
-              <Form.Select
-                className="bg-light border-0 py-2 rounded-3"
-                value={formData.lease}
-                onChange={e => setFormData({...formData, lease: e.target.value})}
-              >
-                <option value="">General Expense</option>
-                {leases.map(l => (
-                  <option key={l.id} value={l.id}>{l.label}</option>
-                ))}
-              </Form.Select>
-            </Col>
-
-            <Col xs={12}>
-                <Form.Label className="x-small fw-bold text-muted text-uppercase">Receipt Image</Form.Label>
-                <Form.Control
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="bg-light border-0 py-2 rounded-3"
-                    onChange={handleFileChange}
-                />
-                <Form.Text className="text-muted x-small">Snap a photo of the receipt using your camera.</Form.Text>
-
-                {expense?.attachment && !formData.attachment && (
-                   <div className="mt-2 p-2 bg-danger-subtle rounded-3 d-flex align-items-center">
-                      <i className="bi bi-paperclip me-2 text-danger"></i>
-                      <a href={expense.attachment} target="_blank" rel="noreferrer" className="x-small text-danger fw-bold text-decoration-none">Review Current Receipt</a>
-                   </div>
-                )}
-            </Col>
-
-            <Col xs={12}>
-              <Form.Label className="x-small fw-bold text-muted text-uppercase">Description</Form.Label>
-              <Form.Control
-                as="textarea" rows={2}
-                className="bg-light border-0 rounded-3 small"
-                placeholder="Breakdown of costs..."
-                value={formData.description}
-                onChange={e => setFormData({...formData, description: e.target.value})}
-              />
-            </Col>
-          </Row>
+            {/* 3. FINANCIAL EVIDENCE CARD */}
+            <div className="card border-0 shadow-sm p-3 p-md-4 rounded-4 bg-white border-start border-4 border-danger">
+                <h6 className="fw-bold text-danger mb-3 text-uppercase small ls-1 border-bottom pb-2">
+                    <i className="bi bi-cash-coin me-2"></i>Financial Specifications
+                </h6>
+                <Row className="g-3">
+                    <Col xs={6}>
+                        <Label required>Amount (৳)</Label>
+                        <Form.Control
+                            type="number" step="0.01" required
+                            className="rounded-pill bg-light border-0 py-2 ps-3 fw-bold text-danger shadow-none"
+                            value={formData.amount}
+                            onChange={e => setFormData({...formData, amount: e.target.value})}
+                        />
+                    </Col>
+                    <Col xs={6}>
+                        <Label required>Date of Expense</Label>
+                        <Form.Control
+                            type="date" required
+                            className="rounded-pill bg-light border-0 py-2 ps-3 small shadow-none fw-bold"
+                            value={formData.date}
+                            onChange={e => setFormData({...formData, date: e.target.value})}
+                        />
+                    </Col>
+                    <Col xs={12}>
+                        <Label>Digital Receipt Attachment</Label>
+                        <Form.Control
+                            type="file" accept="image/*" capture="environment"
+                            className="rounded-pill bg-light border-0 py-2 ps-3 small"
+                            onChange={handleFileChange}
+                        />
+                        {expense?.attachment && !formData.attachment && (
+                            <div className="mt-2 text-end">
+                                <a href={expense.attachment} target="_blank" rel="noreferrer" className="x-small text-danger fw-bold text-uppercase ls-1 text-decoration-none">
+                                    <i className="bi bi-eye me-1"></i>View Current Record
+                                </a>
+                            </div>
+                        )}
+                    </Col>
+                    <Col xs={12}>
+                        <Label>Detailed Description</Label>
+                        <Form.Control
+                            as="textarea" rows={2}
+                            className="rounded-4 bg-light border-0 p-3 small shadow-none fw-bold"
+                            placeholder="Provide cost breakdown..."
+                            value={formData.description}
+                            onChange={e => setFormData({...formData, description: e.target.value})}
+                        />
+                    </Col>
+                </Row>
+            </div>
+          </div>
         </Modal.Body>
 
-        <Modal.Footer className="border-0 p-3 bg-light rounded-bottom-4">
-          <Button variant="white" className="border shadow-sm rounded-pill px-4 d-md-none me-auto fw-bold" onClick={onClose}>
-            Cancel
-          </Button>
+        {/* 4. FOOTER: Right-Aligned (Desktop) / Stacked (Mobile) */}
+        <Modal.Footer className="border-0 p-3 p-md-4 bg-white shadow-sm d-flex flex-column flex-md-row-reverse gap-2 px-md-5">
           <Button
             variant="danger"
             type="submit"
+            className="w-100 w-md-auto px-5 py-2 fw-bold rounded-pill shadow-sm ls-1"
             disabled={loading}
-            className="w-100 w-md-auto px-5 py-2 fw-bold rounded-pill shadow-sm"
           >
-            {loading ? <Spinner size="sm" className="me-2" /> : <i className="bi bi-save2 me-2"></i>}
-            {loading ? "Processing..." : expense ? "Update Entry" : "Record Expense"}
+            {loading ? <Spinner size="sm" animation="border" className="me-2" /> : <i className="bi bi-shield-check me-2"></i>}
+            {expense ? "SYNC RECORD" : "COMMIT EXPENSE"}
           </Button>
-          <Button variant="secondary" onClick={onClose} className="d-none d-md-block rounded-pill px-4 border-0">
-            Cancel
+          <Button
+            variant="light"
+            className="w-100 w-md-auto rounded-pill px-4 py-2 border text-muted small fw-bold ls-1"
+            onClick={onClose}
+          >
+            DISCARD
           </Button>
         </Modal.Footer>
       </Form>
