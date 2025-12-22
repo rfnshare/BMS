@@ -1,76 +1,84 @@
 import { useState, useEffect, useCallback } from "react";
-import { Unit, UnitService } from "../services/unitService";
-import { Floor, FloorService } from "../services/floorService";
+import api from "../services/apiClient";
 import { useNotify } from "../context/NotificationContext";
 import { getErrorMessage } from "../utils/getErrorMessage";
-import api from "../services/apiClient";
+
+export interface UnitFilters {
+  search: string;
+  status: "" | "vacant" | "occupied" | "maintenance";
+  unit_type: "" | "residential" | "shop";
+  floor?: number;
+  page: number;
+}
 
 export const useUnits = (initialPage: number = 1) => {
   const { success, error: notifyError } = useNotify();
 
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [floors, setFloors] = useState<Floor[]>([]);
+  const [units, setUnits] = useState<any[]>([]);
+  const [floors, setFloors] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Pagination & Stats
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const [filters, setFilters] = useState<UnitFilters>({
+    search: "",
+    status: "",
+    unit_type: "",
+    floor: undefined,
+    page: initialPage
+  });
+
+  const [pagination, setPagination] = useState({ totalCount: 0, totalPages: 1 });
   const [stats, setStats] = useState({ vacant: 0, occupied: 0 });
 
-  const loadData = useCallback(async (page: number) => {
+  // 1. Fixed Paths: Added '/api/' to match OpenAPI spec
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [unitRes, floorRes] = await Promise.all([
-        UnitService.list(page),
-        FloorService.list()
+      const [fRes, uRes] = await Promise.all([
+        api.get("/buildings/floors/?page_size=100"), //
+        api.get("/buildings/units/", { params: filters }) //
       ]);
 
-      const unitsData = unitRes.results || [];
-      setUnits(unitsData);
-      setTotalCount(unitRes.count || 0);
-      setTotalPages(unitRes.total_pages || 1);
-      setFloors(floorRes.results || floorRes || []);
+      const unitResults = uRes.data?.results || [];
+      setUnits(unitResults);
+      setFloors(fRes.data?.results || []);
+      setPagination({
+        totalCount: uRes.data?.count || 0,
+        totalPages: uRes.data?.total_pages || 1
+      });
 
       setStats({
-        vacant: unitsData.filter((u: any) => u.status === 'vacant').length,
-        occupied: unitsData.filter((u: any) => u.status === 'occupied').length
+        vacant: unitResults.filter((u: any) => u.status === 'vacant').length,
+        occupied: unitResults.filter((u: any) => u.status === 'occupied').length
       });
     } catch (err) {
-      notifyError("Failed to synchronize unit data.");
+      notifyError("Sync Error: " + getErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [notifyError]);
+  }, [filters, notifyError]);
 
-  useEffect(() => { loadData(currentPage); }, [currentPage, loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  // Actions
+  // 2. Delete Logic: Explicit ID check and refresh
   const deleteUnit = async (id: number) => {
-    if (!confirm("Delete unit? This action cannot be undone.")) return { success: false };
-    try {
-      await UnitService.destroy(id);
-      success("Unit deleted successfully.");
-      await loadData(currentPage);
-      return { success: true };
-    } catch (err: any) {
-      notifyError("Delete failed. Check for active leases.");
-      return { success: false };
-    }
-  };
+    if (!id) return;
+    if (!window.confirm("⚠️ Permanent delete this unit asset?")) return;
 
-  const getUnitDetail = async (id: number) => {
+    setLoading(true);
     try {
-      return await UnitService.retrieve(id);
+      await api.delete(`/buildings/units/${id}/`);
+      success("Unit removed successfully.");
+      await loadData(); // Force refresh the list after deletion
     } catch (err) {
-      notifyError("Error loading unit details.");
-      throw err;
+      notifyError("Action Denied: This unit is linked to active lease records.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return {
-    units, floors, loading, stats,
-    pagination: { currentPage, setCurrentPage, totalCount, totalPages },
-    actions: { refresh: () => loadData(currentPage), deleteUnit, getUnitDetail }
+    units, floors, loading, stats, filters, setFilters,
+    pagination: { ...pagination, currentPage: filters.page },
+    actions: { refresh: loadData, deleteUnit }
   };
 };
