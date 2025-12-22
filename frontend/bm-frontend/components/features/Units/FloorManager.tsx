@@ -1,102 +1,83 @@
-import {useState} from "react";
-import {Floor} from "../../../logic/services/floorService";
-import {useFloors} from "../../../logic/hooks/useFloors"; // Import the new hook
+import { useState } from "react";
+import { Floor } from "../../../logic/services/floorService";
+import { useFloors } from "../../../logic/hooks/useFloors";
 import FloorModal from "./FloorModal";
-import {Spinner} from "react-bootstrap";
+import { Spinner } from "react-bootstrap";
 
 export default function FloorManager() {
-    // 1. Logic handled by the custom hook
-    const {floors, loading, refresh, deleteFloor} = useFloors();
-
-    // 2. UI-specific state for Modals
+    const { floors, loading, refresh, deleteFloor } = useFloors();
     const [showModal, setShowModal] = useState(false);
     const [editingFloor, setEditingFloor] = useState<Floor | null>(null);
 
-    // UI Handlers
-    const openCreate = () => {
-        setEditingFloor(null);
-        setShowModal(true);
-    };
-    const openEdit = (floor: Floor) => {
-        setEditingFloor(floor);
-        setShowModal(true);
-    };
-    const closeModal = () => {
-        setEditingFloor(null);
-        setShowModal(false);
-    };
-
-    const onSaved = () => {
-        closeModal();
-        refresh(); // Refresh list using hook action
-    };
-
+    // Standardized Handlers
+    const openCreate = () => { setEditingFloor(null); setShowModal(true); };
+    const openEdit = (floor: Floor) => { setEditingFloor(floor); setShowModal(true); };
+    const onSaved = () => { setShowModal(false); refresh(); };
 
     return (
-        <div className="container-fluid py-3 py-md-4">
-            {/* HEADER */}
-            <div
-                className="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-4 shadow-sm border-start border-4 border-primary">
-                <div>
-                    <h4 className="fw-bold mb-0 text-dark">Floors</h4>
-                    <p className="text-muted x-small mb-0">Manage building levels.</p>
+        <div className="animate__animated animate__fadeIn">
+            {/* 1. SMALL SUB-HEADER (Matches Unit Style) */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <div className="d-flex align-items-center gap-2">
+                    <div className="bg-primary bg-opacity-10 p-2 rounded-3 text-primary">
+                        <i className="bi bi-layers-fill fs-5"></i>
+                    </div>
+                    <h5 className="fw-bold mb-0 text-dark">Floor Configuration</h5>
                 </div>
                 <button className="btn btn-primary px-3 btn-sm fw-bold rounded-pill shadow-sm" onClick={openCreate}>
-                    + Add Floor
+                    <i className="bi bi-plus-lg me-2"></i>Add Floor
                 </button>
             </div>
 
-            {/* LIST SECTION */}
-            <div className="vstack gap-2">
-                {loading ? (
-                    <div className="text-center py-5">
-                        <Spinner animation="border" variant="primary"/>
+            {/* 2. DATA VIEW (Table to match Units) */}
+            {loading ? (
+                <div className="text-center py-5"><Spinner animation="border" variant="primary"/></div>
+            ) : (
+                <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div className="table-responsive">
+                        <table className="table table-hover align-middle mb-0">
+                            <thead className="bg-light border-bottom">
+                                <tr className="text-muted small text-uppercase fw-bold">
+                                    <th className="ps-4 py-3" style={{ width: '80px' }}>Level</th>
+                                    <th>Floor Name</th>
+                                    <th>Description</th>
+                                    <th className="pe-4 text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {floors.length === 0 ? (
+                                    <tr><td colSpan={4} className="text-center py-5 text-muted">No floors defined.</td></tr>
+                                ) : (
+                                    floors.map((f) => (
+                                        <tr key={f.id}>
+                                            <td className="ps-4">
+                                                <div className="bg-light rounded-circle fw-bold d-flex align-items-center justify-content-center text-primary border small"
+                                                     style={{ width: '35px', height: '35px' }}>
+                                                    {f.number}
+                                                </div>
+                                            </td>
+                                            <td className="fw-bold text-dark">{f.name}</td>
+                                            <td className="text-muted small">{f.description || "No description."}</td>
+                                            <td className="pe-4 text-end">
+                                                <div className="btn-group shadow-sm border rounded-3 overflow-hidden bg-white">
+                                                    <button className="btn btn-sm btn-white border-end" onClick={() => openEdit(f)}>
+                                                        <i className="bi bi-pencil text-warning"></i>
+                                                    </button>
+                                                    <button className="btn btn-sm btn-white text-danger" onClick={() => deleteFloor(f.id)}>
+                                                        <i className="bi bi-trash3"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                ) : floors.length === 0 ? (
-                    <div className="text-center py-5 text-muted small">No floors defined.</div>
-                ) : (
-                    floors.map((f) => (
-                        <div key={f.id}
-                             className="card border-0 shadow-sm rounded-4 p-3 d-flex flex-row align-items-center justify-content-between">
-                            <div className="d-flex align-items-center gap-3">
-                                <div
-                                    className="bg-light rounded-circle fw-bold d-flex align-items-center justify-content-center text-primary border"
-                                    style={{width: '40px', height: '40px'}}
-                                >
-                                    {f.number}
-                                </div>
-                                <div>
-                                    <h6 className="fw-bold text-dark mb-0">{f.name}</h6>
-                                    <small className="text-muted x-small">{f.description || "No description."}</small>
-                                </div>
-                            </div>
-                            <div className="btn-group">
-                                <button
-                                    className="btn btn-sm btn-light border rounded-pill me-1"
-                                    onClick={() => openEdit(f)}
-                                >
-                                    ✏️
-                                </button>
-                                <button
-                                    className="btn btn-sm btn-light border rounded-pill text-danger"
-                                    onClick={() => deleteFloor(f.id)}
-                                >
-                                    🗑️
-                                </button>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-
-            {/* MODAL */}
-            {showModal && (
-                <FloorModal
-                    floor={editingFloor}
-                    onClose={closeModal}
-                    onSaved={onSaved}
-                />
+                </div>
             )}
+
+            {showModal && <FloorModal floor={editingFloor} onClose={() => setShowModal(false)} onSaved={onSaved} />}
         </div>
     );
 }
