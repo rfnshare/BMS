@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
-import { Modal, Button, Form, Row, Col, Alert } from "react-bootstrap";
+import { Modal, Button, Form, Row, Col, Alert, Spinner } from "react-bootstrap";
 import { InvoiceService } from "../../../logic/services/invoiceService";
 import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
+import { useNotify } from "../../../logic/context/NotificationContext"; // ✅ Added Notification Hook
 import api from "../../../logic/services/apiClient";
 
 interface InvoiceModalProps {
-  invoice?: any; // If present, we are in EDIT mode
+  invoice?: any;
   onClose: () => void;
   onSaved: () => void;
 }
 
 export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModalProps) {
+  const { success: notifySuccess, error: notifyError } = useNotify(); // ✅ Initialize notifications
   const [loading, setLoading] = useState(false);
   const [leases, setLeases] = useState<any[]>([]);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -26,6 +28,7 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
     _ui_month: invoice?.invoice_month?.substring(0, 7) || "",
   });
 
+  // Keep existing hydration logic exactly as is
   useEffect(() => {
     (async () => {
       try {
@@ -105,16 +108,26 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
     try {
       if (invoice?.id) {
         await InvoiceService.update(invoice.id, payload);
+        notifySuccess("Invoice updated successfully!"); // ✅ Success notification
       } else {
         await InvoiceService.create(payload);
+        notifySuccess("Invoice generated successfully!"); // ✅ Success notification
       }
-      onSaved();
+      onSaved();   // Refresh parent table
+      onClose();   // ✅ FIXED: Close the modal after success
     } catch (err: any) {
         if (err.response?.data?.non_field_errors) {
             const errorMsg = JSON.stringify(err.response.data.non_field_errors);
-            setServerError(errorMsg.includes("unique set") ? "⚠️ An invoice for this Lease and Month already exists." : err.response.data.non_field_errors[0]);
+            const friendlyError = errorMsg.includes("unique set")
+              ? "⚠️ An invoice for this Lease and Month already exists."
+              : err.response.data.non_field_errors[0];
+
+            setServerError(friendlyError);
+            notifyError(friendlyError); // ✅ Error notification
         } else {
-            setServerError(getErrorMessage(err));
+            const genericError = getErrorMessage(err);
+            setServerError(genericError);
+            notifyError(genericError); // ✅ Error notification
         }
     } finally {
       setLoading(false);
@@ -122,18 +135,17 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
   };
 
   return (
-    /* 🔥 fullscreen="sm-down" ensures a great mobile experience */
-    <Modal show onHide={onClose} size="lg" centered fullscreen="sm-down">
+    <Modal show onHide={onClose} size="lg" centered fullscreen="sm-down" contentClassName="border-0 shadow-lg rounded-4 overflow-hidden">
       <Modal.Header closeButton className="bg-white border-bottom p-3">
-        <Modal.Title className="fw-bold h6 mb-0">
-            {invoice ? "Update Invoice" : "Create New Invoice"}
+        <Modal.Title className="fw-bold h6 mb-0 text-uppercase text-muted">
+            {invoice ? "Update Invoice Detail" : "Generate New Invoice"}
         </Modal.Title>
       </Modal.Header>
 
       <Form onSubmit={handleSubmit} className="d-flex flex-column h-100">
-        <Modal.Body className="p-3 p-md-4 flex-grow-1 overflow-auto">
+        <Modal.Body className="p-3 p-md-4 flex-grow-1 overflow-auto bg-white">
           {serverError && (
-            <Alert variant="danger" className="d-flex align-items-center py-2 small rounded-3">
+            <Alert variant="danger" className="d-flex align-items-center py-2 small rounded-3 border-0 bg-danger-subtle text-danger">
                <i className="bi bi-exclamation-triangle-fill me-2"></i>
                <div>{serverError}</div>
             </Alert>
@@ -145,14 +157,14 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
                 <Form.Label className="small fw-bold text-muted text-uppercase">Target Lease / Renter</Form.Label>
                 <Form.Select
                   required
-                  className={`py-2 rounded-3 ${serverError ? "border-danger" : ""}`}
+                  className={`py-2 rounded-3 bg-light border-0 ${serverError ? "border-danger" : ""}`}
                   value={formData.lease}
                   onChange={handleLeaseSelect}
                 >
                   <option value="">Select Lease...</option>
                   {leases.map(l => (
                     <option key={l.id} value={l.id}>
-                       {l.renterName} ({l.unitName})
+                       {l.renterName} ({l.unitName}) — ID: {l.id}
                     </option>
                   ))}
                 </Form.Select>
@@ -165,7 +177,7 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
                 <Form.Control
                   type="month"
                   required
-                  className={`py-2 rounded-3 ${serverError ? "border-danger" : ""}`}
+                  className={`py-2 rounded-3 bg-light border-0 ${serverError ? "border-danger" : ""}`}
                   value={formData._ui_month}
                   onChange={handleMonthChange}
                 />
@@ -176,7 +188,7 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
               <Form.Group>
                 <Form.Label className="small fw-bold text-muted text-uppercase">Invoice Type</Form.Label>
                 <Form.Select
-                  className="py-2 rounded-3"
+                  className="py-2 rounded-3 bg-light border-0"
                   value={formData.invoice_type}
                   onChange={e => setFormData({...formData, invoice_type: e.target.value})}
                 >
@@ -195,7 +207,7 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
                   type="number"
                   step="0.01"
                   required
-                  className="py-2 rounded-3"
+                  className="py-2 rounded-3 bg-light border-0 fw-bold"
                   value={formData.amount}
                   onChange={e => setFormData({...formData, amount: e.target.value})}
                 />
@@ -208,7 +220,7 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
                 <Form.Control
                   type="date"
                   required
-                  className="py-2 rounded-3"
+                  className="py-2 rounded-3 bg-light border-0"
                   value={formData.due_date}
                   onChange={e => setFormData({...formData, due_date: e.target.value})}
                 />
@@ -219,7 +231,7 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
                <Form.Group>
                 <Form.Label className="small fw-bold text-muted text-uppercase">Payment Status</Form.Label>
                 <Form.Select
-                  className="py-2 rounded-3"
+                  className="py-2 rounded-3 bg-light border-0"
                   value={formData.status}
                   onChange={e => setFormData({...formData, status: e.target.value})}
                 >
@@ -236,7 +248,7 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
                 <Form.Control
                   as="textarea"
                   rows={2}
-                  className="rounded-3"
+                  className="rounded-3 bg-light border-0"
                   placeholder="Notes for renter..."
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
@@ -246,8 +258,8 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
           </Row>
         </Modal.Body>
 
-        <Modal.Footer className="border-top p-3 bg-light">
-          <Button variant="outline-secondary" className="border-0 d-md-none me-auto" onClick={onClose}>
+        <Modal.Footer className="border-0 p-3 bg-light">
+          <Button variant="white" className="border shadow-sm rounded-pill px-4 d-md-none me-auto fw-bold" onClick={onClose}>
             Cancel
           </Button>
           <Button
@@ -256,9 +268,10 @@ export default function InvoiceModal({ invoice, onClose, onSaved }: InvoiceModal
             className="w-100 w-md-auto px-5 py-2 fw-bold rounded-pill shadow-sm"
             disabled={loading}
           >
+            {loading ? <Spinner size="sm" className="me-2" /> : null}
             {loading ? "Processing..." : invoice ? "Update Invoice" : "Generate Invoice"}
           </Button>
-          <Button variant="secondary" className="d-none d-md-block" onClick={onClose}>
+          <Button variant="secondary" className="d-none d-md-block rounded-pill px-4 border-0" onClick={onClose}>
             Cancel
           </Button>
         </Modal.Footer>
