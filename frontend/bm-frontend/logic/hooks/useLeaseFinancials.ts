@@ -31,15 +31,12 @@ export function useLeaseFinancials(leaseId: number) {
     }
   }, [leaseId, notifyError]);
 
-  useEffect(() => {
-    fetchFinancials();
-  }, [fetchFinancials]);
+  useEffect(() => { fetchFinancials(); }, [fetchFinancials]);
 
-  // Pre-calculate stats for the KPI cards
   const stats = useMemo(() => {
-    const totalBilled = data.invoices.reduce((acc, inv: any) => acc + Number(inv.amount), 0);
-    const totalPaid = data.payments.reduce((acc, pay: any) => acc + Number(pay.amount), 0);
-    const totalExpenses = data.expenses.reduce((acc, exp: any) => acc + Number(exp.amount), 0);
+    const totalBilled = data.invoices.reduce((acc, inv: any) => acc + Number(inv.amount || 0), 0);
+    const totalPaid = data.payments.reduce((acc, pay: any) => acc + Number(pay.amount || 0), 0);
+    const totalExpenses = data.expenses.reduce((acc, exp: any) => acc + Number(exp.amount || 0), 0);
     return { totalBilled, totalPaid, totalExpenses };
   }, [data]);
 

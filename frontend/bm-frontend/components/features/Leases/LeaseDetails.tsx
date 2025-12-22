@@ -4,31 +4,26 @@ import { Badge, Spinner, Card, Row, Col, Button } from "react-bootstrap";
 
 export default function LeaseDetails({ lease, renter, unit, onBack }: any) {
   const [activeTab, setActiveTab] = useState("invoices");
+  const { invoices, payments, expenses, stats, loading } = useLeaseFinancials(lease?.id);
 
-  // 1. Logic via Hook
-  const { invoices, payments, expenses, stats, loading } = useLeaseFinancials(lease.id);
-
+  // Safe Type Formatter
   const formatType = (type: string) =>
-    type?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) || "N/A";
+    type?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) || "General";
 
   return (
     <div className="bg-light min-vh-100 animate__animated animate__fadeIn">
 
-      {/* 2. HEADER APP BAR: Consistent with Manager Headers */}
+      {/* 1. HEADER APP BAR (Blueprint Dark) */}
       <div className="sticky-top bg-dark text-white border-bottom shadow mx-n3 px-3 py-3" style={{ zIndex: 1020 }}>
         <div className="d-flex align-items-center justify-content-between">
           <div className="d-flex align-items-center gap-3">
-            <button
-                className="btn btn-outline-light rounded-circle border-0 shadow-sm"
-                onClick={onBack}
-                style={{ width: '40px', height: '40px' }}
-            >
+            <button className="btn btn-outline-light rounded-circle border-0" onClick={onBack} style={{ width: '40px', height: '40px' }}>
               <i className="bi bi-arrow-left fs-5"></i>
             </button>
             <div>
-              <h6 className="fw-bold mb-0">Lease Ledger</h6>
-              <div className="text-white opacity-50 fw-bold text-uppercase" style={{ fontSize: '0.65rem', letterSpacing: '1px' }}>
-                 Unit {unit?.name} — {renter?.full_name}
+              <h6 className="fw-bold mb-0">Agreement Ledger</h6>
+              <div className="text-white opacity-50 fw-bold text-uppercase" style={{ fontSize: '0.6rem', letterSpacing: '1px' }}>
+                 Unit {unit?.name || '...'} — {renter?.full_name || '...'}
               </div>
             </div>
           </div>
@@ -38,17 +33,17 @@ export default function LeaseDetails({ lease, renter, unit, onBack }: any) {
         </div>
       </div>
 
-      {/* 3. KPI OVERVIEW: Same Card Design as Manager */}
+      {/* 2. KPI OVERVIEW (Blueprint Card Style) */}
       <div className="d-flex gap-3 overflow-auto no-scrollbar py-3 px-1">
         {[
-          { label: "Current Balance", val: lease.current_balance, color: "danger", icon: "bi-wallet2" },
+          { label: "Due Balance", val: lease?.current_balance || 0, color: "danger", icon: "bi-wallet2" },
           { label: "Total Billed", val: stats.totalBilled, color: "primary", icon: "bi-receipt" },
           { label: "Total Paid", val: stats.totalPaid, color: "success", icon: "bi-cash-coin" },
           { label: "Maintenance", val: stats.totalExpenses, color: "warning", icon: "bi-tools" }
         ].map((s, i) => (
           <div key={i} className="col-8 col-md-3 flex-shrink-0">
             <Card className={`border-0 shadow-sm rounded-4 p-3 border-start border-4 border-${s.color} bg-white h-100`}>
-              <div className="text-muted fw-bold text-uppercase ls-1 mb-2" style={{ fontSize: '0.6rem' }}>{s.label}</div>
+              <div className="text-muted fw-bold text-uppercase ls-1 mb-2" style={{ fontSize: '0.55rem' }}>{s.label}</div>
               <div className="d-flex justify-content-between align-items-end">
                 <div className={`h4 fw-bold text-${s.color} mb-0`}>৳{Number(s.val).toLocaleString()}</div>
                 <i className={`bi ${s.icon} text-${s.color} opacity-25`}></i>
@@ -58,26 +53,26 @@ export default function LeaseDetails({ lease, renter, unit, onBack }: any) {
         ))}
       </div>
 
-      {/* 4. IDENTITY SECTION: Blueprint Card Style */}
+      {/* 3. PROFILE CARD: Blueprint Style */}
       <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white mx-1 border-start border-4 border-primary">
         <h6 className="fw-bold text-muted small text-uppercase ls-1 mb-4">
-            <i className="bi bi-person-badge me-2 text-primary"></i>Renter & Contract Profile
+            <i className="bi bi-person-badge me-2 text-primary"></i>Renter & Unit Info
         </h6>
         <div className="d-flex align-items-center mb-4">
           <div className="bg-primary bg-opacity-10 text-primary rounded-pill d-flex align-items-center justify-content-center fw-bold h4 mb-0 me-3 shadow-sm" style={{ width:'60px', height:'60px' }}>
-            {renter?.full_name?.charAt(0)}
+            {renter?.full_name?.charAt(0) || 'U'}
           </div>
           <div>
-            <div className="fw-bold text-dark fs-5">{renter?.full_name}</div>
-            <div className="text-muted small fw-bold"><i className="bi bi-telephone me-1"></i>{renter?.phone_number}</div>
+            <div className="fw-bold text-dark fs-5">{renter?.full_name || 'Unknown Renter'}</div>
+            <div className="text-muted small fw-bold"><i className="bi bi-telephone me-1"></i>{renter?.phone_number || 'No contact'}</div>
           </div>
         </div>
 
         <div className="row g-2 pt-3 border-top border-light">
-           {lease.lease_rents?.map((r: any) => (
+           {lease?.lease_rents?.map((r: any) => (
              <div key={r.id} className="col-6 col-md-4">
                <div className="p-2 bg-light rounded-3">
-                  <span className="text-muted d-block fw-bold text-uppercase ls-1" style={{ fontSize: '0.55rem' }}>{r.rent_type_name}</span>
+                  <span className="text-muted d-block fw-bold text-uppercase ls-1" style={{ fontSize: '0.5rem' }}>{r.rent_type_name}</span>
                   <span className="fw-bold text-dark">৳{Number(r.amount).toLocaleString()}</span>
                </div>
              </div>
@@ -85,7 +80,7 @@ export default function LeaseDetails({ lease, renter, unit, onBack }: any) {
         </div>
       </div>
 
-      {/* 5. STICKY SUB-TABS: Pill Design */}
+      {/* 4. STICKY SUB-TABS: Pill Design */}
       <div className="bg-white border-bottom border-top mx-n3 p-2 sticky-top shadow-sm" style={{ top: '72px', zIndex: 1010 }}>
         <div className="nav nav-pills flex-nowrap gap-2 overflow-auto no-scrollbar">
           {['invoices', 'payments', 'expenses'].map(t => (
@@ -100,49 +95,49 @@ export default function LeaseDetails({ lease, renter, unit, onBack }: any) {
         </div>
       </div>
 
-      {/* 6. LISTS: Edge-to-Edge Blueprint */}
+      {/* 5. DYNAMIC LISTS (Preventing Property Errors) */}
       <div className="mx-n3 bg-white mb-5 min-vh-50">
         {loading ? (
           <div className="text-center py-5"><Spinner animation="border" variant="primary" size="sm" /></div>
         ) : (
           <div className="vstack">
-            {activeTab === 'invoices' && invoices.map(inv => (
+            {activeTab === 'invoices' && invoices.map((inv: any) => (
               <div key={inv.id} className="p-3 border-bottom d-flex justify-content-between align-items-center">
                 <div className="overflow-hidden">
-                  <div className="fw-bold text-dark small">{inv.invoice_number}</div>
+                  <div className="fw-bold text-dark small">{inv?.invoice_number || 'INV-000'}</div>
                   <div className="text-muted x-small fw-bold text-uppercase ls-1">
-                      {inv.invoice_date} • {formatType(inv.invoice_type)}
+                      {inv?.invoice_date} • {formatType(inv?.invoice_type)}
                   </div>
                 </div>
                 <div className="text-end">
-                  <div className="fw-bold text-dark mb-1">৳{Number(inv.amount).toLocaleString()}</div>
-                  <Badge pill className={`x-small border px-2 py-1 ${inv.status === 'paid' ? 'bg-success-subtle text-success border-success' : 'bg-danger-subtle text-danger border-danger'}`}>
-                    {inv.status?.toUpperCase()}
+                  <div className="fw-bold text-dark mb-1">৳{Number(inv?.amount || 0).toLocaleString()}</div>
+                  <Badge pill className={`x-small border px-2 py-1 ${inv?.status === 'paid' ? 'bg-success-subtle text-success border-success' : 'bg-danger-subtle text-danger border-danger'}`}>
+                    {(inv?.status || 'unpaid').toUpperCase()}
                   </Badge>
                 </div>
               </div>
             ))}
 
-            {activeTab === 'payments' && payments.map(pay => (
+            {activeTab === 'payments' && payments.map((pay: any) => (
               <div key={pay.id} className="p-3 border-bottom d-flex justify-content-between align-items-center">
                 <div>
-                  <div className="fw-bold text-success small text-uppercase ls-1"><i className="bi bi-arrow-down-left-circle me-1"></i>Payment Received</div>
-                  <div className="text-muted x-small fw-bold">{pay.payment_date} • {pay.method?.toUpperCase()}</div>
+                  <div className="fw-bold text-success small text-uppercase ls-1"><i className="bi bi-arrow-down-left-circle me-1"></i>Receipt</div>
+                  <div className="text-muted x-small fw-bold">{pay?.payment_date} • {(pay?.method || 'CASH').toUpperCase()}</div>
                 </div>
-                <div className="fw-bold text-dark">৳{Number(pay.amount).toLocaleString()}</div>
+                <div className="fw-bold text-dark">৳{Number(pay?.amount || 0).toLocaleString()}</div>
               </div>
             ))}
 
-            {activeTab === 'expenses' && expenses.map(exp => (
+            {activeTab === 'expenses' && expenses.map((exp: any) => (
               <div key={exp.id} className="p-3 border-bottom d-flex justify-content-between align-items-center">
                 <div className="overflow-hidden pe-3">
-                  <div className="fw-bold text-dark small text-truncate">{exp.title}</div>
-                  <div className="text-muted x-small fw-bold text-uppercase ls-1">{exp.date} • {exp.category?.toUpperCase()}</div>
+                  <div className="fw-bold text-dark small text-truncate">{exp?.title}</div>
+                  <div className="text-muted x-small fw-bold text-uppercase ls-1">{exp?.date} • {(exp?.category || 'General').toUpperCase()}</div>
                 </div>
                 <div className="text-end">
-                   <div className="fw-bold text-danger mb-1">-৳{Number(exp.amount).toLocaleString()}</div>
-                   {exp.attachment && (
-                       <a href={exp.attachment} target="_blank" className="x-small text-decoration-none fw-bold text-primary">
+                   <div className="fw-bold text-danger mb-1">-৳{Number(exp?.amount || 0).toLocaleString()}</div>
+                   {exp?.attachment && (
+                       <a href={exp.attachment} target="_blank" rel="noreferrer" className="x-small text-decoration-none fw-bold text-primary">
                            VIEW <i className="bi bi-paperclip"></i>
                        </a>
                    )}
@@ -150,12 +145,13 @@ export default function LeaseDetails({ lease, renter, unit, onBack }: any) {
               </div>
             ))}
 
+            {/* EMPTY STATE */}
             {((activeTab === 'invoices' && invoices.length === 0) ||
               (activeTab === 'payments' && payments.length === 0) ||
               (activeTab === 'expenses' && expenses.length === 0)) && (
               <div className="text-center py-5">
                  <i className="bi bi-card-checklist display-4 text-light"></i>
-                 <p className="text-muted small italic mt-2">No records found for this category.</p>
+                 <p className="text-muted small italic mt-2">No transaction records found.</p>
               </div>
             )}
           </div>
