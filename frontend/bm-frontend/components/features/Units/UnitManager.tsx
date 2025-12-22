@@ -1,74 +1,42 @@
-import { useEffect, useState } from "react";
-import { Unit, UnitService } from "../../../logic/services/unitService";
-import { Floor, FloorService } from "../../../logic/services/floorService";
+import { useState } from "react";
+import { useUnits } from "../../../logic/hooks/useUnits";
 import UnitModal from "./UnitModal";
 import UnitDocumentsModal from "./UnitDocumentsModal";
 import UnitDetailsModal from "./UnitDetailsModal";
-import { Spinner, Badge } from "react-bootstrap";
+import { Spinner } from "react-bootstrap";
+import { Unit } from "../../../logic/services/unitService";
 
 export default function UnitManager() {
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [floors, setFloors] = useState<Floor[]>([]);
-  const [loading, setLoading] = useState(false);
+  // 1. Hook Data: stats, pagination, and units now come from here
+  const {
+    units,
+    floors,
+    loading,
+    pagination,
+    stats,
+    actions
+  } = useUnits();
 
-  // Modals States
+  // 2. Local UI State: Only for controlling which modal is open
   const [showModal, setShowModal] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [docUnit, setDocUnit] = useState<Unit | null>(null);
   const [viewingUnit, setViewingUnit] = useState<Unit | null>(null);
 
-  // Stats
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalVacant, setTotalVacant] = useState(0);
-  const [totalOccupied, setTotalOccupied] = useState(0);
-
-  const loadData = async (page: number = 1) => {
-    setLoading(true);
-    try {
-      const [unitRes, floorRes] = await Promise.all([
-        UnitService.list(page),
-        FloorService.list()
-      ]);
-
-      setUnits(unitRes.results || []);
-      setTotalCount(unitRes.count || 0);
-      setTotalPages(unitRes.total_pages || 1);
-      setFloors(floorRes.results || floorRes || []);
-
-      const allData = unitRes.results || [];
-      setTotalVacant(allData.filter((u: any) => u.status === 'vacant').length);
-      setTotalOccupied(allData.filter((u: any) => u.status === 'occupied').length);
-    } catch (err) {
-      console.error("Fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadData(currentPage); }, [currentPage]);
-
+  // 3. Action Handlers
   const handleViewDetails = async (id: number) => {
-    setLoading(true);
     try {
-      const detail = await UnitService.retrieve(id);
+      const detail = await actions.getUnitDetail(id);
       setViewingUnit(detail);
     } catch (err) {
       alert("Error loading unit details.");
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
     if (confirm("Delete unit? This action cannot be undone.")) {
-      try {
-        await UnitService.destroy(id);
-        loadData(currentPage);
-      } catch (err) {
-        alert("Delete failed. Check for active leases.");
-      }
+      const result = await actions.deleteUnit(id);
+      if (!result.success) alert("Delete failed. Check for active leases.");
     }
   };
 
@@ -83,27 +51,28 @@ export default function UnitManager() {
 
   return (
     <div className="container-fluid py-3 py-md-4">
-        {/* HEADER */}
+      {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-4 shadow-sm border-start border-4 border-primary">
         <div>
           <h4 className="fw-bold mb-0 text-dark">Units</h4>
           <p className="text-muted x-small mb-0">Manage floor-wise property allocation.</p>
         </div>
         <button
-            className="btn btn-primary px-3 btn-sm fw-bold rounded-pill shadow-sm"
-            onClick={() => { setEditingUnit(null); setShowModal(true); }}
-          >
-            <i className="bi bi-plus-lg me-2"></i>Add Unit
-          </button>
+          className="btn btn-primary px-3 btn-sm fw-bold rounded-pill shadow-sm"
+          onClick={() => { setEditingUnit(null); setShowModal(true); }}
+        >
+          <i className="bi bi-plus-lg me-2"></i>Add Unit
+        </button>
       </div>
 
+      {/* STATS SECTION - Updated to use 'pagination' and 'stats' from hook */}
       <div className="row g-3 mb-4">
         <div className="col-12 col-md-4">
           <div className="card border-0 shadow-sm p-3 bg-white border-start border-4 border-primary rounded-4">
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <small className="text-muted fw-bold x-small d-block text-uppercase">Total Units</small>
-                <h3 className="mb-0 fw-bold">{totalCount}</h3>
+                <h3 className="mb-0 fw-bold">{pagination.totalCount}</h3>
               </div>
               <div className="bg-primary bg-opacity-10 p-2 rounded-3">
                 <i className="bi bi-building text-primary fs-4"></i>
@@ -115,45 +84,45 @@ export default function UnitManager() {
         <div className="col-6 col-md-4">
           <div className="card border-0 shadow-sm p-3 bg-white border-start border-4 border-success rounded-4">
             <small className="text-muted fw-bold text-success x-small d-block text-uppercase">Vacant</small>
-            <h3 className="mb-0 fw-bold text-success">{totalVacant}</h3>
+            <h3 className="mb-0 fw-bold text-success">{stats.vacant}</h3>
           </div>
         </div>
 
         <div className="col-6 col-md-4">
           <div className="card border-0 shadow-sm p-3 bg-white border-start border-4 border-danger rounded-4">
             <small className="text-muted fw-bold text-danger x-small d-block text-uppercase">Occupied</small>
-            <h3 className="mb-0 fw-bold text-danger">{totalOccupied}</h3>
+            <h3 className="mb-0 fw-bold text-danger">{stats.occupied}</h3>
           </div>
         </div>
       </div>
 
       {/* MOBILE LIST VIEW */}
       <div className="d-block d-md-none">
-        {loading && !viewingUnit ? (
-            <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
+        {loading && units.length === 0 ? (
+          <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
         ) : (
-            units.map(u => (
-                <div key={u.id} className="card border-0 shadow-sm rounded-4 mb-3 p-3">
-                    <div className="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                            <h5 className="fw-bold text-dark mb-0">{u.name}</h5>
-                            <small className="text-muted">{floors.find(f => f.id === u.floor)?.name || `Floor ${u.floor}`}</small>
-                        </div>
-                        <span className={`badge border rounded-pill px-2 ${getStatusBadge(u.status)}`}>{u.status.toUpperCase()}</span>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-end">
-                        <div>
-                            <div className="fw-bold text-primary">৳{Number(u.monthly_rent).toLocaleString()}</div>
-                            <div className="x-small text-muted text-capitalize">{u.unit_type}</div>
-                        </div>
-                        <div className="btn-group">
-                            <button className="btn btn-light border btn-sm" onClick={() => handleViewDetails(u.id)}><i className="bi bi-eye text-primary"></i></button>
-                            <button className="btn btn-light border btn-sm" onClick={() => setDocUnit(u)}><i className="bi bi-folder2-open text-info"></i></button>
-                            <button className="btn btn-light border btn-sm" onClick={() => { setEditingUnit(u); setShowModal(true); }}><i className="bi bi-pencil text-warning"></i></button>
-                        </div>
-                    </div>
+          units.map(u => (
+            <div key={u.id} className="card border-0 shadow-sm rounded-4 mb-3 p-3">
+              <div className="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <h5 className="fw-bold text-dark mb-0">{u.name}</h5>
+                  <small className="text-muted">{floors.find(f => f.id === u.floor)?.name || `Floor ${u.floor}`}</small>
                 </div>
-            ))
+                <span className={`badge border rounded-pill px-2 ${getStatusBadge(u.status)}`}>{u.status.toUpperCase()}</span>
+              </div>
+              <div className="d-flex justify-content-between align-items-end">
+                <div>
+                  <div className="fw-bold text-primary">৳{Number(u.monthly_rent).toLocaleString()}</div>
+                  <div className="x-small text-muted text-capitalize">{u.unit_type}</div>
+                </div>
+                <div className="btn-group">
+                  <button className="btn btn-light border btn-sm" onClick={() => handleViewDetails(u.id)}><i className="bi bi-eye text-primary"></i></button>
+                  <button className="btn btn-light border btn-sm" onClick={() => setDocUnit(u)}><i className="bi bi-folder2-open text-info"></i></button>
+                  <button className="btn btn-light border btn-sm" onClick={() => { setEditingUnit(u); setShowModal(true); }}><i className="bi bi-pencil text-warning"></i></button>
+                </div>
+              </div>
+            </div>
+          ))
         )}
       </div>
 
@@ -172,7 +141,7 @@ export default function UnitManager() {
               </tr>
             </thead>
             <tbody>
-              {loading && !viewingUnit ? (
+              {loading && units.length === 0 ? (
                 <tr><td colSpan={6} className="text-center py-5"><Spinner animation="border" variant="primary" /></td></tr>
               ) : (
                 units.map((u) => (
@@ -200,18 +169,38 @@ export default function UnitManager() {
         </div>
       </div>
 
-      {/* PAGINATION */}
-      {totalPages > 1 && (
+      {/* PAGINATION - Updated to use pagination object from hook */}
+      {pagination.totalPages > 1 && (
         <div className="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm border">
-          <div className="small text-muted">Page <b>{currentPage}</b> of <b>{totalPages}</b></div>
+          <div className="small text-muted">Page <b>{pagination.currentPage}</b> of <b>{pagination.totalPages}</b></div>
           <div className="d-flex gap-2">
-            <button className="btn btn-outline-secondary btn-sm rounded-pill px-3" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Prev</button>
-            <button className="btn btn-outline-secondary btn-sm rounded-pill px-3" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</button>
+            <button
+              className="btn btn-outline-secondary btn-sm rounded-pill px-3"
+              disabled={pagination.currentPage === 1}
+              onClick={() => pagination.setCurrentPage(p => p - 1)}
+            >
+              Prev
+            </button>
+            <button
+              className="btn btn-outline-secondary btn-sm rounded-pill px-3"
+              disabled={pagination.currentPage === pagination.totalPages}
+              onClick={() => pagination.setCurrentPage(p => p + 1)}
+            >
+              Next
+            </button>
           </div>
         </div>
       )}
 
-      {showModal && <UnitModal floors={floors} unit={editingUnit} onClose={() => setShowModal(false)} onSaved={() => loadData(currentPage)} />}
+      {/* MODALS - Updated onSaved to use actions.refresh */}
+      {showModal && (
+        <UnitModal
+          floors={floors}
+          unit={editingUnit}
+          onClose={() => setShowModal(false)}
+          onSaved={actions.refresh}
+        />
+      )}
       {docUnit && <UnitDocumentsModal unit={docUnit} onClose={() => setDocUnit(null)} />}
       {viewingUnit && <UnitDetailsModal unit={viewingUnit} onClose={() => setViewingUnit(null)} />}
     </div>

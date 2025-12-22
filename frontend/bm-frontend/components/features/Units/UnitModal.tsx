@@ -28,7 +28,6 @@ interface UnitForm {
     prepaid_gas_card_no: string;
 }
 
-// 🔥 Helper: Converts backend Decimal strings to Frontend numbers safely
 const toFormNumber = (val: any): number | "" => {
     if (val === null || val === undefined || val === "") return "";
     const parsed = Number(val);
@@ -66,19 +65,33 @@ export default function UnitModal({floors, unit, onClose, onSaved}: Props) {
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [isSaving, setIsSaving] = useState(false);
 
+    // ✅ Improved update helper
     const update = <K extends keyof UnitForm>(key: K, value: UnitForm[K]) => {
         setForm(prev => ({...prev, [key]: value}));
+
+        // Clear error as user corrects the field
+        if (errors[key as string]) {
+            setErrors(prev => {
+                const next = { ...prev };
+                delete next[key as string];
+                return next;
+            });
+        }
     };
 
     const save = async () => {
         const newErrors: Record<string, string[]> = {};
-        if (!form.name) newErrors.name = ["Required"];
-        if (!form.floor) newErrors.floor = ["Required"];
-        setErrors(newErrors);
-        if (Object.keys(newErrors).length > 0) return;
+
+        // Validation Logic
+        if (!form.name.trim()) newErrors.name = ["Name is required"];
+        if (!form.floor) newErrors.floor = ["Floor selection is required"];
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
 
         setIsSaving(true);
-
         const payload = {
             ...form,
             floor: form.floor?.id,
@@ -92,11 +105,8 @@ export default function UnitModal({floors, unit, onClose, onSaved}: Props) {
             } else {
                 await UnitService.create(payload);
             }
-
-            // ✅ BOTH are required
             onSaved();
             onClose();
-
         } catch (err: any) {
             if (err.response?.data) setErrors(err.response.data);
             else alert(getErrorMessage(err));
@@ -104,7 +114,6 @@ export default function UnitModal({floors, unit, onClose, onSaved}: Props) {
             setIsSaving(false);
         }
     };
-
 
     return (
         <Modal show onHide={onClose} size="xl" centered fullscreen="sm-down">
@@ -116,27 +125,37 @@ export default function UnitModal({floors, unit, onClose, onSaved}: Props) {
                 <div className="row g-3">
                     <div className="col-12 col-lg-7">
                         <div className="bg-white p-3 rounded-4 shadow-sm border h-100">
-                            <h6 className="text-primary fw-bold small text-uppercase mb-3"><i
-                                className="bi bi-info-circle me-2"></i>Unit Details</h6>
+                            <h6 className="text-primary fw-bold small text-uppercase mb-3">
+                                <i className="bi bi-info-circle me-2"></i>Unit Details
+                            </h6>
                             <div className="row g-3">
                                 <div className="col-12 col-md-6">
-                                    <label
-                                        className="form-label x-small fw-bold text-muted text-uppercase">Name/Number</label>
-                                    <input className={`form-control ${errors.name ? 'is-invalid' : ''}`}
-                                           value={form.name} onChange={e => update("name", e.target.value)}/>
+                                    <label className="form-label x-small fw-bold text-muted text-uppercase">
+                                        Name/Number <span className="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                        value={form.name}
+                                        onChange={e => update("name", e.target.value)}
+                                    />
                                     {errors.name && <div className="invalid-feedback">{errors.name[0]}</div>}
                                 </div>
                                 <div className="col-12 col-md-6">
-                                    <label
-                                        className="form-label x-small fw-bold text-muted text-uppercase">Floor</label>
-                                    <select className={`form-select ${errors.floor ? 'is-invalid' : ''}`}
-                                            value={form.floor?.id ?? ""}
-                                            onChange={e => update("floor", floors.find(f => f.id === Number(e.target.value)) ?? null)}>
+                                    <label className="form-label x-small fw-bold text-muted text-uppercase">
+                                        Floor <span className="text-danger">*</span>
+                                    </label>
+                                    <select
+                                        className={`form-select ${errors.floor ? 'is-invalid' : ''}`}
+                                        value={form.floor?.id ?? ""}
+                                        onChange={e => update("floor", floors.find(f => f.id === Number(e.target.value)) ?? null)}
+                                    >
                                         <option value="">Select...</option>
                                         {floors.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                                     </select>
                                     {errors.floor && <div className="invalid-feedback">{errors.floor[0]}</div>}
                                 </div>
+
+                                {/* ... Other fields (Type, Status, Rent) ... */}
                                 <div className="col-6">
                                     <label className="form-label x-small fw-bold text-muted text-uppercase">Type</label>
                                     <select className="form-select" value={form.unit_type}
@@ -146,8 +165,7 @@ export default function UnitModal({floors, unit, onClose, onSaved}: Props) {
                                     </select>
                                 </div>
                                 <div className="col-6">
-                                    <label
-                                        className="form-label x-small fw-bold text-muted text-uppercase">Status</label>
+                                    <label className="form-label x-small fw-bold text-muted text-uppercase">Status</label>
                                     <select className="form-select" value={form.status}
                                             onChange={e => update("status", e.target.value as any)}>
                                         <option value="vacant">Vacant</option>
@@ -156,14 +174,12 @@ export default function UnitModal({floors, unit, onClose, onSaved}: Props) {
                                     </select>
                                 </div>
                                 <div className="col-12 col-md-6">
-                                    <label className="form-label x-small fw-bold text-muted text-uppercase">Monthly
-                                        Rent</label>
+                                    <label className="form-label x-small fw-bold text-muted text-uppercase">Monthly Rent</label>
                                     <input type="number" className="form-control fw-bold" value={form.monthly_rent}
                                            onChange={e => update("monthly_rent", e.target.value === "" ? "" : Number(e.target.value))}/>
                                 </div>
                                 <div className="col-12 col-md-6">
-                                    <label className="form-label x-small fw-bold text-muted text-uppercase">Security
-                                        Deposit</label>
+                                    <label className="form-label x-small fw-bold text-muted text-uppercase">Security Deposit</label>
                                     <input type="number" className="form-control" value={form.security_deposit}
                                            onChange={e => update("security_deposit", e.target.value === "" ? "" : Number(e.target.value))}/>
                                 </div>
@@ -173,8 +189,9 @@ export default function UnitModal({floors, unit, onClose, onSaved}: Props) {
 
                     <div className="col-12 col-lg-5">
                         <div className="bg-white p-3 rounded-4 shadow-sm border h-100">
-                            <h6 className="text-success fw-bold small text-uppercase mb-3"><i
-                                className="bi bi-lightning-charge me-2"></i>Meters</h6>
+                            <h6 className="text-success fw-bold small text-uppercase mb-3">
+                                <i className="bi bi-lightning-charge me-2"></i>Meters
+                            </h6>
                             <div className="vstack gap-2">
                                 {prepaidFields.map(f => (
                                     <div key={f.key}>
@@ -191,15 +208,12 @@ export default function UnitModal({floors, unit, onClose, onSaved}: Props) {
             </Modal.Body>
 
             <Modal.Footer className="bg-white p-3 border-top">
-                <Button variant="outline-secondary" className="me-auto d-md-none border-0" onClick={onClose}
-                        disabled={isSaving}>Cancel</Button>
-                <Button variant="success" className="w-100 w-md-auto rounded-pill px-5 fw-bold shadow-sm" onClick={save}
-                        disabled={isSaving}>
+                <Button variant="outline-secondary" className="me-auto d-md-none border-0" onClick={onClose} disabled={isSaving}>Cancel</Button>
+                <Button variant="success" className="w-100 w-md-auto rounded-pill px-5 fw-bold shadow-sm" onClick={save} disabled={isSaving}>
                     {isSaving ? <Spinner size="sm" className="me-2"/> : null}
                     {unit ? "Update Unit" : "Save Unit"}
                 </Button>
-                <Button variant="light" className="d-none d-md-block rounded-pill px-4 ms-2" onClick={onClose}
-                        disabled={isSaving}>Cancel</Button>
+                <Button variant="light" className="d-none d-md-block rounded-pill px-4 ms-2" onClick={onClose} disabled={isSaving}>Cancel</Button>
             </Modal.Footer>
         </Modal>
     );

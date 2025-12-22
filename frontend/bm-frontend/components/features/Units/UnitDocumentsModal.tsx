@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import api from "../../../logic/services/apiClient";
-import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
+import { useState } from "react";
+import { Modal, Button, Form, Spinner, Alert, ListGroup } from "react-bootstrap";
+import { useUnitDocuments } from "../../../logic/hooks/useUnitDocuments";
 
 interface Props {
   unit: any;
@@ -14,138 +14,67 @@ const DOC_TYPES = [
 ];
 
 export default function UnitDocumentsModal({ unit, onClose }: Props) {
-  // ✅ States defined correctly
-  const [documents, setDocuments] = useState<any[]>([]);
+  const { documents, loading, error, uploadDocument, deleteDocument, setError } = useUnitDocuments(unit.id);
   const [file, setFile] = useState<File | null>(null);
   const [docType, setDocType] = useState("electricity_meter");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const loadDocuments = async () => {
-    try {
-      const res = await api.get("documents/unit-documents/", {
-        params: { unit: unit.id },
-      });
-      setDocuments(res.data.results || res.data);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    }
-  };
-
-  useEffect(() => {
-    loadDocuments();
-  }, []);
-
-  const upload = async () => {
-    if (!file) {
-      setError("Please select a file");
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append("unit", unit.id);
-      formData.append("doc_type", docType);
-      formData.append("file", file);
-
-      await api.post("documents/unit-documents/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setFile(null);
-      loadDocuments();
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteDoc = async (id: number) => {
-    if (!confirm("Delete this document?")) return;
-    setError(null);
-    try {
-      await api.delete(`documents/unit-documents/${id}/`);
-      loadDocuments();
-    } catch (err) {
-      setError(getErrorMessage(err));
-    }
+  const handleUpload = async () => {
+    if (!file) return setError("Please select a file first");
+    const result = await uploadDocument(file, docType);
+    if (result.success) setFile(null);
   };
 
   return (
-    <div className="modal d-block" style={{ background: "rgba(0,0,0,.6)", backdropFilter: "blur(8px)" }}>
-      <div className="modal-dialog modal-lg modal-dialog-centered">
-        <div className="modal-content border-0 shadow-lg rounded-4">
+    <Modal show onHide={onClose} size="lg" centered>
+      <Modal.Header closeButton className="bg-dark text-white">
+        <Modal.Title className="h6">📁 Documents: {unit.name}</Modal.Title>
+      </Modal.Header>
+      <Modal.Body className="p-4 bg-light">
+        {error && <Alert variant="danger" className="border-0 shadow-sm small">{error}</Alert>}
 
-          {/* HEADER */}
-          <div className="modal-header bg-dark text-white rounded-top-4 border-0">
-            <h5 className="fw-bold mb-0 px-2">📁 Documents: {unit.name}</h5>
-            <button className="btn-close btn-close-white shadow-none" onClick={onClose}></button>
-          </div>
-
-          <div className="modal-body p-4">
-            {/* ERROR ALERT */}
-            {error && (
-              <div className="alert alert-danger border-0 shadow-sm mb-4 small">
-                ⚠️ {error}
-              </div>
-            )}
-
-            {/* UPLOAD ZONE (Visual improvement) */}
-            <div className="card border-0 bg-light p-4 mb-4 rounded-4 shadow-sm" style={{ border: '2px dashed #dee2e6' }}>
-              <h6 className="fw-bold mb-3 text-muted small text-uppercase">Quick Upload Section</h6>
-              <div className="row g-2 justify-content-center">
-                <div className="col-md-4">
-                  <select className="form-select border-0 shadow-sm" value={docType} onChange={e => setDocType(e.target.value)}>
-                    {DOC_TYPES.map(d => (
-                      <option key={d.value} value={d.value}>{d.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-5">
-                  <input type="file" className="form-control border-0 shadow-sm" onChange={e => setFile(e.target.files?.[0] || null)} />
-                </div>
-                <div className="col-md-3">
-                  <button className="btn btn-success w-100 fw-bold shadow-sm" onClick={upload} disabled={loading}>
-                    {loading ? <span className="spinner-border spinner-border-sm"></span> : "Upload"}
-                  </button>
-                </div>
-              </div>
-              <small className="mt-3 text-muted italic small">Allowed formats: PDF, JPG, PNG (Max 5MB)</small>
+        {/* Upload Area */}
+        <div className="card border-0 bg-white p-4 mb-4 rounded-4 shadow-sm">
+          <div className="row g-2">
+            <div className="col-md-4">
+              <Form.Select value={docType} onChange={e => setDocType(e.target.value)}>
+                {DOC_TYPES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+              </Form.Select>
             </div>
-
-            {/* DOCUMENT LIST */}
-            <h6 className="fw-bold text-muted small text-uppercase mb-3 px-1">Stored Documents</h6>
-            <div className="list-group list-group-flush rounded-4 border overflow-hidden shadow-sm">
-              {documents.length === 0 ? (
-                <div className="p-5 text-center text-muted bg-white small italic">No documents found for this unit.</div>
-              ) : (
-                documents.map(doc => (
-                  <div key={doc.id} className="list-group-item d-flex justify-content-between align-items-center p-3 bg-white hover-light">
-                    <div className="d-flex align-items-center">
-                      <div className="bg-primary-subtle text-primary p-2 rounded-3 me-3">📄</div>
-                      <div>
-                        <span className="badge bg-secondary-subtle text-secondary me-2 text-uppercase font-monospace" style={{ fontSize: '0.7rem' }}>
-                          {doc.doc_type.replace('_',' ')}
-                        </span>
-                        <div className="small text-muted mt-1">Uploaded on {new Date(doc.uploaded_at).toLocaleDateString()}</div>
-                      </div>
-                    </div>
-                    <div className="btn-group shadow-sm">
-                      <a href={doc.file} target="_blank" rel="noreferrer" className="btn btn-sm btn-white border px-3 fw-bold">View</a>
-                      <button className="btn btn-sm btn-outline-danger border" onClick={() => deleteDoc(doc.id)}>🗑️</button>
-                    </div>
-                  </div>
-                ))
-              )}
+            <div className="col-md-5">
+              <Form.Control type="file" onChange={e => setFile((e.target as any).files?.[0] || null)} />
             </div>
-          </div>
-
-          <div className="modal-footer border-0 bg-light rounded-bottom-4">
-            <button className="btn btn-secondary px-4 fw-bold" onClick={onClose}>Close Manager</button>
+            <div className="col-md-3">
+              <Button variant="success" className="w-100 fw-bold" onClick={handleUpload} disabled={loading}>
+                {loading ? <Spinner size="sm" /> : "Upload"}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+
+        {/* List */}
+        <h6 className="fw-bold text-muted small text-uppercase mb-3">Stored Documents</h6>
+        <ListGroup className="rounded-4 shadow-sm border-0">
+          {documents.length === 0 ? (
+            <div className="p-5 text-center text-muted bg-white">No documents found.</div>
+          ) : (
+            documents.map(doc => (
+              <ListGroup.Item key={doc.id} className="d-flex justify-content-between align-items-center border-bottom">
+                <div className="d-flex align-items-center">
+                  <div className="bg-primary-subtle text-primary p-2 rounded-3 me-3">📄</div>
+                  <div>
+                    <div className="small fw-bold text-uppercase">{doc.doc_type.replace('_', ' ')}</div>
+                    <div className="x-small text-muted">Uploaded: {new Date(doc.uploaded_at).toLocaleDateString()}</div>
+                  </div>
+                </div>
+                <div className="btn-group">
+                  <Button variant="light" size="sm" className="border" href={doc.file} target="_blank">View</Button>
+                  <Button variant="outline-danger" size="sm" onClick={() => deleteDocument(doc.id)}>🗑️</Button>
+                </div>
+              </ListGroup.Item>
+            ))
+          )}
+        </ListGroup>
+      </Modal.Body>
+    </Modal>
   );
 }
