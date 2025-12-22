@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { ProfileService } from "../../../logic/services/profileService";
 import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
-import { Spinner, Row, Col, Card, Badge, Button, Form, Alert, ListGroup } from "react-bootstrap";
+// Added Toast and ToastContainer
+import { Spinner, Row, Col, Card, Badge, Button, Form, Toast, ToastContainer, ListGroup } from "react-bootstrap";
 
 export default function ProfileManager() {
   // 1. STATE
@@ -9,7 +10,10 @@ export default function ProfileManager() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
+
+  // Notification State
+  const [showToast, setShowToast] = useState(false);
+  const [toastConfig, setToastConfig] = useState({ message: "", variant: "success" });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -20,7 +24,7 @@ export default function ProfileManager() {
       const data = await ProfileService.getDetailedProfile();
       setUserData(data);
     } catch (err) {
-      setMessage({ type: 'danger', text: getErrorMessage(err) });
+      triggerNotify(getErrorMessage(err), "danger");
     } finally {
       setLoading(false);
     }
@@ -28,11 +32,16 @@ export default function ProfileManager() {
 
   useEffect(() => { loadProfile(); }, []);
 
-  // 3. UPDATE LOGIC
+  // 3. NOTIFICATION HELPER
+  const triggerNotify = (message: string, variant: string = "success") => {
+    setToastConfig({ message, variant });
+    setShowToast(true);
+  };
+
+  // 4. UPDATE LOGIC
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
-    setMessage(null);
 
     const formData = new FormData(e.currentTarget);
     const payload: any = Object.fromEntries(formData.entries());
@@ -43,17 +52,31 @@ export default function ProfileManager() {
 
     try {
       await ProfileService.updateDetailedProfile(payload);
-      setIsEditing(false);
-      setMessage({ type: 'success', text: 'Profile successfully updated!' });
-      await loadProfile();
+
+      triggerNotify("Profile updated successfully!");
+
+      // Delay closing the edit mode so user sees the success toast
+      setTimeout(async () => {
+        setIsEditing(false);
+        await loadProfile();
+      }, 1200);
+
     } catch (err) {
-      setMessage({ type: 'danger', text: 'Update failed. Please try again.' });
+      triggerNotify("Update failed. Please check your connection.", "danger");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // 4. LOADING GUARD
+  // 5. CANCEL LOGIC
+  const handleCancel = () => {
+    triggerNotify("Changes discarded", "secondary");
+    setTimeout(() => {
+      setIsEditing(false);
+    }, 800);
+  };
+
+  // 6. LOADING GUARD
   if (loading) return (
     <div className="text-center py-5">
       <Spinner animation="border" variant="primary" />
@@ -68,17 +91,26 @@ export default function ProfileManager() {
 
   return (
     <div className="animate__animated animate__fadeIn px-1 px-md-3">
-      {message && (
-        <Alert variant={message.type} className="rounded-4 mb-4 small border-0 shadow-sm animate__animated animate__headShake">
-          {message.text}
-        </Alert>
-      )}
+
+      {/* 7. TOAST UI */}
+      <ToastContainer position="top-center" className="p-3" style={{ zIndex: 9999 }}>
+        <Toast
+          show={showToast}
+          onClose={() => setShowToast(false)}
+          delay={3000}
+          autohide
+          bg={toastConfig.variant}
+        >
+          <Toast.Body className={toastConfig.variant === 'secondary' ? 'text-dark' : 'text-white'}>
+            <span className="fw-bold">{toastConfig.message}</span>
+          </Toast.Body>
+        </Toast>
+      </ToastContainer>
 
       <Row className="g-3 g-md-4">
-        {/* IDENTITY SECTION: Top on mobile, Left on desktop */}
+        {/* IDENTITY SECTION */}
         <Col xs={12} lg={4}>
           <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
-            {/* Cover Banner */}
             <div className="position-relative" style={{ height: '100px', background: 'linear-gradient(45deg, #1a1a1a, #4a4a4a)' }}>
                <div className="position-absolute start-50 top-100 translate-middle">
                   <div className="bg-white p-1 rounded-circle shadow-sm">
@@ -132,22 +164,34 @@ export default function ProfileManager() {
           </Card>
         </Col>
 
-        {/* DETAILS SECTION: Bottom on mobile, Right on desktop */}
+        {/* DETAILS SECTION */}
         <Col xs={12} lg={8}>
           <Card className="border-0 shadow-sm rounded-4 p-3 p-md-4">
             <Form onSubmit={handleUpdate}>
               <div className="d-flex justify-content-between align-items-center mb-3 mb-md-4 pb-2 pb-md-3 border-bottom">
                 <h6 className="fw-bold m-0 text-dark text-uppercase small" style={{letterSpacing: '0.5px'}}>Account Details</h6>
-                <Button
-                    variant={isEditing ? "light" : "outline-primary"}
-                    size="sm"
-                    className="rounded-pill px-3 px-md-4 fw-bold"
-                    onClick={() => { if(isEditing) setIsEditing(false); else setIsEditing(true); }}
-                    type={isEditing ? "button" : "submit"}
-                    disabled={submitting}
-                >
-                  {isEditing ? "Cancel" : "Edit"}
-                </Button>
+                <div>
+                    {isEditing ? (
+                        <Button
+                            variant="light"
+                            size="sm"
+                            className="rounded-pill px-3 px-md-4 fw-bold me-2"
+                            onClick={handleCancel}
+                            disabled={submitting}
+                        >
+                            Cancel
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="rounded-pill px-3 px-md-4 fw-bold"
+                            onClick={() => setIsEditing(true)}
+                        >
+                            Edit
+                        </Button>
+                    )}
+                </div>
               </div>
 
               <Row className="g-2 g-md-3">
