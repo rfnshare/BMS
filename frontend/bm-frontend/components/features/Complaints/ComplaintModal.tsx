@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Modal, Button, Form, Alert, Row, Col } from "react-bootstrap";
+import { Modal, Button, Form, Alert, Row, Col, Spinner } from "react-bootstrap";
 import { ComplaintService } from "../../../logic/services/complaintService";
 import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
 import { ExpenseService } from "../../../logic/services/expenseService";
+import { useNotify } from "../../../logic/context/NotificationContext"; // ✅ Added Notification Hook
 
 interface ComplaintModalProps {
   complaint: any;
@@ -11,6 +12,7 @@ interface ComplaintModalProps {
 }
 
 export default function ComplaintModal({ complaint, onClose, onSuccess }: ComplaintModalProps) {
+  const { success: notifySuccess, error: notifyError } = useNotify(); // ✅ Initialize notifications
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [leases, setLeases] = useState<any[]>([]);
@@ -24,7 +26,7 @@ export default function ComplaintModal({ complaint, onClose, onSuccess }: Compla
     attachment: null as File | null,
   });
 
-  // Load Leases
+  // Load Leases (Preserved hydration logic)
   useEffect(() => {
     (async () => {
         try {
@@ -55,66 +57,78 @@ export default function ComplaintModal({ complaint, onClose, onSuccess }: Compla
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       if (complaint?.id) {
         await ComplaintService.update(complaint.id, formData);
+        notifySuccess("Ticket updated successfully!"); // ✅ Professional Notification
       } else {
         await ComplaintService.create(formData);
+        notifySuccess("New maintenance request submitted!"); // ✅ Professional Notification
       }
-      alert("✅ Complaint Saved!");
-      onSuccess();
+      onSuccess(); // Triggers table refresh in Manager
+      onClose();   // ✅ FIXED: Auto-close modal on success
     } catch (err: any) {
-      setError(getErrorMessage(err));
+      const msg = getErrorMessage(err);
+      setError(msg);
+      notifyError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    /* 🔥 fullscreen="sm-down" makes the modal take up the whole screen on mobile only */
-    <Modal show onHide={onClose} size="lg" centered fullscreen="sm-down">
-      <Modal.Header closeButton className="bg-white border-bottom p-3">
-        <Modal.Title className="fw-bold h6 mb-0">
-          {complaint ? "Update Ticket" : "New Maintenance Request"}
+    <Modal
+      show
+      onHide={onClose}
+      size="lg"
+      centered
+      fullscreen="sm-down"
+      contentClassName="border-0 shadow-lg rounded-4 overflow-hidden"
+    >
+      <Modal.Header closeButton className="border-0 bg-white p-3">
+        <Modal.Title className="fw-bold x-small text-uppercase text-muted ls-wide">
+          {complaint ? "Modify Maintenance Ticket" : "Report New Issue"}
         </Modal.Title>
       </Modal.Header>
 
       <Form onSubmit={handleSubmit} className="d-flex flex-column h-100">
-        <Modal.Body className="p-3 p-md-4 flex-grow-1 overflow-auto">
-          {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
+        <Modal.Body className="p-3 p-md-4 flex-grow-1 overflow-auto bg-white">
+          {error && (
+            <Alert variant="danger" className="py-2 small rounded-3 border-0 bg-danger-subtle text-danger d-flex align-items-center mb-4">
+                <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                {error}
+            </Alert>
+          )}
 
           <Row className="g-3">
-             {/* Subject Field */}
              <Col xs={12}>
-                <Form.Label className="small fw-bold text-muted">SUBJECT / TITLE</Form.Label>
+                <Form.Label className="x-small fw-bold text-muted text-uppercase">Subject / Short Title <span className="text-danger">*</span></Form.Label>
                 <Form.Control
-                    type="text"
-                    required
-                    className="py-2 rounded-3"
+                    type="text" required
+                    className="bg-light border-0 py-2 rounded-3"
                     value={formData.title}
                     onChange={e => setFormData({...formData, title: e.target.value})}
-                    placeholder="e.g. Water leakage in bathroom"
+                    placeholder="e.g. Broken window, Water pump failure"
                 />
              </Col>
 
-             {/* Lease Selection */}
              <Col xs={12} md={6}>
-                <Form.Label className="small fw-bold text-muted">RELATED UNIT/LEASE</Form.Label>
+                <Form.Label className="x-small fw-bold text-muted text-uppercase">Related Unit/Lease</Form.Label>
                 <Form.Select
-                    className="py-2 rounded-3"
+                    className="bg-light border-0 py-2 rounded-3"
                     value={formData.lease}
                     onChange={e => setFormData({...formData, lease: e.target.value})}
                 >
-                    <option value="">-- Select Lease --</option>
+                    <option value="">-- General / Building-wide --</option>
                     {leases.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
                 </Form.Select>
              </Col>
 
-             {/* Priority */}
              <Col xs={6} md={3}>
-                <Form.Label className="small fw-bold text-muted">PRIORITY</Form.Label>
+                <Form.Label className="x-small fw-bold text-muted text-uppercase">Priority</Form.Label>
                 <Form.Select
-                    className="py-2 rounded-3"
+                    className="bg-light border-0 py-2 rounded-3"
                     value={formData.priority}
                     onChange={e => setFormData({...formData, priority: e.target.value})}
                 >
@@ -125,60 +139,68 @@ export default function ComplaintModal({ complaint, onClose, onSuccess }: Compla
                 </Form.Select>
              </Col>
 
-             {/* Status */}
              <Col xs={6} md={3}>
-                <Form.Label className="small fw-bold text-muted">STATUS</Form.Label>
+                <Form.Label className="x-small fw-bold text-muted text-uppercase">Status</Form.Label>
                 <Form.Select
-                    className="py-2 rounded-3"
+                    className="bg-light border-0 py-2 rounded-3"
                     value={formData.status}
                     onChange={e => setFormData({...formData, status: e.target.value})}
                 >
                     <option value="pending">Pending</option>
-                    <option value="in_progress">Working</option>
+                    <option value="in_progress">In Progress</option>
                     <option value="resolved">Resolved</option>
                     <option value="closed">Closed</option>
                 </Form.Select>
              </Col>
 
-             {/* File Attachment with Camera Support */}
              <Col xs={12}>
-                <Form.Label className="small fw-bold text-muted">PHOTO / ATTACHMENT</Form.Label>
+                <Form.Label className="x-small fw-bold text-muted text-uppercase">Evidence / Photo Attachment</Form.Label>
                 <Form.Control
                     type="file"
                     accept="image/*"
-                    /* 🔥 capture="environment" tells mobile browsers to prefer the camera */
                     capture="environment"
-                    className="py-2 rounded-3"
+                    className="bg-light border-0 py-2 rounded-3"
                     onChange={handleFileChange}
                 />
-                <Form.Text className="text-muted small">Tap to take a photo or upload</Form.Text>
+                <Form.Text className="text-muted x-small">Use your camera to snap a photo of the problem.</Form.Text>
+
+                {complaint?.attachment && !formData.attachment && (
+                   <div className="mt-2 p-2 bg-light rounded-3 d-flex align-items-center">
+                      <i className="bi bi-image me-2 text-primary"></i>
+                      <a href={complaint.attachment} target="_blank" rel="noreferrer" className="x-small text-primary fw-bold text-decoration-none">View Existing Attachment</a>
+                   </div>
+                )}
              </Col>
 
-             {/* Description */}
              <Col xs={12}>
-                <Form.Label className="small fw-bold text-muted">DESCRIPTION OF ISSUE</Form.Label>
+                <Form.Label className="x-small fw-bold text-muted text-uppercase">Detailed Description <span className="text-danger">*</span></Form.Label>
                 <Form.Control
                     as="textarea"
                     rows={4}
                     required
-                    className="rounded-3"
+                    className="bg-light border-0 rounded-3 small"
                     value={formData.description}
                     onChange={e => setFormData({...formData, description: e.target.value})}
-                    placeholder="Describe exactly what's wrong..."
+                    placeholder="Please explain the issue in detail..."
                 />
              </Col>
           </Row>
         </Modal.Body>
 
-        <Modal.Footer className="border-top p-3 bg-light">
-            <Button variant="link" className="text-muted text-decoration-none me-auto d-none d-md-block" onClick={onClose}>
+        <Modal.Footer className="border-0 p-3 bg-light rounded-bottom-4">
+            <Button variant="white" className="border shadow-sm rounded-pill px-4 d-md-none me-auto fw-bold" onClick={onClose}>
                 Cancel
             </Button>
-            {/* 🔥 Full-width button on mobile */}
-            <Button variant="primary" type="submit" className="w-100 w-md-auto rounded-pill px-4 py-2 fw-bold shadow-sm" disabled={loading}>
-                {loading ? "Saving..." : complaint ? "Update Ticket" : "Submit Request"}
+            <Button
+                variant="primary"
+                type="submit"
+                className="w-100 w-md-auto rounded-pill px-5 py-2 fw-bold shadow-sm"
+                disabled={loading}
+            >
+                {loading ? <Spinner size="sm" className="me-2" /> : <i className="bi bi-check-circle-fill me-2"></i>}
+                {loading ? "Submitting..." : complaint ? "Update Ticket" : "Submit Ticket"}
             </Button>
-            <Button variant="outline-secondary" className="w-100 d-md-none border-0 mt-2" onClick={onClose}>
+            <Button variant="secondary" className="d-none d-md-block rounded-pill px-4 border-0" onClick={onClose}>
                 Cancel
             </Button>
         </Modal.Footer>
