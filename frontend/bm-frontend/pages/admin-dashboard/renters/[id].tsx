@@ -60,10 +60,6 @@ export default function RenterDetailedView() {
         </div>
 
         {/* HEADER SECTION */}
-        <div className="mb-4">
-          <h2 className="fw-bold mb-1">Renter Detailed Profile</h2>
-          <p className="text-muted small">Comprehensive view of identity, documents, and historical leases for Renter ID: {id}.</p>
-        </div>
 
         {/* PROFILE MANAGER CONTENT */}
         {/* SQA Note: RenterProfileManager should use the 'id' from props or URL
