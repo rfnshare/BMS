@@ -1,73 +1,101 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import axios from "axios";
-import { useRouter } from "next/router";
+import { useAuthContext } from "../context/AuthContext";
 
 export type Step = "role" | "password" | "otp";
 
 export const useLogin = () => {
-  const router = useRouter();
+  const auth = useAuthContext();
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+  // --- States ---
   const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<"renter" | "staff" | "">("");
   const [user, setUser] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // --- Helper for consistent error messages ---
-  const getErrorMessage = (err: any) => {
-    return (
-      err.response?.data?.error ||
-      err.response?.data?.detail ||
-      (typeof err.response?.data === "string" ? err.response.data : "") ||
-      "An unexpected error occurred"
-    );
-  };
+  // --- Timer Logic for OTP ---
+  const [resendTime, setResendTime] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // TEACHING POINT: detectRole sets the step. 
-  // We removed requestOtp from here because the Child component (LoginOtpStep) 
-  // will handle the request once it mounts.
+  const startTimer = useCallback(() => {
+    setResendTime(60);
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    timerRef.current = setInterval(() => {
+      setResendTime((t) => {
+        if (t <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  // --- Actions ---
+
+  /**
+   * Step 1: Detect User Role
+   * Transition: 'role' -> 'password' (staff) OR 'otp' (renter)
+   */
   const detectRole = useCallback(async (username: string) => {
     try {
       setLoading(true);
       setMessage("");
-      const res = await axios.post(`${API_URL}/accounts/detect-role/`, { 
-        phone_or_email: username 
+      const res = await axios.post(`${API_URL}/accounts/detect-role/`, {
+        phone_or_email: username
       });
 
+      const detectedRole = res.data.role;
       setUser(username);
-      setRole(res.data.role);
+      setRole(detectedRole);
 
-      if (res.data.role === "renter") {
-        setStep("otp"); 
-        // Logic: The LoginOtpStep useEffect will now trigger the single OTP request.
+      if (detectedRole === "renter") {
+        setStep("otp");
+        // For Renters, we trigger the OTP request immediately upon finding them
+        await requestOtp(username);
       } else {
         setStep("password");
       }
     } catch (err: any) {
-      setMessage(getErrorMessage(err));
+      setMessage(err.response?.data?.error || "User identity not found.");
     } finally {
       setLoading(false);
     }
   }, [API_URL]);
 
-  // TEACHING POINT: useCallback ensures this function "identity" stays the same.
-  // This prevents the Child component's useEffect from re-triggering.
+  /**
+   * Action: Request OTP
+   * Used for initial entry and 'Resend' button
+   */
   const requestOtp = useCallback(async (usernameOverride?: string) => {
     try {
       setLoading(true);
       setMessage("");
-      await axios.post(`${API_URL}/accounts/request-otp/`, { 
-        phone_or_email: usernameOverride || user 
+      await axios.post(`${API_URL}/accounts/request-otp/`, {
+        phone_or_email: usernameOverride || user
       });
-      setMessage("OTP sent successfully!");
+      setMessage("Security code sent successfully!");
+      startTimer();
     } catch (err: any) {
-      setMessage(getErrorMessage(err));
+      setMessage("Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
     }
-  }, [user, API_URL]);
+  }, [user, API_URL, startTimer]);
 
+  /**
+   * Step 2 (Renter Path): Verify OTP
+   */
   const verifyOtp = useCallback(async (otp: string) => {
     try {
       setLoading(true);
@@ -76,53 +104,63 @@ export const useLogin = () => {
         phone_or_email: user,
         otp,
       });
-      localStorage.setItem("access", res.data.access);
-      localStorage.setItem("refresh", res.data.refresh);
-      router.push("/renter-dashboard");
+
+      // Delegate session storage and redirection to AuthContext
+      auth.login(res.data.access, res.data.refresh, "renter");
     } catch (err: any) {
-      setMessage(getErrorMessage(err));
+      setMessage("Invalid security code.");
     } finally {
       setLoading(false);
     }
-  }, [user, API_URL, router]);
+  }, [user, API_URL, auth]);
 
+  /**
+   * Step 2 (Staff Path): Password Login
+   */
   const loginStaff = useCallback(async (username: string, password: string) => {
     try {
       setLoading(true);
       setMessage("");
-      const res = await axios.post(`${API_URL}/accounts/token/`, { 
-        username, 
-        password 
+      const res = await axios.post(`${API_URL}/accounts/token/`, {
+        username,
+        password
       });
-      localStorage.setItem("access", res.data.access);
-      localStorage.setItem("refresh", res.data.refresh);
-      router.push("/admin-dashboard");
+
+      // Delegate session storage and redirection to AuthContext
+      auth.login(res.data.access, res.data.refresh, "staff");
     } catch (err: any) {
-      setMessage(getErrorMessage(err));
+      setMessage("Invalid username or password.");
     } finally {
       setLoading(false);
     }
-  }, [API_URL, router]);
+  }, [API_URL, auth]);
 
+  /**
+   * Action: Reset the entire flow
+   */
   const reset = useCallback(() => {
     setStep("role");
     setRole("");
     setUser("");
     setMessage("");
+    setResendTime(0);
+    if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
   return {
+    // States
     step,
     role,
     user,
     message,
     loading,
+    resendTime,
+    // Actions
     detectRole,
     requestOtp,
     verifyOtp,
     loginStaff,
     setMessage,
-    setUser,
     reset,
   };
 };

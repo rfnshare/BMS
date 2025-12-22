@@ -1,0 +1,40 @@
+import React, { createContext, useContext } from "react";
+import { useAuth } from "../hooks/useAuth";
+
+interface AuthContextType {
+  isAuthenticated: boolean;
+  role: string | null;
+  loading: boolean;
+  login: (access: string, refresh: string, role: string) => void;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const auth = useAuth();
+
+  // If we are loading, we can show a full-screen spinner
+  // or nothing. If you see a white screen, it's because of this block:
+  if (auth.loading) {
+    return (
+      <div className="vh-100 d-flex justify-content-center align-items-center bg-light">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AuthContext.Provider value={auth}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuthContext = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuthContext must be used within an AuthProvider");
+  return context;
+};

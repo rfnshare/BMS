@@ -1,4 +1,5 @@
 import axios from "axios";
+import { TokenService } from "../utils/token";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -14,11 +15,9 @@ const api = axios.create({
 // ==========================
 api.interceptors.request.use(
   (config) => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("access");
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    const token = TokenService.getAccessToken(); // ✅ Using Utility
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -33,39 +32,34 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Check if error is 401 and we haven't tried to refresh yet
     if (
-      typeof window !== "undefined" &&
       error.response?.status === 401 &&
-      !originalRequest._retry
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/accounts/token/') // Don't refresh if the login itself fails
     ) {
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem("refresh");
+        const refreshToken = TokenService.getRefreshToken(); // ✅ Using Utility
         if (!refreshToken) throw new Error("No refresh token");
 
-        // TEACHING POINT: We use raw 'axios' here, NOT our 'api' instance.
-        // If we used 'api', we might trigger an infinite loop of 401s.
+        // We use a clean axios instance to avoid interceptor loops
         const res = await axios.post(`${API_URL}/accounts/token/refresh/`, {
           refresh: refreshToken,
         });
 
         if (res.status === 200) {
           const newAccess = res.data.access;
-          localStorage.setItem("access", newAccess);
+          TokenService.updateAccessToken(newAccess); // ✅ Syncing global storage
 
-          // Update the failed request with the new token
           originalRequest.headers.Authorization = `Bearer ${newAccess}`;
-
-          // Retry the original request
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // If refreshing fails (e.g., refresh token expired too), log out
-        localStorage.removeItem("access");
-        localStorage.removeItem("refresh");
-        window.location.href = "/login";
+        TokenService.clear(); // ✅ Clear everything on failure
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
       }
     }
 

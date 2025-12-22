@@ -1,8 +1,12 @@
-// pages/_app.tsx
-import type { AppProps } from "next/app";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
+import { AuthProvider } from "../logic/context/AuthContext";
+import { NotificationProvider } from "../logic/context/NotificationContext"; // ✅ Added
 
-export default function MyApp({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />;
+export default function MyApp({ Component, pageProps }: any) {
+  return (
+    <AuthProvider>
+      <NotificationProvider> {/* ✅ Wrap here */}
+        <Component {...pageProps} />
+      </NotificationProvider>
+    </AuthProvider>
+  );
 }

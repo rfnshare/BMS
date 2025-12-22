@@ -1,7 +1,6 @@
 ﻿import Layout from '../../components/layouts/Layout';
 import { useRouter } from 'next/router';
-
-// 🔥 STEP 1: Define the Grouped Menu Items (Must match your Sidebar logic)
+import { withAuth } from '../../logic/utils/withAuth';
 const adminMenuItems = [
   {
     group: "Operations",
@@ -36,25 +35,18 @@ const adminMenuItems = [
     ]
   },
 ];
-
-export default function AdminDashboardIndex() {
+function AdminDashboardIndex() {
   const router = useRouter();
 
-  // Reusable Action Card
+  // Reusable Action Card (Purely Presentational)
   const ActionCard = ({ title, icon, path, description, color }: any) => (
     <div className="col-md-6 col-lg-3 mb-4">
       <div
         className="card border-0 shadow-sm rounded-4 h-100 btn text-start p-0 overflow-hidden"
         onClick={() => router.push(path)}
         style={{ transition: 'all 0.3s ease' }}
-        onMouseOver={(e) => {
-          e.currentTarget.style.transform = 'translateY(-8px)';
-          e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.1)';
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
+        onMouseOver={(e) => (e.currentTarget.style.transform = 'translateY(-8px)')}
+        onMouseOut={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
       >
         <div className="card-body p-4">
           <div className={`rounded-4 bg-${color} bg-opacity-10 p-3 d-inline-block mb-3 text-${color}`}>
@@ -75,7 +67,7 @@ export default function AdminDashboardIndex() {
         <div className="d-flex justify-content-between align-items-center mb-5">
           <div>
             <h1 className="fw-bold h2 mb-1">Control Center</h1>
-            <p className="text-muted mb-0">Navigate through your property management modules.</p>
+            <p className="text-muted mb-0">Navigate through building management modules.</p>
           </div>
           <div className="text-end d-none d-md-block">
             <div className="text-muted small text-uppercase fw-bold ls-1">System Status</div>
@@ -83,71 +75,25 @@ export default function AdminDashboardIndex() {
           </div>
         </div>
 
-        {/* PRIMARY MODULES GRID */}
+        {/* MODULE GRID */}
         <div className="row">
-          <ActionCard
-            title="Units"
-            icon="bi-building"
-            path="/admin-dashboard/units"
-            description="Manage rooms & availability."
-            color="primary"
-          />
-          <ActionCard
-            title="Leases"
-            icon="bi-file-earmark-text"
-            path="/admin-dashboard/leases"
-            description="Active contracts & terms."
-            color="info"
-          />
-          <ActionCard
-            title="Renters"
-            icon="bi-people"
-            path="/admin-dashboard/renters"
-            description="Tenant profiles & docs."
-            color="success"
-          />
-          <ActionCard
-            title="Invoices"
-            icon="bi-receipt"
-            path="/admin-dashboard/invoices"
-            description="Billing & rent generation."
-            color="warning"
-          />
+          <ActionCard title="Units" icon="bi-building" path="/admin-dashboard/units" description="Rooms & availability." color="primary" />
+          <ActionCard title="Leases" icon="bi-file-earmark-text" path="/admin-dashboard/leases" description="Active contracts." color="info" />
+          <ActionCard title="Renters" icon="bi-people" path="/admin-dashboard/renters" description="Tenant profiles." color="success" />
+          <ActionCard title="Invoices" icon="bi-receipt" path="/admin-dashboard/invoices" description="Billing & rent." color="warning" />
         </div>
 
-        {/* SECONDARY MODULES GRID */}
         <div className="row mt-2">
-          <ActionCard
-            title="Expenses"
-            icon="bi-cart-dash"
-            path="/admin-dashboard/expenses"
-            description="Track building costs."
-            color="danger"
-          />
-          <ActionCard
-            title="Complaints"
-            icon="bi-chat-dots"
-            path="/admin-dashboard/complaints"
-            description="Manage service requests."
-            color="secondary"
-          />
-          <ActionCard
-            title="Reports"
-            icon="bi-bar-chart-line"
-            path="/admin-dashboard/reports"
-            description="Analytics & data export."
-            color="dark"
-          />
-          <ActionCard
-            title="Permissions"
-            icon="bi-shield-lock"
-            path="/admin-dashboard/permissions"
-            description="Role based access control."
-            color="primary"
-          />
+          <ActionCard title="Expenses" icon="bi-cart-dash" path="/admin-dashboard/expenses" description="Track building costs." color="danger" />
+          <ActionCard title="Complaints" icon="bi-chat-dots" path="/admin-dashboard/complaints" description="Service requests." color="secondary" />
+          <ActionCard title="Reports" icon="bi-bar-chart-line" path="/admin-dashboard/reports" description="Data analytics." color="dark" />
+          <ActionCard title="Permissions" icon="bi-shield-lock" path="/admin-dashboard/permissions" description="Access control." color="primary" />
         </div>
 
       </div>
     </Layout>
   );
 }
+
+// ✅ PROTECTED: Only allow 'staff' role
+export default withAuth(AdminDashboardIndex, "staff");
