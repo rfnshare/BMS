@@ -42,4 +42,5 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_role(self, obj):
         if obj.is_superadmin: return "Super Admin"
         if obj.is_manager: return "Building Manager"
-        return "Staff"
+        if obj.is_renter: return "Renter"
+        return "Unknown"

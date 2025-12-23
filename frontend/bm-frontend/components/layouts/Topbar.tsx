@@ -1,69 +1,69 @@
-import {useState, useEffect} from "react";
-import {Navbar, Container, Nav, NavDropdown, Badge, Spinner} from "react-bootstrap";
-import {useRouter} from "next/router";
-import {useAuthContext} from "../../logic/context/AuthContext";
-import {ProfileService} from "../../logic/services/profileService";
+import { useEffect, useState } from "react";
+import { Navbar, Container, Nav, NavDropdown, Badge, Spinner } from "react-bootstrap";
+import { useRouter } from "next/router";
+import { useAuthContext } from "../../logic/context/AuthContext";
+import { ProfileService } from "../../logic/services/profileService";
+import { RenterService } from "../../logic/services/renterService";
 
-export default function Topbar({onToggleMenu}: { onToggleMenu: () => void }) {
-    const {logout} = useAuthContext();
+export default function Topbar({ onToggleMenu }: { onToggleMenu: () => void }) {
     const router = useRouter();
+    const { logout, isRenter } = useAuthContext();
 
-    // 1. IDENTITY STATE
     const [profile, setProfile] = useState<any>(null);
+    const [profilePic, setProfilePic] = useState<string | null>(null); // 🔥 State for renter-specific photo
     const [loading, setLoading] = useState(true);
 
-    // 2. DATA FETCHING (Using your Brain/Logic)
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchAllData = async () => {
+            setLoading(true);
             try {
-                const data = await ProfileService.getDetailedProfile();
-                setProfile(data);
+                // 1. Always fetch base detailed profile
+                const profileData = await ProfileService.getDetailedProfile();
+                setProfile(profileData);
+
+                // 2. 🔥 Only fetch Renter-specific data if the role is Renter
+                if (isRenter) {
+                    const renterRes = await RenterService.list();
+                    if (renterRes?.results?.length > 0) {
+                        // Extract profile_pic path from results array
+                        setProfilePic(renterRes.results[0].profile_pic);
+                    }
+                }
             } catch (err) {
                 console.error("Identity Sync Error", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchProfile();
-    }, []);
 
-    // 3. IMAGE URL HELPER
-    // 3. IMAGE URL HELPER
+        fetchAllData();
+    }, [isRenter]); // Re-run if login status changes
+
     const getAvatarUrl = (path: string | null) => {
         if (!path) return null;
-
-        // If it's already a full external URL, don't change it
         if (path.startsWith("http")) return path;
 
-        /** * STEP 1: Get the API URL from your .env.local
-         * Value: "http://192.168.1.7:8000/api"
-         */
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-
-        /** * STEP 2: Strip the "/api" suffix
-         * Result: "http://192.168.1.7:8000"
-         */
         const baseUrl = apiUrl.replace(/\/api$/, "").replace(/\/api\/$/, "");
-
-        /** * STEP 3: Clean the path
-         * Ensures "/media/pic.jpg" and "media/pic.jpg" both work correctly
-         */
         const cleanPath = path.startsWith("/") ? path : `/${path}`;
 
         return `${baseUrl}${cleanPath}`;
     };
 
-    const isRenter = profile?.role?.toLowerCase() === "renter";
-    const profilePath = isRenter ? "/renter-dashboard/profile" : "/admin-dashboard/profile";
+    const profilePath = isRenter
+        ? "/renter-dashboard/profile"
+        : "/admin-dashboard/profile";
+
+    // 🔥 Logic: Use Renter-specific pic first, then standard profile pic, then null
+    const finalAvatar = profilePic || profile?.profile_picture;
 
     return (
         <Navbar
             bg="white"
             className="border-bottom sticky-top shadow-sm px-0 bg-white"
-            style={{height: '70px', zIndex: 1030}}
+            style={{ height: '70px', zIndex: 1030 }}
         >
             <Container fluid className="px-3">
-                {/* LEFT: MOBILE TRIGGER & BRANDING */}
                 <div className="d-flex align-items-center">
                     <button
                         className="btn btn-light d-lg-none me-3 border shadow-sm rounded-3"
@@ -73,19 +73,16 @@ export default function Topbar({onToggleMenu}: { onToggleMenu: () => void }) {
                     </button>
                     <Navbar.Brand
                         className="d-lg-none fw-bold text-primary mb-0 ls-1 text-uppercase"
-                        style={{fontSize: '1.1rem'}}
+                        style={{ fontSize: '1.1rem' }}
                     >
                         BM PRO
                     </Navbar.Brand>
                 </div>
 
-                {/* RIGHT: USER IDENTITY STACK */}
                 <Nav className="ms-auto flex-row align-items-center">
-
-                    {/* SYSTEM LOGO/TIME (Optional context) */}
                     <div className="d-none d-md-flex flex-column text-end me-3 border-end pe-3">
                         {loading ? (
-                            <Spinner animation="border" size="sm" variant="primary"/>
+                            <Spinner animation="border" size="sm" variant="primary" />
                         ) : (
                             <>
                                 <span className="fw-bold text-dark small ls-1 text-uppercase">
@@ -96,7 +93,7 @@ export default function Topbar({onToggleMenu}: { onToggleMenu: () => void }) {
                                         pill
                                         bg={isRenter ? "info" : "primary"}
                                         className="bg-opacity-10 text-primary border border-primary border-opacity-10 x-small ls-1 fw-bold"
-                                        style={{fontSize: '0.6rem'}}
+                                        style={{ fontSize: '0.6rem' }}
                                     >
                                         {profile?.role?.toUpperCase()}
                                     </Badge>
@@ -105,18 +102,17 @@ export default function Topbar({onToggleMenu}: { onToggleMenu: () => void }) {
                         )}
                     </div>
 
-                    {/* USER DROPDOWN & AVATAR */}
                     <NavDropdown
                         align="end"
                         id="user-dropdown"
                         title={
                             <div
                                 className="rounded-circle bg-light d-flex align-items-center justify-content-center shadow-sm border border-2 border-white overflow-hidden"
-                                style={{width: '45px', height: '45px'}}
+                                style={{ width: '45px', height: '45px' }}
                             >
-                                {getAvatarUrl(profile?.profile_picture) ? (
+                                {getAvatarUrl(finalAvatar) ? (
                                     <img
-                                        src={getAvatarUrl(profile?.profile_picture)!}
+                                        src={getAvatarUrl(finalAvatar)!}
                                         alt="User"
                                         className="w-100 h-100 object-fit-cover"
                                     />
@@ -147,7 +143,7 @@ export default function Topbar({onToggleMenu}: { onToggleMenu: () => void }) {
                             SECURITY
                         </NavDropdown.Item>
 
-                        <NavDropdown.Divider/>
+                        <NavDropdown.Divider />
 
                         <NavDropdown.Item
                             onClick={logout}

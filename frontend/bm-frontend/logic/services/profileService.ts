@@ -1,19 +1,12 @@
 import api from "./apiClient";
 
 export const ProfileService = {
-    /**
-     * 1. GET Unified Detailed Profile
-     * Fetches User data and RenterProfile data in one request.
-     */
+
     getDetailedProfile: async () => {
         const response = await api.get('/accounts/profile/detailed/');
         return response.data;
     },
 
-    /**
-     * 2. PATCH Unified Detailed Profile
-     * Handles updates for both models using FormData for MultiPart support (images).
-     */
     updateDetailedProfile: async (data: any) => {
         const formData = new FormData();
 
@@ -34,12 +27,6 @@ export const ProfileService = {
         return response.data;
     },
 
-    /**
-     * 3. POST Detect Role
-     * Used by Topbar to switch dashboards and profile pictures dynamically.
-     * Expects: { "phone_or_email": "..." }
-     * Returns: { "role": "renter" } or { "role": "admin" }
-     */
     detectRole: async (emailOrPhone: string) => {
         const response = await api.post('/accounts/detect-role/', {
             phone_or_email: emailOrPhone
