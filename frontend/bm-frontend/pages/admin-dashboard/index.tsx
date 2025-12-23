@@ -1,41 +1,6 @@
 ﻿import Layout from '../../components/layouts/Layout';
 import { useRouter } from 'next/router';
-
-// 🔥 STEP 1: Define the Grouped Menu Items (Must match your Sidebar logic)
-const adminMenuItems = [
-  {
-    group: "Operations",
-    items: [
-      { name: 'Dashboard', path: '/admin-dashboard', icon: 'bi-speedometer2' },
-      { name: 'Units', path: '/admin-dashboard/units', icon: 'bi-building' },
-      { name: 'Leases', path: '/admin-dashboard/leases', icon: 'bi-file-earmark-text' },
-      { name: 'Renters', path: '/admin-dashboard/renters', icon: 'bi-people' },
-    ]
-  },
-  {
-    group: "Financials",
-    items: [
-      { name: 'Invoices', path: '/admin-dashboard/invoices', icon: 'bi-receipt' },
-      { name: 'Payments', path: '/admin-dashboard/payments', icon: 'bi-wallet2' },
-      { name: 'Expenses', path: '/admin-dashboard/expenses', icon: 'bi-cart-dash' },
-    ]
-  },
-  {
-    group: "Support & Intelligence",
-    items: [
-      { name: 'Complaints', path: '/admin-dashboard/complaints', icon: 'bi-exclamation-triangle' },
-      { name: 'Notifications', path: '/admin-dashboard/notifications', icon: 'bi-bell' },
-      { name: 'Reports', path: '/admin-dashboard/reports', icon: 'bi-bar-chart-line' },
-    ]
-  },
-  {
-    group: "System",
-    items: [
-      { name: 'Permissions', path: '/admin-dashboard/permissions', icon: 'bi-shield-lock' },
-      { name: 'Profile', path: '/admin-dashboard/profile', icon: 'bi-person-gear' },
-    ]
-  },
-];
+import {ADMIN_MENU_ITEMS} from "../../utils/menuConstants";
 
 export default function AdminDashboardIndex() {
   const router = useRouter();
@@ -68,7 +33,7 @@ export default function AdminDashboardIndex() {
   );
 
   return (
-    <Layout menuItems={adminMenuItems}>
+    <Layout menuItems={ADMIN_MENU_ITEMS}>
       <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
         {/* WELCOME SECTION */}

@@ -1,22 +1,38 @@
-import { useState } from "react";
+import {Step, useLogin} from "../../../logic/hooks/useLogin";
 import LoginUsernameStep from "./LoginUsernameStep";
 import LoginPasswordStep from "./LoginPasswordStep";
 import LoginOtpStep from "./LoginOtpStep";
-import { Step } from "../../../logic/hooks/useLogin";
 
 interface LoginFormProps {
   step: Step;
-  loading: boolean;
+  role: "renter" | "staff" | "";
+  user: string;
   message: string;
+  loading: boolean;
+  resendTime: number;
   detectRole: (username: string) => Promise<void>;
-  requestOtp: () => Promise<void>;
+  requestOtp: (usernameOverride?: string) => Promise<void>;
   verifyOtp: (otp: string) => Promise<void>;
   loginStaff: (username: string, password: string) => Promise<void>;
-  setMessage: (msg: string) => void;
+  setMessage: (msg: string | null) => void;
+  reset: () => void;
 }
 
 export default function LoginForm(props: LoginFormProps) {
-  const [username, setUsername] = useState("");
+  // 1. All Data & Actions come from the Hook
+  const {
+    step,
+    user,
+    message,
+    loading,
+    resendTime,
+    detectRole,
+    requestOtp,
+    verifyOtp,
+    loginStaff,
+    setMessage,
+    reset
+  } = useLogin();
 
   // --- MOBILE-FRIENDLY STYLES ---
   const containerStyle: React.CSSProperties = {
@@ -25,12 +41,12 @@ export default function LoginForm(props: LoginFormProps) {
       radial-gradient(at 0% 0%, rgba(0, 77, 64, 0.05) 0, transparent 50%),
       radial-gradient(at 100% 100%, rgba(0, 150, 136, 0.1) 0, transparent 50%)
     `,
-    minHeight: "100vh", // Use minHeight so it can grow if keyboard pops up
+    minHeight: "100vh",
     width: "100%",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    padding: "20px", // Prevents card from touching screen edges on mobile
+    padding: "20px",
   };
 
   const cardStyle: React.CSSProperties = {
@@ -42,28 +58,13 @@ export default function LoginForm(props: LoginFormProps) {
     WebkitBackdropFilter: "blur(20px)",
     border: "1px solid rgba(255, 255, 255, 0.5)",
     boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
-    padding: "2rem", // Slightly reduced padding for mobile comfort
-    transition: "all 0.3s ease",
-  };
-
-  const titleStyle: React.CSSProperties = {
-    color: "#004D40",
-    fontWeight: "800",
-    fontSize: "1.8rem", // Slightly smaller for mobile scaling
-    letterSpacing: "-0.5px",
-    marginBottom: "0.25rem",
-  };
-
-  const subtitleStyle: React.CSSProperties = {
-    color: "#607D8B",
-    fontSize: "0.9rem",
-    marginBottom: "2rem",
+    padding: "2rem",
   };
 
   const getStepDescription = () => {
-    if (props.step === "role") return "Enter your credentials to continue";
-    if (props.step === "password") return `Logging in as ${username}`;
-    if (props.step === "otp") return "Enter the code sent to your phone";
+    if (step === "role") return "Enter your credentials to continue";
+    if (step === "password") return `Logging in as ${user}`;
+    if (step === "otp") return "Enter the code sent to your phone";
     return "";
   };
 
@@ -72,65 +73,65 @@ export default function LoginForm(props: LoginFormProps) {
       <div style={cardStyle} className="shadow-lg">
         {/* BRANDING HEADER */}
         <div className="text-center">
-          {/* Icon/Logo Placeholder for better Mobile UI */}
-          <div className="mb-3 d-inline-flex align-items-center justify-content-center bg-teal-100 rounded-circle" style={{width: '60px', height: '60px', backgroundColor: '#E0F2F1'}}>
+          <div className="mb-3 d-inline-flex align-items-center justify-content-center rounded-circle" style={{width: '60px', height: '60px', backgroundColor: '#E0F2F1'}}>
              <i className="bi bi-building-lock text-primary fs-2"></i>
           </div>
-          <h2 style={titleStyle}>BM Portal</h2>
-          <p style={subtitleStyle}>{getStepDescription()}</p>
+          <h2 className="fw-bold mb-1" style={{ color: "#004D40", fontSize: '1.8rem' }}>BM Portal</h2>
+          <p className="mb-4" style={{ color: "#607D8B", fontSize: "0.9rem" }}>{getStepDescription()}</p>
         </div>
 
-        {/* STEP CONTENT */}
+        {/* STEP CONTENT SWITCHER */}
         <div className="login-step-container">
-          {props.step === "role" && (
+          {step === "role" && (
             <LoginUsernameStep
-              loading={props.loading}
-              detectRole={props.detectRole}
-              setMessage={props.setMessage}
-              username={username}
-              onUsernameSubmit={setUsername}
+              loading={loading}
+              detectRole={detectRole}
+              setMessage={setMessage}
+              onUsernameSubmit={() => {}} // Hook handles the 'user' state now
             />
           )}
 
-          {props.step === "password" && (
+          {step === "password" && (
             <LoginPasswordStep
-              loading={props.loading}
-              username={username}
-              loginStaff={props.loginStaff}
-              setMessage={props.setMessage}
+              loading={loading}
+              username={user}
+              loginStaff={loginStaff}
+              setMessage={setMessage}
+              // Instead of window.location.reload, use our hook's reset
+              onBack={reset}
             />
           )}
 
-          {props.step === "otp" && (
+          {step === "otp" && (
             <LoginOtpStep
-              loading={props.loading}
-              requestOtp={props.requestOtp}
-              verifyOtp={props.verifyOtp}
-              setMessage={props.setMessage}
+              loading={loading}
+              resendTime={resendTime}
+              requestOtp={requestOtp}
+              verifyOtp={verifyOtp}
+              setMessage={setMessage}
             />
           )}
         </div>
 
-        {/* FEEDBACK MESSAGE */}
-        {props.message && (
+        {/* DYNAMIC FEEDBACK MESSAGE */}
+        {message && (
           <div
-            className={`mt-4 p-3 rounded-4 text-center small fw-bold animate__animated animate__headShake ${
-              props.message.toLowerCase().includes("error") || props.message.toLowerCase().includes("failed") || props.message.toLowerCase().includes("not found")
+            className={`mt-4 p-3 rounded-4 text-center small fw-bold animate__animated animate__fadeInUp ${
+              message.toLowerCase().includes("error") || 
+              message.toLowerCase().includes("failed") || 
+              message.toLowerCase().includes("invalid")
                 ? "bg-danger-subtle text-danger border border-danger-subtle"
                 : "bg-success-subtle text-success border border-success-subtle"
             }`}
           >
-            {props.message}
+            {message}
           </div>
         )}
 
         {/* FOOTER */}
-        <div className="mt-4 pt-2 text-center border-top border-light">
-          <p className="text-muted" style={{ fontSize: '0.75rem' }}>
-            By continuing, you agree to our <span className="text-primary">Terms</span> and <span className="text-primary">Security Protocols</span>.
-          </p>
-          <p className="text-muted mt-3 mb-0" style={{ fontSize: '0.7rem' }}>
-            &copy; 2025 BMS Portal
+        <div className="mt-4 pt-3 text-center border-top border-light">
+          <p className="text-muted mb-0" style={{ fontSize: '0.7rem' }}>
+            &copy; 2025 BMS Portal • Secure Session
           </p>
         </div>
       </div>

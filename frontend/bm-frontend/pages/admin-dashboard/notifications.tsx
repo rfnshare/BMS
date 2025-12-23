@@ -2,46 +2,11 @@
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 import NotificationManager from "../../components/features/Notifications/NotificationManager";
-
-// 🔥 STEP 1: Use the Grouped Menu Structure (Consistency for Sidebar)
-const adminMenuItems = [
-  {
-    group: "Operations",
-    items: [
-      { name: 'Dashboard', path: '/admin-dashboard/home', icon: 'bi-speedometer2' },
-      { name: 'Units', path: '/admin-dashboard/units', icon: 'bi-building' },
-      { name: 'Leases', path: '/admin-dashboard/leases', icon: 'bi-file-earmark-text' },
-      { name: 'Renters', path: '/admin-dashboard/renters', icon: 'bi-people' },
-    ]
-  },
-  {
-    group: "Financials",
-    items: [
-      { name: 'Invoices', path: '/admin-dashboard/invoices', icon: 'bi-receipt' },
-      { name: 'Payments', path: '/admin-dashboard/payments', icon: 'bi-wallet2' },
-      { name: 'Expenses', path: '/admin-dashboard/expenses', icon: 'bi-cart-dash' },
-    ]
-  },
-  {
-    group: "Support & Intelligence",
-    items: [
-      { name: 'Complaints', path: '/admin-dashboard/complaints', icon: 'bi-exclamation-triangle' },
-      { name: 'Notifications', path: '/admin-dashboard/notifications', icon: 'bi-bell' },
-      { name: 'Reports', path: '/admin-dashboard/reports', icon: 'bi-bar-chart-line' },
-    ]
-  },
-  {
-    group: "System",
-    items: [
-      { name: 'Permissions', path: '/admin-dashboard/permissions', icon: 'bi-shield-lock' },
-      { name: 'Profile', path: '/admin-dashboard/profile', icon: 'bi-person-gear' },
-    ]
-  },
-];
+import {ADMIN_MENU_ITEMS} from "../../utils/menuConstants";
 
 export default function NotificationsPage() {
   return (
-    <Layout menuItems={adminMenuItems}>
+    <Layout menuItems={ADMIN_MENU_ITEMS}>
       <div className="container-fluid p-0 animate__animated animate__fadeIn">
         <NotificationManager />
       </div>

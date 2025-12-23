@@ -5,6 +5,7 @@ interface Props {
   username: string;
   loginStaff: (username: string, password: string) => Promise<void>;
   setMessage: (msg: string) => void;
+  onBack: () => void;
 }
 
 export default function LoginPasswordStep({
@@ -12,6 +13,7 @@ export default function LoginPasswordStep({
   username,
   loginStaff,
   setMessage,
+    onBack
 }: Props) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
