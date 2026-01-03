@@ -146,7 +146,7 @@ class LeaseRentHistoryViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     serializer_class = LeaseRentHistorySerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission]
 
-
+@extend_schema(tags=["Rent Type Configuration"])
 class RentTypeViewSet(viewsets.ModelViewSet):
     queryset = RentType.objects.all()
     serializer_class = RentTypeSerializer
