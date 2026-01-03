@@ -73,17 +73,17 @@ export default function UnitDetailsModal({ unit, onClose }: UnitDetailsModalProp
           <Col md={6}>
             <div className="p-3 border rounded-3 h-100">
               <div className="fw-bold small mb-2 text-primary"><i className="bi bi-lightning-charge me-2"></i>Electricity (Prepaid)</div>
-              <div className="x-small text-muted">Meter No: <b className="text-dark">{unit.prepaid_electricity_meter_no || 'N/A'}</b></div>
-              <div className="x-small text-muted">Old Meter: <b className="text-dark">{unit.prepaid_electricity_old_meter_no || 'N/A'}</b></div>
-              <div className="x-small text-muted">Customer No: <b className="text-dark">{unit.prepaid_electricity_customer_no || 'N/A'}</b></div>
+              <div className="x-small text-muted">Meter No: <b className="text-dark text-break">{unit.prepaid_electricity_meter_no || 'N/A'}</b></div>
+              <div className="x-small text-muted">Old Meter: <b className="text-dark text-break">{unit.prepaid_electricity_old_meter_no || 'N/A'}</b></div>
+              <div className="x-small text-muted">Customer No: <b className="text-dark text-break">{unit.prepaid_electricity_customer_no || 'N/A'}</b></div>
             </div>
           </Col>
           <Col md={6}>
             <div className="p-3 border rounded-3 h-100">
               <div className="fw-bold small mb-2 text-warning"><i className="bi bi-fire me-2"></i>Gas Connection</div>
-              <div className="x-small text-muted">Customer Code: <b className="text-dark">{unit.prepaid_gas_meter_customer_code || 'N/A'}</b></div>
-              <div className="x-small text-muted">Meter No: <b className="text-dark">{unit.prepaid_gas_meter_no || 'N/A'}</b></div>
-              <div className="x-small text-muted">Card No: <b className="text-dark">{unit.prepaid_gas_card_no || 'N/A'}</b></div>
+              <div className="x-small text-muted">Customer Code: <b className="text-dark text-break">{unit.prepaid_gas_meter_customer_code || 'N/A'}</b></div>
+              <div className="x-small text-muted">Meter No: <b className="text-dark text-break">{unit.prepaid_gas_meter_no || 'N/A'}</b></div>
+              <div className="x-small text-muted">Card No: <b className="text-dark text-break">{unit.prepaid_gas_card_no || 'N/A'}</b></div>
             </div>
           </Col>
         </Row>
