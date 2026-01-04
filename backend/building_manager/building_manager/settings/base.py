@@ -157,7 +157,9 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"
 }
-
+CSRF_TRUSTED_ORIGINS = [
+    "http://103.190.130.68:81",
+]
 # Simple JWT: lifetimes configured via env
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", 105))),
