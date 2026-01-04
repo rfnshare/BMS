@@ -125,15 +125,17 @@ USE_L10N = True
 USE_TZ = True
 
 # Static & media
-STATIC_URL = "/static/"
+# STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # whitenoise storage for static files (works for simple deploys)
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-MEDIA_URL = "/media/"
+# MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "http://bms.viewdns.net:81/media/"
+STATIC_URL = "http://bms.viewdns.net:81/static/"
 
 # File storage backend (set to S3 in prod via DEFAULT_FILE_STORAGE override)
 DEFAULT_FILE_STORAGE = os.getenv("DEFAULT_FILE_STORAGE", "django.core.files.storage.FileSystemStorage")
