@@ -44,7 +44,10 @@ class RenterSerializer(serializers.ModelSerializer):
             "to_date",
             "landlord_name",
             "landlord_phone",
-            "reason_for_leaving"
+            "reason_for_leaving",
+            "spouse_name",
+            "spouse_phone",
+            "nationality",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "status"]
 

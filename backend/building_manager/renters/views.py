@@ -77,6 +77,7 @@ class RenterViewSet(RenterAccessMixin, viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
     def perform_update(self, serializer):
+        print(serializer.validated_data)
         """
         Override perform_update to update associated User's fields if changed in Renter
         """
