@@ -1,33 +1,31 @@
 # notifications/utils.py
 import base64
 import os
-import pywhatkit as kit
-import sib_api_v3_sdk
-from django.conf import settings
-from pywhatkit import sendwhatmsg_instantly
 
-from notifications.models import Notification
-from twilio.rest import Client
+from django.conf import settings
 from sib_api_v3_sdk import ApiClient, TransactionalEmailsApi, SendSmtpEmail
 from sib_api_v3_sdk.rest import ApiException
 
+from notifications.models import Notification
+
+
 class NotificationService:
+    """
+    Centralized notification dispatcher.
+    Supports Email (Brevo) and WhatsApp (pywhatkit – dev only).
+    """
 
     @staticmethod
     def send(
-            notification_type,
-            renter,
-            channel,
-            message,
-            subject=None,
-            invoice=None,
-            sent_by=None,
-            attachment_url=None,
+        notification_type,
+        renter,
+        channel,
+        message,
+        subject=None,
+        invoice=None,
+        sent_by=None,
+        attachment_url=None,
     ):
-        """
-        Sends notification via email or WhatsApp, logs it in Notification model.
-        Automatically handles attachments and message formatting.
-        """
         recipient = renter.email if channel == "email" else renter.phone_number
 
         notification = Notification.objects.create(
@@ -40,31 +38,33 @@ class NotificationService:
             message=message,
             sent_by=sent_by,
             status="pending",
-
         )
 
         try:
             if channel == "email":
-                # Attach invoice PDF if available
                 attachment_path = None
                 if invoice and getattr(invoice, "invoice_pdf", None):
                     attachment_path = invoice.invoice_pdf.path
 
-                # 🔥 Call the helper
-                NotificationService._send_email(recipient, subject, message, attachment_path)
+                NotificationService._send_email(
+                    to_email=recipient,
+                    subject=subject,
+                    content=message,
+                    attachment_path=attachment_path,
+                )
 
-                # ✅ FIX: Update the status here because no exception was raised
                 notification.status = "sent"
 
             elif channel == "whatsapp":
-                # Append download link if provided
                 full_msg = message.strip()
                 if attachment_url:
                     full_msg += f"\n\nDownload: {attachment_url.strip()}"
 
-                result = NotificationService._send_whatsapp(renter.phone_number, full_msg)
-                notification.status = result.get("status", "failed")
-                notification.error_message = result.get("error_message", "")
+                result = NotificationService._send_whatsapp(
+                    renter.phone_number, full_msg
+                )
+                notification.status = result["status"]
+                notification.error_message = result.get("error_message")
 
             else:
                 notification.status = "failed"
@@ -77,28 +77,30 @@ class NotificationService:
         notification.save()
         return notification
 
+    # -------------------------
+    # EMAIL (Brevo / SendinBlue)
+    # -------------------------
     @staticmethod
     def _send_email(to_email, subject, content, attachment_path=None):
-        configuration = sib_api_v3_sdk.Configuration()
-        configuration.api_key['api-key'] = os.getenv("BREVO_API_KEY")
-        api_instance = TransactionalEmailsApi(ApiClient(configuration))
+        configuration = ApiClient()
+        configuration.configuration.api_key["api-key"] = os.getenv("BREVO_API_KEY")
 
-        # Prepare attachments if provided
+        api_instance = TransactionalEmailsApi(configuration)
+
         attachments = []
         if attachment_path:
             try:
                 with open(attachment_path, "rb") as f:
-                    file_data = f.read()
-                attachments = [
-                    {
-                        "content": base64.b64encode(file_data).decode("utf-8"),
-                        "name": os.path.basename(attachment_path)
-                    }
-                ]
+                    attachments.append(
+                        {
+                            "content": base64.b64encode(f.read()).decode("utf-8"),
+                            "name": os.path.basename(attachment_path),
+                        }
+                    )
             except Exception as e:
                 print("Attachment load failed:", e)
 
-        send_smtp_email = SendSmtpEmail(
+        email = SendSmtpEmail(
             sender={"name": settings.FROM_NAME, "email": settings.FROM_EMAIL},
             to=[{"email": to_email}],
             subject=subject,
@@ -107,17 +109,37 @@ class NotificationService:
         )
 
         try:
-            api_instance.send_transac_email(send_smtp_email)
+            api_instance.send_transac_email(email)
         except ApiException as e:
             raise Exception(f"Email send failed: {e}")
 
+    # -------------------------
+    # WHATSAPP (DEV / DESKTOP)
+    # -------------------------
     @staticmethod
     def _send_whatsapp(to_number, message):
-        from_number = os.getenv("WHATSAPP_FROM")  # Use centralized config
-        if not from_number:
-            raise ValueError("WHATSAPP_FROM is not set in .env")
+        """
+        WhatsApp sending via pywhatkit.
+        Disabled automatically on headless servers.
+        """
 
-        # Ensure proper format: +880XXXXXXXXXX
+        # 🚨 HARD STOP ON HEADLESS SERVER
+        if not os.environ.get("DISPLAY"):
+            return {
+                "status": "failed",
+                "error_message": "WhatsApp disabled (no DISPLAY on server)",
+            }
+
+        try:
+            # Lazy import (CRITICAL FIX)
+            from pywhatkit import sendwhatmsg_instantly
+        except Exception as e:
+            return {
+                "status": "failed",
+                "error_message": f"pywhatkit import failed: {e}",
+            }
+
+        # Ensure +880 format
         formatted_number = to_number
         if not formatted_number.startswith("+"):
             formatted_number = f"+88{to_number}"
@@ -127,6 +149,4 @@ class NotificationService:
             return {"status": "sent", "error_message": None}
 
         except Exception as e:
-            return {"status": "failed", "error_message":
-                str(e)}
-
+            return {"status": "failed", "error_message": str(e)}
