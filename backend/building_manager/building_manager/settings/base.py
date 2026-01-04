@@ -13,7 +13,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Basics
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-change-me")
-DEBUG = os.getenv("DJANGO_DEBUG")
 
 # Hosts
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]

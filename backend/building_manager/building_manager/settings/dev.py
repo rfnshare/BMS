@@ -2,7 +2,7 @@
 from .base import *
 
 # Development settings
-DEBUG = True
+DEBUG = os.getenv("DJANGO_DEBUG")
 ALLOWED_HOSTS = ["*"]
 
 # SQLite is already default in base.py, so usually no override needed.
