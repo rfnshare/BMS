@@ -1,41 +1,55 @@
-# building_manager/settings/prod.py
+# building_manager/settings/dev.py
 from .base import *
-import dj_database_url
 import os
 
+# =====================================================
+# CORE
+# =====================================================
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "bms.viewdns.net",
     "localhost",
     "127.0.0.1",
+    "0.0.0.0",
 ]
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
-    DATABASES = {
-        "default": dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            ssl_require=True,
-        )
-    }
+# =====================================================
+# DATABASE (DEV)
+# =====================================================
+# Uses sqlite from base.py – no override needed
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# =====================================================
+# STATIC FILES
+# =====================================================
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
+# =====================================================
+# CORS (DEV – explicit, NOT allow all)
+# =====================================================
 CORS_ALLOW_ALL_ORIGINS = False
+
 CORS_ALLOWED_ORIGINS = [
-    "http://bms.viewdns.net",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+
+# =====================================================
+# CSRF (DEV)
+# =====================================================
 CSRF_TRUSTED_ORIGINS = [
-    "http://bms.viewdns.net",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
 ]
 
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_SSL_REDIRECT = False  # turn True after HTTPS
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
 
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# =====================================================
+# SECURITY (DISABLED IN DEV)
+# =====================================================
+SECURE_SSL_REDIRECT = False
+SECURE_HSTS_SECONDS = 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False

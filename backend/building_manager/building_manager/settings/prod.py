@@ -4,15 +4,12 @@ import dj_database_url
 
 DEBUG = False
 
-ALLOWED_HOSTS = [
-    "bms.viewdns.net",
-]
+ALLOWED_HOSTS = ["bms.viewdns.net"]
 
 # ------------------
-# Database (PROD)
+# Database
 # ------------------
 DATABASE_URL = os.getenv("DATABASE_URL")
-
 if DATABASE_URL:
     DATABASES = {
         "default": dj_database_url.config(
@@ -21,8 +18,6 @@ if DATABASE_URL:
             ssl_require=True,
         )
     }
-# else:
-# SQLite from base.py is used automatically
 
 # ------------------
 # Static files
@@ -30,26 +25,30 @@ if DATABASE_URL:
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # ------------------
-# CORS (LOCKED)
+# CORS
 # ------------------
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
-    "https://bms.viewdns.net",
-]
+CORS_ALLOWED_ORIGINS = ["https://bms.viewdns.net"]
+CORS_ALLOW_CREDENTIALS = True
 
 # ------------------
-# CSRF (HTTPS)
+# CSRF
 # ------------------
-CSRF_TRUSTED_ORIGINS = [
-    "https://bms.viewdns.net",
-]
+CSRF_TRUSTED_ORIGINS = ["https://bms.viewdns.net"]
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = "Lax"
 
 # ------------------
-# Security (STRICT)
+# Sessions
 # ------------------
 SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "Lax"
+
+# ------------------
+# Security
+# ------------------
 SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
