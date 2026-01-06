@@ -1,34 +1,41 @@
+# building_manager/settings/prod.py
 from .base import *
+import dj_database_url
 import os
 
-DEBUG = os.getenv("DJANGO_DEBUG", "True") == "True"
+DEBUG = False
 
-ALLOWED_HOSTS = ["*"]
-
-# ------------------
-# CORS (DEV = OPEN)
-# ------------------
-CORS_ALLOW_ALL_ORIGINS = True
-
-# ------------------
-# CSRF (DEV)
-# ------------------
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost",
-    "http://127.0.0.1",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://bms.viewdns.net:81",
+ALLOWED_HOSTS = [
+    "bms.viewdns.net",
+    "localhost",
+    "127.0.0.1",
 ]
 
-# ------------------
-# Security (DEV)
-# ------------------
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
-SECURE_SSL_REDIRECT = False
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
+    }
 
-# ------------------
-# Email (DEV)
-# ------------------
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    "http://bms.viewdns.net",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://bms.viewdns.net",
+]
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = False  # turn True after HTTPS
+
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True

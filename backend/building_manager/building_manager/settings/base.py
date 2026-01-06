@@ -3,43 +3,40 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-from dotenv import load_dotenv
-
-# Load .env (optional, useful for local dev)
-load_dotenv()
-
-# Paths
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# Basics
+# ============================
+# CORE
+# ============================
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-change-me")
 
-# Hosts
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+
 ALLOWED_HOSTS = [
     h.strip()
     for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",")
     if h.strip()
 ]
 
-
-# Installed apps
+# ============================
+# APPLICATIONS
+# ============================
 INSTALLED_APPS = [
-    # Django contrib
+    # Django
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'rest_framework_simplejwt.token_blacklist',
 
     # Third-party
     "rest_framework",
     "corsheaders",
     "drf_spectacular",
-    "dj_database_url",
+    "rest_framework_simplejwt.token_blacklist",
 
-    # Local apps (fix paths)
+    # Local
     "accounts",
     "buildings",
     "renters",
@@ -52,10 +49,12 @@ INSTALLED_APPS = [
     "permissions",
     "scheduling",
     "complaints",
-    "expenses"
+    "expenses",
 ]
 
-# Middleware
+# ============================
+# MIDDLEWARE
+# ============================
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -66,12 +65,15 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "common.logging.APILoggingMiddleware"
+    "common.logging.APILoggingMiddleware",
 ]
 
 ROOT_URLCONF = "building_manager.urls"
+WSGI_APPLICATION = "building_manager.wsgi.application"
 
-# Templates
+# ============================
+# TEMPLATES
+# ============================
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -83,65 +85,67 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-            ]
+            ],
         },
     }
 ]
 
-WSGI_APPLICATION = "building_manager.wsgi.application"
-
-# Custom user model (defined in apps/accounts/models.py)
-AUTH_USER_MODEL = os.getenv("AUTH_USER_MODEL", "accounts.User")
-
-# Database (default: sqlite for quick local dev; override in dev/prod)
+# ============================
+# DATABASE
+# ============================
 DB_ENGINE = os.getenv("DB_ENGINE", "django.db.backends.sqlite3")
+
 if DB_ENGINE == "django.db.backends.sqlite3":
     DATABASES = {
         "default": {
             "ENGINE": DB_ENGINE,
-            "NAME": str(BASE_DIR / "db.sqlite3"),
+            "NAME": BASE_DIR / "db.sqlite3",
         }
     }
 else:
     DATABASES = {
         "default": {
             "ENGINE": DB_ENGINE,
-            "NAME": os.getenv("POSTGRES_DB", "building_db"),
-            "USER": os.getenv("POSTGRES_USER", "postgres"),
-            "PASSWORD": os.getenv("POSTGRES_PASSWORD", ""),
-            "HOST": os.getenv("POSTGRES_HOST", "db"),
+            "NAME": os.getenv("POSTGRES_DB"),
+            "USER": os.getenv("POSTGRES_USER"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+            "HOST": os.getenv("POSTGRES_HOST"),
             "PORT": os.getenv("POSTGRES_PORT", "5432"),
         }
     }
 
-# Password validation (sane defaults)
+# ============================
+# AUTH
+# ============================
+AUTH_USER_MODEL = os.getenv("AUTH_USER_MODEL", "accounts.User")
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# Internationalization
+# ============================
+# I18N
+# ============================
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = os.getenv("DJANGO_TIME_ZONE", "Asia/Dhaka")
+TIME_ZONE = os.getenv("TIME_ZONE", "Asia/Dhaka")
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
-# Static & Media (BASE — no domain here)
+# ============================
+# STATIC & MEDIA
+# ============================
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
-
-
-# File storage backend (set to S3 in prod via DEFAULT_FILE_STORAGE override)
 DEFAULT_FILE_STORAGE = os.getenv("DEFAULT_FILE_STORAGE", "django.core.files.storage.FileSystemStorage")
-
-# REST Framework + JWT auth (DRF + simplejwt)
+# ============================
+# DRF / JWT
+# ============================
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -159,14 +163,10 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"
 }
-CSRF_TRUSTED_ORIGINS = [
-    "http://103.190.130.68:81",
-]
-# Simple JWT: lifetimes configured via env
+
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", 105))),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", 60))),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", 7))),
-    "AUTH_HEADER_TYPES": ("Bearer",),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
 }
@@ -197,31 +197,46 @@ SPECTACULAR_SETTINGS = {
 
     ]
 }
-# CORS
-CORS_ALLOWED_ORIGINS = [u.strip() for u in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if u.strip()]
+# ============================
+# CORS / CSRF
+# ============================
+CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "False") == "True"
+CORS_ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if o.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
 
-# Celery (broker & backend)
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://localhost:6379/0"))
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+CSRF_TRUSTED_ORIGINS = [
+    o.strip()
+    for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if o.strip()
+]
 
-# Email (safe default for dev)
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+# ============================
+# EMAIL
+# ============================
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@localhost")
 
-# Security defaults (can be tightened in prod.py)
+# ============================
+# SECURITY (DEFAULTS)
+# ============================
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 SECURE_SSL_REDIRECT = False
 SECURE_HSTS_SECONDS = 0
 
-# Misc
+# ============================
+# MISC
+# ============================
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# Email
+SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
 FROM_EMAIL = os.environ.get("FROM_EMAIL")  # e.g., rfnshare@gmail.com
 FROM_NAME = os.environ.get("FROM_NAME", "Building Manager")
 BREVO_USE_ATTACHMENT_URL = True
-SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")
-
