@@ -5,13 +5,14 @@ import os
 # =====================================================
 # CORE
 # =====================================================
-# DEBUG = True
-#
-# ALLOWED_HOSTS = [
-#     "localhost",
-#     "127.0.0.1",
-#     "0.0.0.0",
-# ]
+DEBUG = True
+
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+    "192.168.1.95"
+]
 
 # =====================================================
 # DATABASE (DEV)
@@ -26,22 +27,24 @@ STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 # =====================================================
 # CORS (DEV – explicit, NOT allow all)
 # =====================================================
-# CORS_ALLOW_ALL_ORIGINS = False
-#
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3001",
-#     "http://127.0.0.1:3001",
-# ]
+CORS_ALLOW_ALL_ORIGINS = False
 
-# CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://192.168.1.95:3001",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # =====================================================
 # CSRF (DEV)
 # =====================================================
-# CSRF_TRUSTED_ORIGINS = [
-#     "http://localhost:3001",
-#     "http://127.0.0.1:3001",
-# ]
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://192.168.1.95:3001",
+]
 
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
