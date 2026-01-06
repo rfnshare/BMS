@@ -41,15 +41,16 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # ------------------
 # Sessions
 # ------------------
-SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = False  # Change to False
 SESSION_COOKIE_SAMESITE = "Lax"
 
 # ------------------
 # Security
 # ------------------
-SECURE_SSL_REDIRECT = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = False    # Change to False (Stops the auto-redirect)
+SECURE_PROXY_SSL_HEADER = None # Set to None since no proxy/SSL
 
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# Set HSTS to 0 to tell the browser to stop forcing HTTPS
+SECURE_HSTS_SECONDS = 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
