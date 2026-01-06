@@ -2,11 +2,11 @@ from .base import *
 import os
 import dj_database_url
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     "bms.viewdns.net",
-    "192.168.1.95:8000",
+    "192.168.1.95",
     "localhost",
     "127.0.0.1",
 ]
