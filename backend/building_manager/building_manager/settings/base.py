@@ -77,6 +77,7 @@ CORS_ALLOW_HEADERS = [
     "x-csrftoken",
     "x-requested-with",
 ]
+
 ROOT_URLCONF = "building_manager.urls"
 WSGI_APPLICATION = "building_manager.wsgi.application"
 
@@ -152,6 +153,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_FILE_STORAGE = os.getenv("DEFAULT_FILE_STORAGE", "django.core.files.storage.FileSystemStorage")
+
 # ============================
 # DRF / JWT
 # ============================
@@ -179,6 +181,7 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
 }
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Building Management API',
     'DESCRIPTION': 'API documentation for Building Management System',
@@ -206,6 +209,7 @@ SPECTACULAR_SETTINGS = {
 
     ]
 }
+
 # ============================
 # CORS / CSRF
 # ============================

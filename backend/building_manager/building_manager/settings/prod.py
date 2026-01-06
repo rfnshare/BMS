@@ -2,10 +2,6 @@ from .base import *
 import os
 import dj_database_url
 
-# DEBUG = False
-#
-# ALLOWED_HOSTS = ["bms.viewdns.net"]
-
 # ------------------
 # Database
 # ------------------
@@ -23,20 +19,6 @@ if DATABASE_URL:
 # Static files
 # ------------------
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-# # ------------------
-# # CORS
-# # ------------------
-# CORS_ALLOW_ALL_ORIGINS = False
-# CORS_ALLOWED_ORIGINS = ["https://bms.viewdns.net"]
-# CORS_ALLOW_CREDENTIALS = True
-#
-# # ------------------
-# # CSRF
-# # ------------------
-# CSRF_TRUSTED_ORIGINS = ["https://bms.viewdns.net"]
-# CSRF_COOKIE_SECURE = True
-# CSRF_COOKIE_SAMESITE = "Lax"
 
 # ------------------
 # Sessions
