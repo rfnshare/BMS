@@ -35,6 +35,7 @@ CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "http://bms.viewdns.net",
     "http://192.168.1.95",
+    "http://192.168.1.95:8000",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -44,6 +45,7 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://bms.viewdns.net",
     "http://192.168.1.95",
+    "http://192.168.1.95:8000",
 ]
 
 CSRF_COOKIE_SECURE = False
