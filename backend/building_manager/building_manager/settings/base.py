@@ -10,8 +10,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # ============================
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-change-me")
 
-DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
-
 ALLOWED_HOSTS = [
     h.strip()
     for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",")
@@ -68,6 +66,15 @@ MIDDLEWARE = [
     "common.logging.APILoggingMiddleware",
 ]
 
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+    "accept",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
 ROOT_URLCONF = "building_manager.urls"
 WSGI_APPLICATION = "building_manager.wsgi.application"
 
