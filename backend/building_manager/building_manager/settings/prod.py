@@ -6,7 +6,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = [
     "bms.viewdns.net",
-    "192.168.1.95",
+    "192.168.1.95:8000",
     "localhost",
     "127.0.0.1",
 ]
