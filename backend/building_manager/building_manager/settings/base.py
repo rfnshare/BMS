@@ -15,7 +15,11 @@ ALLOWED_HOSTS = [
     for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",")
     if h.strip()
 ]
+# Tell Django to trust the X-Forwarded-Host header sent by Nginx
+USE_X_FORWARDED_HOST = True
 
+# If you ever use HTTPS/SSL in the future, this is required
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # ============================
 # APPLICATIONS
 # ============================
