@@ -3,7 +3,7 @@ from django.db import models
 from common.models import BaseAuditModel
 from accounts.models import User
 from common.utils.storage import renter_profile_upload_path, renter_nid_upload_path
-
+from django.core.validators import RegexValidator
 
 class Renter(BaseAuditModel):
     GENDER_CHOICES = [
@@ -34,7 +34,6 @@ class Renter(BaseAuditModel):
     # Basic Info
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="renter_profile")
     full_name = models.CharField(max_length=255)
-    email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, unique=True)
     alternate_phone = models.CharField(max_length=20, blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
@@ -43,7 +42,18 @@ class Renter(BaseAuditModel):
     spouse_name = models.CharField(max_length=255, blank=True, null=True)
     spouse_phone = models.CharField(max_length=20, blank=True, null=True)
     nationality = models.CharField(max_length=100, blank=True, null=True)
-
+    nid_validator = RegexValidator(
+        regex=r'^\d{10,17}$',
+        message="NID must be between 10 to 17 digits."
+    )
+    nid_number = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True,
+        null=True,
+        validators=[nid_validator],
+        help_text="National ID number of the renter"
+    )
     class Status(models.TextChoices):
         PROSPECTIVE = "prospective", "Prospective"
         ACTIVE = "active", "Active"

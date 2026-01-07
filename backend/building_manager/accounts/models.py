@@ -21,7 +21,7 @@ class User(AbstractUser):
         blank=True
     )
     bio = models.TextField(max_length=500, blank=True)
-
+    email = models.EmailField(unique=True)
     def __str__(self):
         return self.username
 
