@@ -26,7 +26,7 @@ class NotificationService:
         sent_by=None,
         attachment_url=None,
     ):
-        recipient = renter.email if channel == "email" else renter.phone_number
+        recipient = renter.user.email if channel == "email" else renter.phone_number
 
         notification = Notification.objects.create(
             notification_type=notification_type,

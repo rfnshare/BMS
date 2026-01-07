@@ -289,7 +289,7 @@ class ManualInvoiceGenerationView(APIView):
             # -------------------
             # Send notifications
             # -------------------
-            if renter.prefers_email:
+            if renter.prefers_email and renter.user.email:
                 subject, body = get_email_message(invoice, renter, message_type="invoice_created")
                 notif = NotificationService.send(
                     notification_type="invoice_created",
@@ -351,14 +351,14 @@ class ManualRentReminderView(APIView):
         invoices_due = Invoice.objects.filter(
             due_date__lte=due_soon,
             status__in=["draft", "unpaid", "partially_paid"]
-        )
+        ).select_related('lease__renter__user')
 
         messages = []
         notif_statuses = []
         for invoice in invoices_due:
             renter = invoice.lease.renter
 
-            if renter.prefers_email:
+            if renter.prefers_email and renter.user.email:
                 subject, body = get_email_message(invoice, renter, message_type="rent_reminder")
                 notif = NotificationService.send(
                     notification_type="rent_reminder",
@@ -420,7 +420,7 @@ class ManualOverdueDetectionView(APIView):
             overdue_invoices = Invoice.objects.filter(
                 due_date__lte=overdue_threshold,
                 status__in=["draft", "unpaid", "partially_paid"]
-            )
+            ).select_related('lease__renter__user')
         except Exception as e:
             return Response({
                 "status": "error",
@@ -435,7 +435,7 @@ class ManualOverdueDetectionView(APIView):
         for invoice in overdue_invoices:
             try:
                 renter = invoice.lease.renter
-                if renter.prefers_email:
+                if renter.prefers_email and renter.user.email:
                     subject, body = get_email_message(invoice, renter, message_type="overdue_notice")
                     notif = NotificationService.send(
                         notification_type="overdue_notice",
