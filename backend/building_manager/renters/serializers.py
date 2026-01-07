@@ -88,6 +88,30 @@ class RenterSerializer(serializers.ModelSerializer):
         renter = Renter.objects.create(user=user, **validated_data)
         return renter
 
+    def update(self, instance, validated_data):
+        # 1. Handle the 'dotted-source' field (user.email)
+        # DRF puts 'user' data into a nested dictionary because of 'source="user.email"'
+        user_data = validated_data.pop('user', None)
+
+        if user_data:
+            new_email = user_data.get('email')
+            user = instance.user
+            if new_email and user.email != new_email:
+                user.email = new_email
+                user.save()
+
+        # 2. Handle the 'phone_number' sync
+        # If the phone changes in Renter, we usually want it to change in User (the login ID)
+        new_phone = validated_data.get('phone_number')
+        if new_phone and instance.phone_number != new_phone:
+            user = instance.user
+            user.phone_number = new_phone
+            user.username = new_phone  # Keeping login username in sync
+            user.save()
+
+        # 3. Call the standard update for the remaining Renter fields
+        return super().update(instance, validated_data)
+
 class RenterProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email", required=False, allow_null=True)
     class Meta:
