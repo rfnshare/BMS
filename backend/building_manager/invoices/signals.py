@@ -76,11 +76,11 @@ def invoice_post_save(sender, instance: Invoice, created, **kwargs):
                     logger.warning(f"Invoice {instance.id}: SITE_URL not configured, attachment may not work in Brevo/WhatsApp")
         else:
             logger.warning(f"Invoice {instance.id}: PDF not found, skipping attachment.")
-
+        renter_email = renter.user.email
         # -----------------------
         # EMAIL NOTIFICATION
         # -----------------------
-        if getattr(renter, "prefers_email", False) and renter.email:
+        if getattr(renter, "prefers_email", False) and renter_email:
             subject, body = get_email_message(instance, renter, message_type="invoice_created")
             notif = NotificationService.send(
                 notification_type="invoice_created",
@@ -92,7 +92,7 @@ def invoice_post_save(sender, instance: Invoice, created, **kwargs):
                 sent_by=user,
                 attachment_url=attachment_url
             )
-            logger.info(f"Invoice {instance.id}: email sent to {renter.email}. Status: {notif.status}, Error: {notif.error_message}")
+            logger.info(f"Invoice {instance.id}: email sent to {renter_email}. Status: {notif.status}, Error: {notif.error_message}")
 
         # -----------------------
         # WHATSAPP NOTIFICATION

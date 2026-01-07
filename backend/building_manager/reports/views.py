@@ -106,13 +106,14 @@ class RenterTopDuesView(APIView):
 
     def get(self, request):
         svc = RenterCollectionReportService()
+        # Ensure your service uses select_related('user') to avoid N+1 issues
         qs = svc.top_dues(limit=int(request.query_params.get("limit", 20)))
-        # Serialize minimal fields
+
         data = [
             {
                 "renter_id": r.id,
                 "full_name": r.full_name,
-                "email": r.email,
+                "email": r.user.email,  # ✅ Updated: Accessing via User relationship
                 "phone_number": r.phone_number,
                 "total_due": getattr(r, "total_due", 0),
             }

@@ -39,7 +39,7 @@ class UnitListSerializer(serializers.ModelSerializer):
 class RenterCollectionRowSerializer(serializers.Serializer):
     renter_id = serializers.IntegerField()
     full_name = serializers.CharField()
-    email = serializers.CharField(allow_null=True)
+    email = serializers.EmailField(source="user.email", allow_null=True)
     phone_number = serializers.CharField()
     total_invoiced = serializers.DecimalField(max_digits=14, decimal_places=2)
     total_paid = serializers.DecimalField(max_digits=14, decimal_places=2)
