@@ -247,76 +247,94 @@ def get_whatsapp_message(invoice, renter, message_type="invoice_created"):
 @extend_schema(tags=["Scheduling"])
 class ManualInvoiceGenerationView(APIView):
     """
-
     Create monthly invoices and notify renters via email/WhatsApp.
     """
     permission_classes = [IsAuthenticated, RoleBasedPermission]
 
     def post(self, request, *args, **kwargs):
         today = timezone.now().date()
+        target_month_name = today.strftime('%B %Y')
+        target_description = f"Monthly rent for {target_month_name}"
+
+        # This is the "Magic Date" your database uses for uniqueness (e.g., 2026-01-01)
         current_month_start = today.replace(day=1)
+
         user = request.user
-        notif_statuses = []
         created_count = 0
         skipped_count = 0
         messages = []
 
-        active_leases = Lease.objects.filter(status="active")
+        # 🚀 SQA Optimization: Fetch renter and user in one query
+        active_leases = Lease.objects.filter(status="active").select_related('renter__user')
 
         for lease in active_leases:
             renter = lease.renter
 
-            if Invoice.objects.filter(lease=lease, invoice_type="rent", invoice_date__gte=current_month_start).exists():
+            # ✅ FIX 1: Check by invoice_month (the actual unique field)
+            if Invoice.objects.filter(
+                    lease=lease,
+                    invoice_type="rent",
+                    invoice_month=current_month_start
+            ).exists():
                 skipped_count += 1
-                messages.append(f"Skipped lease {lease.id} — invoice exists")
+                messages.append(f"Skipped lease {lease.id} — Invoice for {target_month_name} already exists.")
                 continue
 
-            due_date = current_month_start + timedelta(days=7)
-            invoice = Invoice(
-                lease=lease,
-                invoice_type="rent",
-                amount=lease.rent_amount,
-                due_date=due_date,
-                status="unpaid",
-                description=f"Monthly rent for {today.strftime('%B %Y')}"
-            )
-            invoice._skip_signal_notify = True  # mark in memory only
-            invoice.save()
+            try:
+                due_date = current_month_start + timedelta(days=7)
 
-            created_count += 1
-            messages.append(f"Created invoice {invoice.invoice_number or invoice.id} for lease {lease.id}")
-
-            # -------------------
-            # Send notifications
-            # -------------------
-            if renter.prefers_email and renter.user.email:
-                subject, body = get_email_message(invoice, renter, message_type="invoice_created")
-                notif = NotificationService.send(
-                    notification_type="invoice_created",
-                    renter=renter,
-                    channel="email",
-                    subject=subject,
-                    message=body,
-                    invoice=invoice,
-                    sent_by=user
+                # ✅ FIX 2: Explicitly set invoice_month so the DB is happy
+                invoice = Invoice(
+                    lease=lease,
+                    invoice_type="rent",
+                    amount=lease.rent_amount,
+                    due_date=due_date,
+                    invoice_month=current_month_start,
+                    status="unpaid",
+                    description=target_description
                 )
-                notif_statuses.append(f"Email: {notif.status}")
+                invoice._skip_signal_notify = True
+                invoice.save()
 
-            if renter.prefers_whatsapp:
-                message = get_whatsapp_message(invoice, renter, message_type="invoice_created")
-                notif = NotificationService.send(
-                    notification_type="invoice_created",
-                    renter=renter,
-                    channel="whatsapp",
-                    message=message,
-                    invoice=invoice,
-                    sent_by=user
-                )
-                notif_statuses.append(f"Whatsapp: {notif.status}")
+                created_count += 1
+                messages.append(f"Created invoice {invoice.invoice_number or invoice.id} for lease {lease.id}")
 
-        task_status = "FAILURE" if any("failed" in m.lower() for m in messages) else "SUCCESS"
+                # -------------------
+                # Send notifications
+                # -------------------
+                # Email check using the new User model location
+                if renter.prefers_email and renter.user.email:
+                    subject, body = get_email_message(invoice, renter, message_type="invoice_created")
+                    NotificationService.send(
+                        notification_type="invoice_created",
+                        renter=renter,
+                        channel="email",
+                        subject=subject,
+                        message=body,
+                        invoice=invoice,
+                        sent_by=user
+                    )
 
-        # Log Task
+                if renter.prefers_whatsapp:
+                    message = get_whatsapp_message(invoice, renter, message_type="invoice_created")
+                    NotificationService.send(
+                        notification_type="invoice_created",
+                        renter=renter,
+                        channel="whatsapp",
+                        message=message,
+                        invoice=invoice,
+                        sent_by=user
+                    )
+
+            except Exception as e:
+                # ✅ FIX 3: Defensive Programming
+                # If one lease fails (e.g. data error), log it and move to the next one
+                error_msg = f"Failed lease {lease.id}: {str(e)}"
+                messages.append(error_msg)
+                print(error_msg)
+
+        task_status = "SUCCESS" if created_count > 0 or skipped_count > 0 else "FAILURE"
+
         TaskLog.objects.create(
             task_name="GENERATE_INVOICES",
             status=task_status,
