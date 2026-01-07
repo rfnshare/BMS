@@ -1,6 +1,6 @@
 # scheduling/api/views.py
 from datetime import timedelta
-
+from invoices.services import generate_invoice_pdf
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
@@ -8,7 +8,7 @@ from rest_framework import generics, filters, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from django.conf import settings
 from common.pagination import CustomPagination
 from invoices.models import Invoice
 from leases.models import Lease
@@ -244,10 +244,9 @@ def get_whatsapp_message(invoice, renter, message_type="invoice_created"):
 # Manual Invoice Generation
 # -------------------------------
 
-@extend_schema(tags=["Scheduling"])
 class ManualInvoiceGenerationView(APIView):
     """
-    Create monthly invoices and notify renters via email/WhatsApp.
+    Create monthly invoices, generate PDFs, and notify renters with attachments.
     """
     permission_classes = [IsAuthenticated, RoleBasedPermission]
 
@@ -255,8 +254,6 @@ class ManualInvoiceGenerationView(APIView):
         today = timezone.now().date()
         target_month_name = today.strftime('%B %Y')
         target_description = f"Monthly rent for {target_month_name}"
-
-        # This is the "Magic Date" your database uses for uniqueness (e.g., 2026-01-01)
         current_month_start = today.replace(day=1)
 
         user = request.user
@@ -264,26 +261,25 @@ class ManualInvoiceGenerationView(APIView):
         skipped_count = 0
         messages = []
 
-        # 🚀 SQA Optimization: Fetch renter and user in one query
+        # Optimization: Fetch renter and user in one go to prevent N+1 queries
         active_leases = Lease.objects.filter(status="active").select_related('renter__user')
 
         for lease in active_leases:
             renter = lease.renter
 
-            # ✅ FIX 1: Check by invoice_month (the actual unique field)
+            # 1. Skip check: Prevent duplicates based on the UNIQUE month constraint
             if Invoice.objects.filter(
                     lease=lease,
                     invoice_type="rent",
                     invoice_month=current_month_start
             ).exists():
                 skipped_count += 1
-                messages.append(f"Skipped lease {lease.id} — Invoice for {target_month_name} already exists.")
+                messages.append(f"Skipped LS-{lease.id}: Invoice already exists for {target_month_name}.")
                 continue
 
             try:
+                # 2. Create the Invoice Record
                 due_date = current_month_start + timedelta(days=7)
-
-                # ✅ FIX 2: Explicitly set invoice_month so the DB is happy
                 invoice = Invoice(
                     lease=lease,
                     invoice_type="rent",
@@ -293,16 +289,25 @@ class ManualInvoiceGenerationView(APIView):
                     status="unpaid",
                     description=target_description
                 )
+                # 🔒 IMPORTANT: Bypass the signal so we don't send double emails
                 invoice._skip_signal_notify = True
                 invoice.save()
 
-                created_count += 1
-                messages.append(f"Created invoice {invoice.invoice_number or invoice.id} for lease {lease.id}")
+                # 3. Synchronous PDF Generation
+                # This calls your service.py function to create the physical file
+                generate_invoice_pdf(invoice)
 
-                # -------------------
-                # Send notifications
-                # -------------------
-                # Email check using the new User model location
+                # REFRESH to ensure the 'invoice_pdf' field (saved in your service) is loaded
+                invoice.refresh_from_db()
+
+                # 4. Construct Public URL for Notifications
+                attachment_url = None
+                if invoice.invoice_pdf:
+                    # SITE_URL should be http://bms.viewdns.net:85 in settings
+                    site_url = getattr(settings, "SITE_URL", "http://localhost:8000").rstrip("/")
+                    attachment_url = f"{site_url}{invoice.invoice_pdf.url}"
+
+                # 5. Send Email Notification with Attachment
                 if renter.prefers_email and renter.user.email:
                     subject, body = get_email_message(invoice, renter, message_type="invoice_created")
                     NotificationService.send(
@@ -312,29 +317,33 @@ class ManualInvoiceGenerationView(APIView):
                         subject=subject,
                         message=body,
                         invoice=invoice,
-                        sent_by=user
+                        sent_by=user,
+                        attachment_url=attachment_url  # This pulls the file for Brevo
                     )
 
+                # 6. Send WhatsApp Notification with Link
                 if renter.prefers_whatsapp:
-                    message = get_whatsapp_message(invoice, renter, message_type="invoice_created")
+                    wa_message = get_whatsapp_message(invoice, renter, message_type="invoice_created")
                     NotificationService.send(
                         notification_type="invoice_created",
                         renter=renter,
                         channel="whatsapp",
-                        message=message,
+                        message=wa_message,
                         invoice=invoice,
-                        sent_by=user
+                        sent_by=user,
+                        attachment_url=attachment_url  # This adds the link to the message
                     )
 
+                created_count += 1
+                messages.append(f"Success: LS-{lease.id} (Inv: {invoice.invoice_number})")
+
             except Exception as e:
-                # ✅ FIX 3: Defensive Programming
-                # If one lease fails (e.g. data error), log it and move to the next one
-                error_msg = f"Failed lease {lease.id}: {str(e)}"
-                messages.append(error_msg)
-                print(error_msg)
+                error_log = f"Error processing LS-{lease.id}: {str(e)}"
+                messages.append(error_log)
+                print(error_log)
 
+        # 7. Final Response & Log
         task_status = "SUCCESS" if created_count > 0 or skipped_count > 0 else "FAILURE"
-
         TaskLog.objects.create(
             task_name="GENERATE_INVOICES",
             status=task_status,
@@ -343,7 +352,7 @@ class ManualInvoiceGenerationView(APIView):
         )
 
         return Response({
-            "message": "Manual invoice generation completed",
+            "message": "Bulk processing completed.",
             "created": created_count,
             "skipped": skipped_count,
             "details": messages
