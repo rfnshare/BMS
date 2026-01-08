@@ -57,6 +57,10 @@ export const InvoiceService = {
         const response = await api.post("/scheduling/manual-overdue/");
         return response.data; // Expected: { status: "success", message: "..." }
     },
+    resendNotification: async (id: number) => {
+        const response = await api.post(`/invoices/${id}/resend_notification/`);
+        return response.data;
+    },
     // Hydration Helpers
     getLease: (id: number) => api.get(`/leases/leases/${id}/`).then(res => res.data),
     getRenter: (id: number) => api.get(`/renters/${id}/`).then(res => res.data),

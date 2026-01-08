@@ -12,7 +12,8 @@ from permissions.mixins import RenterAccessMixin
 from .models import Invoice
 from .serializers import InvoiceSerializer
 from .services import generate_invoice_pdf
-
+from django.conf import settings
+from scheduling.api.views import get_email_message, get_whatsapp_message
 
 @extend_schema(tags=["Invoices"])
 class InvoiceViewSet(RenterAccessMixin, viewsets.ModelViewSet):
@@ -45,3 +46,59 @@ class InvoiceViewSet(RenterAccessMixin, viewsets.ModelViewSet):
 
         # optionally send invoice via email/whatsapp here
         return Response({"pdf": invoice.invoice_pdf.url}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="resend_notification")
+    def resend_notification(self, request, pk=None):
+        invoice = self.get_object()
+
+        # 1. Ensure PDF exists (if not, generate it first)
+        if not invoice.invoice_pdf:
+            generate_invoice_pdf(invoice)
+            invoice.refresh_from_db()
+
+        renter = invoice.lease.renter
+
+        # 2. Get the full attachment URL
+        attachment_url = None
+        if invoice.invoice_pdf:
+            attachment_url = invoice.invoice_pdf.url
+            if not attachment_url.startswith("http"):
+                site_url = getattr(settings, "SITE_URL", "").rstrip("/")
+                attachment_url = f"{site_url}{attachment_url}"
+
+        # 3. Trigger Email if preferred
+        email_status = "Skipped"
+        if renter.prefers_email and renter.user.email:
+            subject, body = get_email_message(invoice, renter, message_type="invoice_created")
+            NotificationService.send(
+                notification_type="invoice_created",
+                renter=renter,
+                channel="email",
+                subject=subject,
+                message=body,
+                invoice=invoice,
+                sent_by=request.user,  # The admin who clicked the button
+                attachment_url=attachment_url
+            )
+            email_status = "Sent"
+
+        # 4. Trigger WhatsApp if preferred
+        whatsapp_status = "Skipped"
+        if renter.prefers_whatsapp and renter.phone_number:
+            message = get_whatsapp_message(invoice, renter, message_type="invoice_created")
+            NotificationService.send(
+                notification_type="invoice_created",
+                renter=renter,
+                channel="whatsapp",
+                message=message,
+                invoice=invoice,
+                sent_by=request.user,
+                attachment_url=attachment_url
+            )
+            whatsapp_status = "Sent"
+
+        return Response({
+            "detail": "Notifications triggered.",
+            "email": email_status,
+            "whatsapp": whatsapp_status
+        }, status=status.HTTP_200_OK)
