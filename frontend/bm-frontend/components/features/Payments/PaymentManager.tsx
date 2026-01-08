@@ -1,14 +1,14 @@
-import { useEffect, useState, useCallback } from "react";
-import { PaymentService } from "../../../logic/services/paymentService";
-import { InvoiceService } from "../../../logic/services/invoiceService";
-import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
+import {useEffect, useState, useCallback} from "react";
+import {PaymentService} from "../../../logic/services/paymentService";
+import {InvoiceService} from "../../../logic/services/invoiceService";
+import {getErrorMessage} from "../../../logic/utils/getErrorMessage";
 import BulkPaymentModal from "./BulkPaymentModal";
 import PaymentModal from "./PaymentModal";
 import EditPaymentModal from "./EditPaymentModal";
-import { Modal, Button, Table, Badge, Spinner, InputGroup, Form } from "react-bootstrap";
+import {Modal, Button, Table, Badge, Spinner, InputGroup, Form} from "react-bootstrap";
 
 export default function PaymentManager() {
-    const [data, setData] = useState<any>({ results: [], count: 0, next: null, previous: null });
+    const [data, setData] = useState<any>({results: [], count: 0, next: null, previous: null});
     const [loading, setLoading] = useState(true);
 
     const [filters, setFilters] = useState({
@@ -53,7 +53,7 @@ export default function PaymentManager() {
                     }
                 };
             } catch (e) {
-                return { id: leaseId, data: { renter: "Error", unit: "Error" } };
+                return {id: leaseId, data: {renter: "Error", unit: "Error"}};
             }
         }));
 
@@ -62,8 +62,8 @@ export default function PaymentManager() {
             return acc;
         }, {});
 
-        if (isLookup) setLookupCache(prev => ({ ...prev, ...updateMap }));
-        else setCache(prev => ({ ...prev, ...updateMap }));
+        if (isLookup) setLookupCache(prev => ({...prev, ...updateMap}));
+        else setCache(prev => ({...prev, ...updateMap}));
     }, [cache, lookupCache]);
 
     const loadPayments = async () => {
@@ -79,14 +79,16 @@ export default function PaymentManager() {
         }
     };
 
-    useEffect(() => { loadPayments(); }, [filters.method, filters.page, filters.search, filters.lease]);
+    useEffect(() => {
+        loadPayments();
+    }, [filters.method, filters.page, filters.search, filters.lease]);
 
     const fetchUnpaidInvoices = async () => {
         setLookupLoading(true);
         try {
             const [unpaidRes, partialRes] = await Promise.all([
-                InvoiceService.list({ status: "unpaid", search: invoiceSearch, page_size: 10 }),
-                InvoiceService.list({ status: "partially_paid", search: invoiceSearch, page_size: 10 })
+                InvoiceService.list({status: "unpaid", search: invoiceSearch, page_size: 10}),
+                InvoiceService.list({status: "partially_paid", search: invoiceSearch, page_size: 10})
             ]);
             const combinedInvoices = [...(unpaidRes.results || []), ...(partialRes.results || [])];
             setUnpaidInvoices(combinedInvoices);
@@ -115,12 +117,21 @@ export default function PaymentManager() {
             }
         }
     };
-
+    const formatMonth = (dateString: string) => {
+        if (!dateString) return "Misc";
+        const date = new Date(dateString);
+        return date.toLocaleDateString('default', {
+            month: 'short',
+            year: 'numeric',
+            timeZone: 'UTC'
+        });
+    };
     return (
         <div className="bg-white rounded-4 shadow-sm overflow-hidden border">
             {/* HEADER & FILTERS */}
             <div className="p-3 p-md-4 border-bottom bg-white">
-                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                <div
+                    className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
                     <h5 className="fw-bold text-dark m-0 text-center text-md-start">Payment History</h5>
                     <div className="d-flex gap-2">
                         <button className="btn btn-primary rounded-pill px-3 fw-bold shadow-sm flex-grow-1"
@@ -137,17 +148,19 @@ export default function PaymentManager() {
                 <div className="row g-2">
                     <div className="col-12 col-md-4">
                         <InputGroup size="sm" className="bg-light rounded-pill overflow-hidden border-0">
-                            <InputGroup.Text className="bg-light border-0 ps-3"><i className="bi bi-search text-muted"></i></InputGroup.Text>
+                            <InputGroup.Text className="bg-light border-0 ps-3"><i
+                                className="bi bi-search text-muted"></i></InputGroup.Text>
                             <Form.Control className="bg-light border-0" placeholder="Search reference..."
                                           value={filters.search}
-                                          onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })} />
+                                          onChange={(e) => setFilters({...filters, search: e.target.value, page: 1})}/>
                         </InputGroup>
                     </div>
                     <div className="col-12 col-md-3">
                         <Form.Select size="sm" className="bg-light border-0 rounded-pill ps-3" value={filters.method}
-                                     onChange={(e) => setFilters({ ...filters, method: e.target.value, page: 1 })}>
+                                     onChange={(e) => setFilters({...filters, method: e.target.value, page: 1})}>
                             <option value="">All Methods</option>
-                            {PaymentService.getMethods().map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                            {PaymentService.getMethods().map(m => <option key={m.value}
+                                                                          value={m.value}>{m.label}</option>)}
                         </Form.Select>
                     </div>
                 </div>
@@ -156,7 +169,7 @@ export default function PaymentManager() {
             {/* MOBILE LIST VIEW */}
             <div className="d-block d-md-none">
                 {loading ? (
-                    <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
+                    <div className="text-center py-5"><Spinner animation="border" variant="primary"/></div>
                 ) : data.results.map((pay: any) => (
                     <div key={pay.id} className="p-3 border-bottom">
                         <div className="d-flex justify-content-between align-items-start mb-2">
@@ -165,7 +178,8 @@ export default function PaymentManager() {
                                 <div className="text-muted x-small">Transaction ID: #{pay.id}</div>
                             </div>
                             <div className="text-end">
-                                <div className="fw-bold text-success h5 mb-0">৳{Number(pay.amount).toLocaleString()}</div>
+                                <div
+                                    className="fw-bold text-success h5 mb-0">৳{Number(pay.amount).toLocaleString()}</div>
                                 <div className="badge bg-light text-dark border fw-normal x-small">{pay.method}</div>
                             </div>
                         </div>
@@ -175,8 +189,12 @@ export default function PaymentManager() {
                                 <div className="text-muted x-small">Unit: {cache[pay.lease]?.unit || "..."}</div>
                             </div>
                             <div className="btn-group">
-                                <button className="btn btn-sm btn-light border py-1" onClick={() => setEditingPayment(pay)}><i className="bi bi-pencil-square text-warning"></i></button>
-                                <button className="btn btn-sm btn-light border py-1" onClick={() => handleDelete(pay.id)}><i className="bi bi-trash text-danger"></i></button>
+                                <button className="btn btn-sm btn-light border py-1"
+                                        onClick={() => setEditingPayment(pay)}><i
+                                    className="bi bi-pencil-square text-warning"></i></button>
+                                <button className="btn btn-sm btn-light border py-1"
+                                        onClick={() => handleDelete(pay.id)}><i className="bi bi-trash text-danger"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -187,83 +205,138 @@ export default function PaymentManager() {
             <div className="d-none d-md-block table-responsive">
                 <table className="table table-hover align-middle mb-0">
                     <thead className="bg-light border-bottom">
-                        <tr className="text-muted x-small fw-bold text-uppercase">
-                            <th className="ps-4 py-3">Date</th>
-                            <th>Payer</th>
-                            <th>Unit</th>
-                            <th>Amount</th>
-                            <th>Ref</th>
-                            <th className="pe-4 text-end">Action</th>
-                        </tr>
+                    <tr className="text-muted x-small fw-bold text-uppercase">
+                        <th className="ps-4 py-3">Date</th>
+                        <th>Payer</th>
+                        <th>Unit</th>
+                        <th>Amount</th>
+                        <th>Ref</th>
+                        <th className="pe-4 text-end">Action</th>
+                    </tr>
                     </thead>
                     <tbody>
-                        {loading ? (
-                            <tr><td colSpan={6} className="text-center py-5"><Spinner animation="border" variant="primary" /></td></tr>
-                        ) : data.results.map((pay: any) => (
-                            <tr key={pay.id}>
-                                <td className="ps-4">
-                                    <div className="fw-bold text-dark small">{pay.payment_date}</div>
-                                    <div className="x-small text-muted">#{pay.id}</div>
-                                </td>
-                                <td>
-                                    <div className="fw-bold small text-primary">{cache[pay.lease]?.renter || "..."}</div>
-                                    <div className="text-muted x-small font-monospace">L-{pay.lease}</div>
-                                </td>
-                                <td><Badge bg="light" className="text-dark border fw-normal">{cache[pay.lease]?.unit || "..."}</Badge></td>
-                                <td className="fw-bold text-success">৳{Number(pay.amount).toLocaleString()}</td>
-                                <td className="small text-muted font-monospace">{pay.transaction_reference || "-"}</td>
-                                <td className="pe-4 text-end">
-                                    <div className="btn-group shadow-sm border rounded-3 overflow-hidden">
-                                        <button className="btn btn-sm btn-white border-end" onClick={() => setEditingPayment(pay)}><i className="bi bi-pencil-square text-warning"></i></button>
-                                        <button className="btn btn-sm btn-white text-danger" onClick={() => handleDelete(pay.id)}><i className="bi bi-trash"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                    {loading ? (
+                        <tr>
+                            <td colSpan={6} className="text-center py-5"><Spinner animation="border" variant="primary"/>
+                            </td>
+                        </tr>
+                    ) : data.results.map((pay: any) => (
+                        <tr key={pay.id}>
+                            <td className="ps-4">
+                                <div className="fw-bold text-dark small">{pay.payment_date}</div>
+                                <div className="x-small text-muted">#{pay.id}</div>
+                            </td>
+                            <td>
+                                <div className="fw-bold small text-primary">{cache[pay.lease]?.renter || "..."}</div>
+                                <div className="text-muted x-small font-monospace">L-{pay.lease}</div>
+                            </td>
+                            <td><Badge bg="light"
+                                       className="text-dark border fw-normal">{cache[pay.lease]?.unit || "..."}</Badge>
+                            </td>
+                            <td className="fw-bold text-success">৳{Number(pay.amount).toLocaleString()}</td>
+                            <td className="small text-muted font-monospace">{pay.transaction_reference || "-"}</td>
+                            <td className="pe-4 text-end">
+                                <div className="btn-group shadow-sm border rounded-3 overflow-hidden">
+                                    <button className="btn btn-sm btn-white border-end"
+                                            onClick={() => setEditingPayment(pay)}><i
+                                        className="bi bi-pencil-square text-warning"></i></button>
+                                    <button className="btn btn-sm btn-white text-danger"
+                                            onClick={() => handleDelete(pay.id)}><i className="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
                     </tbody>
                 </table>
             </div>
 
             {/* RESPONSIVE PAGINATION */}
-            <div className="p-3 border-top d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+            <div
+                className="p-3 border-top d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                 <span className="text-muted x-small">Records: {data.count}</span>
                 <div className="d-flex gap-2 w-100 w-md-auto">
-                    <Button variant="outline-secondary" size="sm" className="flex-grow-1" disabled={!data.previous} onClick={() => setFilters({ ...filters, page: filters.page - 1 })}>Prev</Button>
-                    <Button variant="outline-secondary" size="sm" className="flex-grow-1" disabled={!data.next} onClick={() => setFilters({ ...filters, page: filters.page + 1 })}>Next</Button>
+                    <Button variant="outline-secondary" size="sm" className="flex-grow-1" disabled={!data.previous}
+                            onClick={() => setFilters({...filters, page: filters.page - 1})}>Prev</Button>
+                    <Button variant="outline-secondary" size="sm" className="flex-grow-1" disabled={!data.next}
+                            onClick={() => setFilters({...filters, page: filters.page + 1})}>Next</Button>
                 </div>
             </div>
 
             {/* MODALS */}
-            {showBulkModal && <BulkPaymentModal onClose={() => setShowBulkModal(false)} onSuccess={() => { setShowBulkModal(false); loadPayments(); }} />}
-            {activePaymentInvoice && <PaymentModal invoice={activePaymentInvoice} onClose={() => setActivePaymentInvoice(null)} onSuccess={() => { setActivePaymentInvoice(null); loadPayments(); }} />}
-            {editingPayment && <EditPaymentModal payment={editingPayment} onClose={() => setEditingPayment(null)} onSuccess={() => { setEditingPayment(null); loadPayments(); }} />}
+            {showBulkModal && <BulkPaymentModal onClose={() => setShowBulkModal(false)} onSuccess={() => {
+                setShowBulkModal(false);
+                loadPayments();
+            }}/>}
+            {activePaymentInvoice &&
+                <PaymentModal invoice={activePaymentInvoice} onClose={() => setActivePaymentInvoice(null)}
+                              onSuccess={() => {
+                                  setActivePaymentInvoice(null);
+                                  loadPayments();
+                              }}/>}
+            {editingPayment &&
+                <EditPaymentModal payment={editingPayment} onClose={() => setEditingPayment(null)} onSuccess={() => {
+                    setEditingPayment(null);
+                    loadPayments();
+                }}/>}
 
             {/* INVOICE LOOKUP MODAL (Mobile Responsive) */}
-            <Modal show={showInvoiceLookup} onHide={() => setShowInvoiceLookup(false)} size="lg" centered fullscreen="sm-down">
+            <Modal show={showInvoiceLookup} onHide={() => setShowInvoiceLookup(false)} size="lg" centered
+                   fullscreen="sm-down">
                 <Modal.Header closeButton className="bg-primary text-white sticky-top">
                     <Modal.Title className="h6 fw-bold mb-0">Select Invoice</Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="p-0 bg-light">
-                    <div className="p-3 border-bottom bg-white sticky-top" style={{ top: '0', zIndex: 10 }}>
-                        <Form.Control type="text" placeholder="Search Renter or Unit..." value={invoiceSearch} onChange={(e) => setInvoiceSearch(e.target.value)} autoFocus />
+                    <div className="p-3 border-bottom bg-white sticky-top" style={{top: '0', zIndex: 10}}>
+                        <Form.Control type="text" placeholder="Search Renter or Unit..." value={invoiceSearch}
+                                      onChange={(e) => setInvoiceSearch(e.target.value)} autoFocus/>
                     </div>
                     <div>
                         {lookupLoading ? (
-                            <div className="text-center p-5"><Spinner animation="border" variant="primary" /></div>
+                            <div className="text-center p-5"><Spinner animation="border" variant="primary"/></div>
                         ) : (
                             unpaidInvoices.map(inv => {
                                 const remaining = (Number(inv.amount) || 0) - (Number(inv.paid_amount) || 0);
                                 return (
-                                    <div key={inv.id} className="p-3 bg-white border-bottom" onClick={() => { setShowInvoiceLookup(false); setActivePaymentInvoice(inv); }} style={{ cursor: 'pointer' }}>
-                                        <div className="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <div className="fw-bold text-primary small">{inv.invoice_number}</div>
-                                                <div className="fw-bold text-dark">{lookupCache[inv.lease]?.renter || "..."}</div>
-                                                <div className="text-muted x-small">Unit: {lookupCache[inv.lease]?.unit || "..."}</div>
+                                    <div
+                                        key={inv.id}
+                                        className="p-3 bg-white border-bottom list-group-item-action"
+                                        onClick={() => {
+                                            setShowInvoiceLookup(false);
+                                            setActivePaymentInvoice(inv);
+                                        }}
+                                        style={{cursor: 'pointer'}}
+                                    >
+                                        <div className="d-flex justify-content-between align-items-center">
+                                            <div className="d-flex flex-column">
+                                                {/* 1. The Month - Small, Bold, and Muted */}
+                                                <div
+                                                    className="text-muted fw-bold x-small text-uppercase mb-1 d-flex align-items-center">
+                                                    <i className="bi bi-calendar3 me-1 text-primary"></i>
+                                                    {formatMonth(inv.invoice_month)}
+                                                </div>
+
+                                                {/* 2. The Renter - This should be the boldest part */}
+                                                <div className="fw-bold text-dark mb-0">
+                                                    {lookupCache[inv.lease]?.renter || "..."}
+                                                </div>
+
+                                                {/* 3. Secondary Meta Info - Small and lighter */}
+                                                <div className="text-muted x-small">
+                                                    {inv.invoice_number} • Unit: {lookupCache[inv.lease]?.unit || "..."}
+                                                </div>
                                             </div>
+
                                             <div className="text-end">
-                                                <div className="fw-bold text-danger">৳{remaining.toLocaleString()}</div>
-                                                <Badge bg={inv.status === 'partially_paid' ? "info-xs" : "danger-xs"} className="x-small">
+                                                {/* 4. The Amount - Distinctive color */}
+                                                <div className="fw-bold text-danger h6 mb-1">
+                                                    ৳{remaining.toLocaleString()}
+                                                </div>
+                                                <Badge
+                                                    bg={inv.status === 'partially_paid' ? "info" : "danger"}
+                                                    className="x-small rounded-pill"
+                                                    style={{fontSize: '0.65rem'}}
+                                                >
                                                     {inv.status === 'partially_paid' ? "PARTIAL" : "DUE"}
                                                 </Badge>
                                             </div>

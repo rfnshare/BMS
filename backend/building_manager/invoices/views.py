@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 from common.pagination import CustomPagination
+from notifications.utils import NotificationService
 from permissions.custom_permissions import IsStaffOrReadOnlyForRenter
 from permissions.drf import RoleBasedPermission
 from permissions.mixins import RenterAccessMixin
