@@ -2,7 +2,10 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+
+from celery.schedules import crontab
 from dotenv import load_dotenv
+
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -35,6 +38,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "drf_spectacular",
     "rest_framework_simplejwt.token_blacklist",
+    'django_celery_beat',
 
     # Local
     "accounts",
@@ -243,6 +247,32 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 SECURE_SSL_REDIRECT = False
 SECURE_HSTS_SECONDS = 0
+
+# ============================
+# Celery Configuration
+# ============================
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Dhaka'
+
+# This enables the database-backed scheduler
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+BILLING_DAY = int(os.getenv("BILLING_DAY_OF_MONTH", 1))
+BILLING_HR = int(os.getenv("BILLING_HOUR", 0))
+BILLING_MIN = int(os.getenv("BILLING_MINUTE", 5))
+
+CELERY_BEAT_SCHEDULE = {
+    'auto-generate-invoices-first-of-month': {
+        'task': 'generate_monthly_invoices_task', # Match the name in Step A
+        'schedule': crontab(
+            day_of_month=BILLING_DAY,
+            hour=BILLING_HR,
+            minute=BILLING_MIN
+        ),
+    },
+}
 
 # ============================
 # MISC
