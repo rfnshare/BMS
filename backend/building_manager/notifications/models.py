@@ -33,7 +33,13 @@ class Notification(BaseAuditModel):
     sent_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     sent_at = models.DateTimeField(default=timezone.now)
     error_message = models.TextField(blank=True, null=True)
-
+    task_log = models.ForeignKey(
+        'scheduling.TaskLog',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notifications'
+    )
     class Meta:
         ordering = ["-sent_at"]
 

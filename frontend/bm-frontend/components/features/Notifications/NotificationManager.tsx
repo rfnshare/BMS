@@ -33,26 +33,22 @@ export default function NotificationManager() {
   };
 
   return (
-    /* 🔥 Changed to p-0 to ensure sticky header hits the absolute edges */
     <div className="bg-light min-vh-100 pb-5 position-relative">
 
-      {/* 1. STICKY HEADER
-          FIX: Removed mx-n1. Added top: 0 because the new Layout.tsx handles
-          the scroll inside the main tag, so top: 0 is relative to the content area.
-      */}
+      {/* 1. STICKY HEADER */}
       <div
         className="sticky-top bg-white border-bottom shadow-sm px-3 py-3 mb-3"
         style={{
             zIndex: 1020,
-            top: '-24px', // 🔥 Pulls up to hide the default layout padding gap
-            marginTop: '-24px' // Matches the Layout's default padding to look flush
+            top: '-24px',
+            marginTop: '-24px'
         }}
       >
         <Container className="px-0" style={{ maxWidth: '800px' }}>
           <div className="d-flex justify-content-between align-items-center mb-3">
             <div>
-               <h5 className="fw-bold m-0 text-dark">System Logs</h5>
-               <small className="text-muted d-none d-md-block">Real-time delivery status</small>
+               <h5 className="fw-bold m-0 text-dark">Communication Logs</h5>
+               <small className="text-muted d-none d-md-block">Traceability & Delivery status</small>
             </div>
             <button className="btn btn-light border-0 text-primary" onClick={loadNotifications}>
               <i className={`bi bi-arrow-clockwise fs-5 ${loading ? 'spinner-border spinner-border-sm' : ''}`}></i>
@@ -62,7 +58,7 @@ export default function NotificationManager() {
           <div className="d-flex gap-2 overflow-auto no-scrollbar pb-1">
             <input
               className="form-control rounded-pill bg-light border-0 px-3"
-              placeholder="Search renter..."
+              placeholder="Search renter or invoice..."
               style={{ minWidth: '160px', fontSize: '1rem' }}
               value={filters.search}
               onChange={(e) => setFilters({...filters, search: e.target.value, page: 1})}
@@ -72,7 +68,7 @@ export default function NotificationManager() {
               value={filters.status}
               onChange={e => setFilters({...filters, status: e.target.value, page: 1})}
             >
-              <option value="">Status</option>
+              <option value="">All Status</option>
               <option value="sent">Sent</option>
               <option value="failed">Failed</option>
             </Form.Select>
@@ -99,14 +95,31 @@ export default function NotificationManager() {
                         <div className="text-muted x-small font-monospace mt-1">{log.recipient}</div>
                       </div>
                     </div>
-                    <Badge className={`rounded-pill px-2 py-1 x-small text-uppercase border-0 ${getStatusBadge(log.status)}`}>
-                      {log.status}
-                    </Badge>
+                    <div className="text-end">
+                        <Badge className={`rounded-pill px-2 py-1 x-small text-uppercase border-0 ${getStatusBadge(log.status)}`}>
+                        {log.status}
+                        </Badge>
+                        {/* 🔥 NEW: Showing the Task Log Name so you know what triggered this */}
+                        {log.task_log_name && (
+                            <div className="text-muted mt-1" style={{ fontSize: '0.6rem', fontWeight: 'bold' }}>
+                                <i className="bi bi-gear-fill me-1"></i>
+                                {log.task_log_name}
+                            </div>
+                        )}
+                    </div>
                   </div>
 
                   <div className="bg-light p-3 rounded-3 mb-3 border border-light-subtle">
-                    <div className="fw-bold text-primary text-uppercase mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.5px' }}>
-                      {log.notification_type?.replace(/_/g, ' ')}
+                    <div className="d-flex justify-content-between">
+                        <div className="fw-bold text-primary text-uppercase mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.5px' }}>
+                        {log.notification_type?.replace(/_/g, ' ')}
+                        </div>
+                        {/* 🔥 NEW: Show actual Invoice Number (Traceability) */}
+                        {log.invoice_number && (
+                            <div className="fw-bold text-dark small">
+                                {log.invoice_number}
+                            </div>
+                        )}
                     </div>
                     <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{log.subject || "Security Alert"}</div>
                   </div>
@@ -114,7 +127,7 @@ export default function NotificationManager() {
                   {log.status === 'failed' && (
                     <div className="p-2 px-3 bg-danger bg-opacity-10 text-danger rounded-3 x-small fw-bold mb-3 border border-danger border-opacity-10">
                       <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                      {log.error_message || "API Auth Missing"}
+                      {log.error_message || "Delivery Failed"}
                     </div>
                   )}
 
@@ -123,11 +136,11 @@ export default function NotificationManager() {
                       <i className="bi bi-clock me-1"></i>
                       {new Date(log.sent_at).toLocaleString()}
                     </div>
-                    {log.invoice_id && (
-                      <span className="fw-bold text-primary small">
-                         INV-{log.invoice_id}
-                      </span>
-                    )}
+                    {/* Footnote showing the user who triggered it */}
+                    <div className="text-muted" style={{ fontSize: '0.7rem' }}>
+                        <i className="bi bi-person-circle me-1"></i>
+                        {log.sent_by_name || 'System'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -137,10 +150,7 @@ export default function NotificationManager() {
       </Container>
 
       {/* 3. PAGINATION FOOTER */}
-      <div
-        className="fixed-bottom bg-white border-top p-3 shadow-lg"
-        style={{ zIndex: 1010 }}
-      >
+      <div className="fixed-bottom bg-white border-top p-3 shadow-lg" style={{ zIndex: 1010 }}>
         <Container className="px-0 d-flex justify-content-between align-items-center" style={{ maxWidth: '800px' }}>
           <span className="text-muted small">Total Logs: <b>{data.count}</b></span>
           <div className="d-flex gap-2">

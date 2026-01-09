@@ -17,14 +17,15 @@ class NotificationService:
 
     @staticmethod
     def send(
-        notification_type,
-        renter,
-        channel,
-        message,
-        subject=None,
-        invoice=None,
-        sent_by=None,
-        attachment_url=None,
+            notification_type,
+            renter,
+            channel,
+            message,
+            subject=None,
+            invoice=None,
+            sent_by=None,
+            attachment_url=None,
+            task_log=None, **kwargs
     ):
         recipient = renter.user.email if channel == "email" else renter.phone_number
 
@@ -38,6 +39,8 @@ class NotificationService:
             message=message,
             sent_by=sent_by,
             status="pending",
+            task_log=task_log,
+            **kwargs
         )
 
         try:

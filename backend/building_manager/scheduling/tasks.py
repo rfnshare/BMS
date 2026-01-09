@@ -37,6 +37,12 @@ def generate_monthly_invoices_task(executed_by_id=None):
     messages = []
 
     active_leases = Lease.objects.filter(status="active").select_related('renter__user')
+    task_log = TaskLog.objects.create(
+        task_name="AUTO_GENERATE_INVOICES",
+        status="IN_PROGRESS",
+        executed_by=executed_by,
+        message="Task started..."
+    )
 
     for lease in active_leases:
         renter = lease.renter
@@ -82,7 +88,8 @@ def generate_monthly_invoices_task(executed_by_id=None):
                     message=body,
                     invoice=invoice,
                     sent_by=executed_by,
-                    attachment_url=attachment_url
+                    attachment_url=attachment_url,
+                    task_log=task_log
                 )
 
             # WhatsApp
@@ -104,12 +111,8 @@ def generate_monthly_invoices_task(executed_by_id=None):
         except Exception as e:
             messages.append(f"Error LS-{lease.id}: {str(e)}")
 
-    # Log the Task Result
-    TaskLog.objects.create(
-        task_name="AUTO_GENERATE_INVOICES",
-        status="SUCCESS" if created_count > 0 else "SKIPPED",
-        executed_by=executed_by,
-        message=f"Created: {created_count}, Skipped: {skipped_count}\n" + "\n".join(messages)[:900]
-    )
+    task_log.status = "SUCCESS" if created_count > 0 else "SKIPPED"
+    task_log.message = f"Created: {created_count}. Details:\n" + "\n".join(messages)[:900]
+    task_log.save()
 
     return f"Processed {created_count} invoices."

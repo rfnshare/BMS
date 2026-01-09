@@ -3,98 +3,110 @@ from decimal import Decimal
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from rest_framework import request
 
 from invoices.services import generate_invoice_pdf
 from notifications.utils import NotificationService
 from payments.models import Payment
 from leases.models import Lease
 from scheduling.api.views import get_email_message, get_whatsapp_message
+from scheduling.models import TaskLog
 
 logger = logging.getLogger(__name__)
 
 
 @receiver(post_save, sender=Payment)
 def update_invoice_and_lease(sender, instance: Payment, created, **kwargs):
-    """
-    Handle payments:
-    - Single invoice: regenerate PDF + send email/WhatsApp
-    - Bulk (lease-wide) payment: update invoices + send one summary email/WhatsApp
-    """
     if not created:
         return
 
-    payment_amount = Decimal(instance.amount or 0)
-    lease: Lease = instance.lease if instance.lease else (instance.invoice.lease if instance.invoice else None)
-    if not lease:
-        logger.warning(f"Payment {instance.id} has no linked lease or invoice.")
-        return
+    # 1. START THE TASK LOG (Traceability Parent)
+    # Get the user who executed the payment or fallback to the renter's user
+    executed_by = getattr(instance, '_executed_by', None) or instance.lease.renter.user
 
-    # -------------------------
-    # SINGLE-INVOICE payment
-    # -------------------------
-    if instance.invoice_id:
-        invoice = instance.invoice
-        balance = invoice.amount - invoice.paid_amount
-        applied = min(balance, payment_amount)
-        invoice.paid_amount += applied
-        payment_amount -= applied
+    task_log = TaskLog.objects.create(
+        task_name="PAYMENT_RECEIVED_NOTIFICATION",
+        status="IN_PROGRESS",
+        executed_by=executed_by,
+        message=f"Processing payment {instance.id} for lease {instance.lease_id}"
+    )
 
-        invoice.status = "paid" if invoice.paid_amount >= invoice.amount else "partially_paid"
-        invoice.save(update_fields=["paid_amount", "status"])
+    try:
+        payment_amount = Decimal(instance.amount or 0)
+        lease = instance.lease if instance.lease else (instance.invoice.lease if instance.invoice else None)
 
-        # Update lease deposit_status if security deposit
-        if invoice.invoice_type == "security_deposit" and invoice.status == "paid" and lease.deposit_status != "paid":
-            lease.deposit_status = "paid"
-            lease.save(update_fields=["deposit_status"])
+        if not lease:
+            task_log.status = "FAILURE"
+            task_log.message = "Payment has no linked lease or invoice."
+            task_log.save()
+            return
 
-        # Notify renter with PDF
-        notify_single_invoice(invoice)
-        return
+        # SINGLE-INVOICE Logic
+        if instance.invoice_id:
+            invoice = instance.invoice
+            balance = invoice.amount - invoice.paid_amount
+            applied = min(balance, payment_amount)
+            invoice.paid_amount += applied
+            invoice.status = "paid" if invoice.paid_amount >= invoice.amount else "partially_paid"
+            invoice.save(update_fields=["paid_amount", "status"])
 
-    # -------------------------
-    # BULK PAYMENT (no invoice linked)
-    # -------------------------
-    invoices = lease.invoices.filter(
-        status__in=["unpaid", "partially_paid"]
-    ).exclude(invoice_type__in=["security_deposit", "adjustment"]).order_by("invoice_date", "id")
+            if invoice.invoice_type == "security_deposit" and invoice.status == "paid":
+                lease.deposit_status = "paid"
+                lease.save(update_fields=["deposit_status"])
 
-    # Inside bulk payment block
-    updated_invoices = []
-    for inv in invoices:
-        if payment_amount <= 0:
-            break
-        balance = inv.amount - inv.paid_amount
-        if balance <= 0:
-            continue
+            # Pass task_log to the helper
+            notify_single_invoice(invoice, task_log=task_log)
 
-        applied = min(balance, payment_amount)
-        inv.paid_amount += applied
-        payment_amount -= applied
-        inv.status = "paid" if inv.paid_amount >= inv.amount else "partially_paid"
-        inv.save(update_fields=["paid_amount", "status"])
-        updated_invoices.append(inv)
+            task_log.status = "SUCCESS"
+            task_log.message = f"Applied payment to Invoice {invoice.invoice_number}"
+            task_log.save()
+            return
 
-    # Instead of calling notify_invoices(updated_invoices)
-    # call a bulk summary function
-    if updated_invoices:
-        send_bulk_payment_summary(updated_invoices)  # No PDF, just one summary email/WhatsApp
+        # BULK PAYMENT Logic
+        invoices = lease.invoices.filter(status__in=["unpaid", "partially_paid"]).exclude(
+            invoice_type__in=["security_deposit", "adjustment"]
+        ).order_by("invoice_date", "id")
+
+        updated_invoices = []
+        for inv in invoices:
+            if payment_amount <= 0: break
+            balance = inv.amount - inv.paid_amount
+            if balance <= 0: continue
+
+            applied = min(balance, payment_amount)
+            inv.paid_amount += applied
+            payment_amount -= applied
+            inv.status = "paid" if inv.paid_amount >= inv.amount else "partially_paid"
+            inv.save(update_fields=["paid_amount", "status"])
+            updated_invoices.append(inv)
+
+        if updated_invoices:
+            # Pass task_log to the helper
+            send_bulk_payment_summary(updated_invoices, task_log=task_log)
+
+        task_log.status = "SUCCESS"
+        task_log.message = f"Bulk payment applied to {len(updated_invoices)} invoices."
+        task_log.save()
+
+    except Exception as e:
+        task_log.status = "FAILURE"
+        task_log.message = f"Error processing payment: {str(e)}"
+        task_log.save()
+        logger.exception(f"Payment signal error: {e}")
 
 
 # -------------------------
 # Helpers
 # -------------------------
-def notify_single_invoice(invoice):
+def notify_single_invoice(invoice, task_log=None): # Added task_log param
     renter = invoice.lease.renter
     user = getattr(renter, "user", None)
 
     try:
-        logger.info(f"Regenerating PDF for Invoice {invoice.id}.")
         generate_invoice_pdf(invoice)
-
         attachment_url = _get_attachment_url(invoice.invoice_pdf.url if invoice.invoice_pdf else None)
 
-        # Email
-        if getattr(renter, "prefers_email", False) and renter.email:
+        if getattr(renter, "prefers_email", False) and renter.user.email:
             subject, body = get_email_message(invoice, renter, "invoice_payment_update")
             NotificationService.send(
                 notification_type="invoice_payment_update",
@@ -104,10 +116,10 @@ def notify_single_invoice(invoice):
                 message=body,
                 invoice=invoice,
                 sent_by=user,
-                attachment_url=attachment_url
+                attachment_url=attachment_url,
+                task_log=task_log,  # <--- LINKED!
             )
 
-        # WhatsApp
         if getattr(renter, "prefers_whatsapp", False) and renter.phone_number:
             message = get_whatsapp_message(invoice, renter, "invoice_payment_update")
             NotificationService.send(
@@ -117,14 +129,14 @@ def notify_single_invoice(invoice):
                 message=message,
                 invoice=invoice,
                 sent_by=user,
-                attachment_url=attachment_url
+                attachment_url=attachment_url,
+                task_log=task_log # <--- LINKED!
             )
-
     except Exception as e:
-        logger.exception(f"Failed to notify single invoice {invoice.id}: {e}")
+        logger.exception(f"Failed to notify: {e}")
 
 
-def send_bulk_payment_summary(invoices):
+def send_bulk_payment_summary(invoices, task_log=None ):
     renter = invoices[0].lease.renter
     user = getattr(renter, "user", None)
 
@@ -172,7 +184,6 @@ def send_bulk_payment_summary(invoices):
     )
 
     try:
-        # Email
         if getattr(renter, "prefers_email", False) and renter.email:
             NotificationService.send(
                 notification_type="bulk_payment_update",
@@ -181,9 +192,9 @@ def send_bulk_payment_summary(invoices):
                 subject=f"Payment Update - {len(invoices)} Invoices Updated",
                 message=email_body,
                 sent_by=user,
+                task_log=task_log,  # <--- LINKED!
             )
 
-        # WhatsApp
         if getattr(renter, "prefers_whatsapp", False) and renter.phone_number:
             NotificationService.send(
                 notification_type="bulk_payment_update",
@@ -191,10 +202,10 @@ def send_bulk_payment_summary(invoices):
                 channel="whatsapp",
                 message=whatsapp_message,
                 sent_by=user,
+                task_log=task_log  # <--- LINKED!
             )
-
     except Exception as e:
-        logger.exception(f"Failed to send bulk payment summary: {e}")
+        logger.exception(f"Failed to send bulk summary: {e}")
 
 
 def _get_attachment_url(pdf_url):
