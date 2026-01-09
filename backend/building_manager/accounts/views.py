@@ -74,6 +74,13 @@ class RequestOTP(APIView):
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=404)
 
+        renter_profile = getattr(user, 'renter_profile', None)
+
+        if not renter_profile or renter_profile.status != "active":
+            return Response(
+                {"error": "Your account is currently inactive. Please contact the manager."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         # Generate OTP
         RenterOTP.generate_otp(user)
 

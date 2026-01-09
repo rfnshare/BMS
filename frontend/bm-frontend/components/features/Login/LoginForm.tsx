@@ -126,14 +126,18 @@ export default function LoginForm(props: LoginFormProps) {
                 {/* DYNAMIC FEEDBACK MESSAGE */}
                 {message && (
                     <div
-                        className={`mt-4 p-3 rounded-4 text-center small fw-bold animate__animated animate__fadeInUp ${
-                            message.toLowerCase().includes("error") ||
-                            message.toLowerCase().includes("failed") ||
-                            message.toLowerCase().includes("invalid")
-                                ? "bg-danger-subtle text-danger border border-danger-subtle"
-                                : "bg-success-subtle text-success border border-success-subtle"
+                        className={`mt-4 p-3 rounded-4 text-center small fw-bold animate__animated animate__shakeX ${
+                            message.toLowerCase().includes("denied") || message.toLowerCase().includes("inactive")
+                                ? "bg-warning-subtle text-dark border border-warning" // Warning style for Inactive
+                                : message.toLowerCase().includes("error") || message.toLowerCase().includes("failed")
+                                    ? "bg-danger-subtle text-danger border border-danger-subtle" // Danger for System errors
+                                    : "bg-success-subtle text-success border border-success-subtle" // Success
                         }`}
                     >
+                        {/* If it's a "Denied" error, add a lock icon */}
+                        {(message.includes("Denied") || message.includes("inactive")) && (
+                            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                        )}
                         {message}
                     </div>
                 )}
