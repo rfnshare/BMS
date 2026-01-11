@@ -12,12 +12,23 @@ from permissions.drf import RoleBasedPermission
 @extend_schema(tags=["Notifications"])
 class NotificationListView(generics.ListAPIView):
     """
-    View all sent notifications (filterable by type, channel, status, or user)
+    View notifications. Staff see all; Renters see only their own.
     """
-    queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission]
     pagination_class = CustomPagination
     filterset_fields = ["notification_type", "channel", "status", "sent_by"]
     search_fields = ["recipient", "subject", "message"]
     ordering_fields = ["sent_at", "status"]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # 1. Staff/Admin check
+        if user.is_superadmin or user.is_manager:
+            return Notification.objects.all()
+
+        # 2. Renter check
+        # We filter the Notification table where the 'renter'
+        # is the one linked to this logged-in user.
+        return Notification.objects.filter(renter__user=user)

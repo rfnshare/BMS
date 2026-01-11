@@ -1,6 +1,6 @@
 # scheduling/api/views.py
 from datetime import timedelta
-
+from invoices.services import generate_invoice_pdf
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
@@ -8,7 +8,7 @@ from rest_framework import generics, filters, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from django.conf import settings
 from common.pagination import CustomPagination
 from invoices.models import Invoice
 from leases.models import Lease
@@ -244,91 +244,117 @@ def get_whatsapp_message(invoice, renter, message_type="invoice_created"):
 # Manual Invoice Generation
 # -------------------------------
 
-@extend_schema(tags=["Scheduling"])
 class ManualInvoiceGenerationView(APIView):
     """
-
-    Create monthly invoices and notify renters via email/WhatsApp.
+    Create monthly invoices, generate PDFs, and notify renters with attachments.
     """
     permission_classes = [IsAuthenticated, RoleBasedPermission]
 
     def post(self, request, *args, **kwargs):
         today = timezone.now().date()
+        target_month_name = today.strftime('%B %Y')
+        target_description = f"Monthly rent for {target_month_name}"
         current_month_start = today.replace(day=1)
         user = request.user
-        notif_statuses = []
+
+        # 1. START THE PARENT LOG
+        task_log = TaskLog.objects.create(
+            task_name="GENERATE_INVOICES",
+            status="IN_PROGRESS",
+            executed_by=user,
+            message=f"Manual bulk generation started for {target_month_name}"
+        )
+
         created_count = 0
         skipped_count = 0
         messages = []
 
-        active_leases = Lease.objects.filter(status="active")
+        active_leases = Lease.objects.filter(status="active").select_related('renter__user')
 
         for lease in active_leases:
             renter = lease.renter
 
-            if Invoice.objects.filter(lease=lease, invoice_type="rent", invoice_date__gte=current_month_start).exists():
+            if Invoice.objects.filter(
+                    lease=lease,
+                    invoice_type="rent",
+                    invoice_month=current_month_start
+            ).exists():
                 skipped_count += 1
-                messages.append(f"Skipped lease {lease.id} — invoice exists")
+                messages.append(f"SKIPPED LS-{lease.id}: Already exists.")
                 continue
 
-            due_date = current_month_start + timedelta(days=7)
-            invoice = Invoice(
-                lease=lease,
-                invoice_type="rent",
-                amount=lease.rent_amount,
-                due_date=due_date,
-                status="unpaid",
-                description=f"Monthly rent for {today.strftime('%B %Y')}"
-            )
-            invoice._skip_signal_notify = True  # mark in memory only
-            invoice.save()
-
-            created_count += 1
-            messages.append(f"Created invoice {invoice.invoice_number or invoice.id} for lease {lease.id}")
-
-            # -------------------
-            # Send notifications
-            # -------------------
-            if renter.prefers_email:
-                subject, body = get_email_message(invoice, renter, message_type="invoice_created")
-                notif = NotificationService.send(
-                    notification_type="invoice_created",
-                    renter=renter,
-                    channel="email",
-                    subject=subject,
-                    message=body,
-                    invoice=invoice,
-                    sent_by=user
+            try:
+                due_date = current_month_start + timedelta(days=7)
+                invoice = Invoice(
+                    lease=lease,
+                    invoice_type="rent",
+                    amount=lease.rent_amount,
+                    due_date=due_date,
+                    invoice_month=current_month_start,
+                    status="unpaid",
+                    description=target_description
                 )
-                notif_statuses.append(f"Email: {notif.status}")
+                invoice._skip_signal_notify = True
+                invoice.save()
 
-            if renter.prefers_whatsapp:
-                message = get_whatsapp_message(invoice, renter, message_type="invoice_created")
-                notif = NotificationService.send(
-                    notification_type="invoice_created",
-                    renter=renter,
-                    channel="whatsapp",
-                    message=message,
-                    invoice=invoice,
-                    sent_by=user
-                )
-                notif_statuses.append(f"Whatsapp: {notif.status}")
+                generate_invoice_pdf(invoice)
+                invoice.refresh_from_db()
 
-        task_status = "FAILURE" if any("failed" in m.lower() for m in messages) else "SUCCESS"
+                attachment_url = None
+                if invoice.invoice_pdf:
+                    site_url = getattr(settings, "SITE_URL", "http://localhost:8000").rstrip("/")
+                    attachment_url = f"{site_url}{invoice.invoice_pdf.url}"
 
-        # Log Task
-        TaskLog.objects.create(
-            task_name="GENERATE_INVOICES",
-            status=task_status,
-            executed_by=user,
-            message="\n".join(messages)[:1000]
-        )
+                # 5. Email Notification
+                if renter.prefers_email and renter.user.email:
+                    subject, body = get_email_message(invoice, renter, message_type="invoice_created")
+                    NotificationService.send(
+                        notification_type="invoice_created",
+                        renter=renter,
+                        channel="email",
+                        subject=subject,
+                        message=body,
+                        invoice=invoice,
+                        sent_by=user,
+                        attachment_url=attachment_url,
+                        task_log=task_log,  # Linked correctly
+                    )
+
+                # 6. WhatsApp Notification
+                if renter.prefers_whatsapp and renter.phone_number:
+                    wa_message = get_whatsapp_message(invoice, renter, message_type="invoice_created")
+                    NotificationService.send(
+                        notification_type="invoice_created",
+                        renter=renter,
+                        channel="whatsapp",
+                        message=wa_message,
+                        invoice=invoice,
+                        sent_by=user,
+                        attachment_url=attachment_url,
+                        task_log=task_log,  # 🔥 FIXED: Now linked to the TaskLog
+                    )
+
+                created_count += 1
+                messages.append(f"SUCCESS: LS-{lease.id} (Inv: {invoice.invoice_number})")
+
+            except Exception as e:
+                messages.append(f"ERROR LS-{lease.id}: {str(e)}")
+
+        # 7. REFINED STATUS LOGIC
+        if created_count > 0:
+            task_log.status = "SUCCESS"
+        elif skipped_count > 0 and created_count == 0:
+            task_log.status = "SKIPPED"
+        else:
+            task_log.status = "FAILURE"
+
+        task_log.message = f"Created: {created_count}, Skipped: {skipped_count}\n" + "\n".join(messages)[:800]
+        task_log.save()
 
         return Response({
-            "message": "Manual invoice generation completed",
+            "message": "Bulk processing completed.",
             "created": created_count,
-            "skipped": skipped_count,
-            "details": messages
+            "skipped": skipped_count
         }, status=status.HTTP_200_OK)
 
 
@@ -348,50 +374,66 @@ class ManualRentReminderView(APIView):
         today = timezone.now().date()
         due_soon = today + timedelta(days=3)
 
+        # 1. START THE PARENT LOG (Audit Trail Initialization)
+        task_log = TaskLog.objects.create(
+            task_name="RENT_REMINDER",
+            status="IN_PROGRESS",
+            executed_by=user,
+            message=f"Manual rent reminder started for invoices due by {due_soon}"
+        )
+
         invoices_due = Invoice.objects.filter(
             due_date__lte=due_soon,
             status__in=["draft", "unpaid", "partially_paid"]
-        )
+        ).select_related('lease__renter__user')
 
         messages = []
-        notif_statuses = []
-        for invoice in invoices_due:
-            renter = invoice.lease.renter
 
-            if renter.prefers_email:
-                subject, body = get_email_message(invoice, renter, message_type="rent_reminder")
-                notif = NotificationService.send(
-                    notification_type="rent_reminder",
-                    renter=renter,
-                    channel="email",
-                    subject=subject,
-                    message=body,
-                    invoice=invoice,
-                    sent_by=user
-                )
-                notif_statuses.append(f"Email: {notif.status}")
+        try:
+            for invoice in invoices_due:
+                renter = invoice.lease.renter
 
-            if renter.prefers_whatsapp:
-                message = get_whatsapp_message(invoice, renter, message_type="rent_reminder")
-                notif = NotificationService.send(
-                    notification_type="rent_reminder",
-                    renter=renter,
-                    channel="whatsapp",
-                    message=message,
-                    invoice=invoice,
-                    sent_by=user
-                )
-                notif_statuses.append(f"Whatsapp: {notif.status}")
+                # Email Notification
+                if renter.prefers_email and renter.user.email:
+                    subject, body = get_email_message(invoice, renter, message_type="rent_reminder")
+                    NotificationService.send(
+                        notification_type="rent_reminder",
+                        renter=renter,
+                        channel="email",
+                        subject=subject,
+                        message=body,
+                        invoice=invoice,
+                        task_log=task_log,  # <--- LINKED
+                        sent_by=user
+                    )
 
-            messages.append(f"Reminder sent for invoice {invoice.invoice_number}")
+                # WhatsApp Notification
+                if renter.prefers_whatsapp and renter.phone_number:
+                    message = get_whatsapp_message(invoice, renter, message_type="rent_reminder")
+                    NotificationService.send(
+                        notification_type="rent_reminder",
+                        renter=renter,
+                        channel="whatsapp",
+                        message=message,
+                        invoice=invoice,
+                        task_log=task_log,  # <--- FIXED: Linked this to TaskLog
+                        sent_by=user
+                    )
 
-        task_status = "FAILURE" if any("failed" in m.lower() for m in messages) else "SUCCESS"
-        TaskLog.objects.create(
-            task_name="RENT_REMINDER",
-            status=task_status,
-            executed_by=user,
-            message="\n".join(messages)[:1000]
-        )
+                messages.append(f"Reminder sent for invoice {invoice.invoice_number}")
+
+            # 2. FINALIZE TASK LOG
+            task_log.status = "SUCCESS" if invoices_due.exists() else "SKIPPED"
+            task_log.message = f"Processed {len(invoices_due)} reminders.\n" + "\n".join(messages)[:800]
+            task_log.save()
+
+        except Exception as e:
+            # 3. LOG FAILURE FOR AUDIT
+            task_log.status = "FAILURE"
+            task_log.message = f"Critical Error: {str(e)}"
+            task_log.save()
+            return Response({"detail": "Error during reminder processing."},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({
             "status": "success",
@@ -413,73 +455,86 @@ class ManualOverdueDetectionView(APIView):
     def post(self, request):
         user = request.user
         today = timezone.now().date()
+        # Invoices due 30+ days ago are considered "Long Overdue"
         overdue_threshold = today - timedelta(days=30)
 
-        # Attempt to filter overdue invoices
-        try:
-            overdue_invoices = Invoice.objects.filter(
-                due_date__lte=overdue_threshold,
-                status__in=["draft", "unpaid", "partially_paid"]
-            )
-        except Exception as e:
-            return Response({
-                "status": "error",
-                "message": "Internal server error",
-                "errors": str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        messages = []
-        notif_statuses = []
-
-        # Loop through overdue invoices and send notifications
-        for invoice in overdue_invoices:
-            try:
-                renter = invoice.lease.renter
-                if renter.prefers_email:
-                    subject, body = get_email_message(invoice, renter, message_type="overdue_notice")
-                    notif = NotificationService.send(
-                        notification_type="overdue_notice",
-                        renter=renter,
-                        channel="email",
-                        subject=subject,
-                        message=body,
-                        invoice=invoice,
-                        sent_by=user
-                    )
-                    notif_statuses.append(f"Email: {notif.status}")
-
-                if renter.prefers_whatsapp:
-                    message = get_whatsapp_message(invoice, renter, message_type="overdue_notice")
-                    notif = NotificationService.send(
-                        notification_type="overdue_notice",
-                        renter=renter,
-                        channel="whatsapp",
-                        message=message,
-                        invoice=invoice,
-                        sent_by=user
-                    )
-                    notif_statuses.append(f"Whatsapp: {notif.status}")
-
-                messages.append(f"Overdue notice sent for invoice {invoice.invoice_number}")
-
-            except Exception as e:
-                messages.append(f"Failed to process invoice {invoice.invoice_number}: {str(e)}")
-
-        # Determine task status based on whether any failures occurred
-        if any("failed" in m.lower() for m in messages):
-            task_status = "FAILURE"
-        else:
-            task_status = "SUCCESS"
-
-        # Log Task
-        TaskLog.objects.create(
-            task_name="CUSTOM",
-            status=task_status,
+        # 1. START THE PARENT LOG (Audit Trail)
+        task_log = TaskLog.objects.create(
+            task_name="OVERDUE_DETECTION",  # Fixed: Changed from RENT_REMINDER
+            status="IN_PROGRESS",
             executed_by=user,
-            message="\n".join(messages)[:1000]
+            message=f"Detecting invoices overdue since {overdue_threshold}"
         )
 
-        return Response({
-            "status": "success",
-            "message": f"{len(overdue_invoices)} overdue notices processed"
-        }, status=status.HTTP_200_OK)
+        try:
+            # 2. FETCH OVERDUE INVOICES
+            overdue_invoices = Invoice.objects.filter(
+                due_date__lte=overdue_threshold,
+                status__in=["unpaid", "partially_paid"]  # Drafts usually aren't sent as overdue
+            ).select_related('lease__renter__user')
+
+            if not overdue_invoices.exists():
+                task_log.status = "SKIPPED"
+                task_log.message = "No overdue invoices found for this threshold."
+                task_log.save()
+                return Response({"message": "No overdue invoices found."}, status=status.HTTP_200_OK)
+
+            messages = []
+
+            # 3. PROCESSING LOOP
+            for invoice in overdue_invoices:
+                try:
+                    renter = invoice.lease.renter
+
+                    # Email Notification
+                    if renter.prefers_email and renter.user.email:
+                        subject, body = get_email_message(invoice, renter, message_type="overdue_notice")
+                        NotificationService.send(
+                            notification_type="overdue_notice",
+                            renter=renter,
+                            channel="email",
+                            subject=subject,
+                            message=body,
+                            invoice=invoice,
+                            sent_by=user,
+                            task_log=task_log,  # <--- LINKED
+                        )
+
+                    # WhatsApp Notification
+                    if renter.prefers_whatsapp and renter.phone_number:
+                        message = get_whatsapp_message(invoice, renter, message_type="overdue_notice")
+                        NotificationService.send(
+                            notification_type="overdue_notice",
+                            renter=renter,
+                            channel="whatsapp",
+                            message=message,
+                            invoice=invoice,
+                            sent_by=user,
+                            task_log=task_log  # <--- FIXED: Added missing link
+                        )
+
+                    messages.append(f"SUCCESS: Notice sent for {invoice.invoice_number}")
+
+                except Exception as inner_e:
+                    messages.append(f"FAILED: {invoice.invoice_number} error: {str(inner_e)}")
+
+            # 4. FINALIZE TASK LOG
+            # Status logic: If any individual item failed, we mark as SUCCESS_WITH_ERRORS or FAILURE
+            has_failures = any("FAILED" in m for m in messages)
+            task_log.status = "FAILURE" if has_failures else "SUCCESS"
+            task_log.message = f"Processed {len(overdue_invoices)} overdue notices.\n" + "\n".join(messages)[:800]
+            task_log.save()
+
+            return Response({
+                "status": "success",
+                "message": f"{len(overdue_invoices)} overdue notices processed",
+                "details": messages
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # 5. CRITICAL ERROR CATCH
+            task_log.status = "FAILURE"
+            task_log.message = f"Critical Error in View: {str(e)}"
+            task_log.save()
+            return Response({"detail": "Internal server error during detection."},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

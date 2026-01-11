@@ -15,8 +15,9 @@ class User(AbstractUser):
     is_manager = models.BooleanField(default=False)
     is_renter = models.BooleanField(default=False)
     phone_number = models.CharField(max_length=15, blank=True, null=True)  # For WhatsApp login
+    email = models.EmailField(unique=True)
     profile_picture = models.ImageField(
-        upload_to=staff_profile_upload_path,  # 👈 Using the new function
+        upload_to=staff_profile_upload_path,
         null=True,
         blank=True
     )

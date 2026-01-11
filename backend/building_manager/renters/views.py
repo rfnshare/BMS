@@ -43,40 +43,36 @@ class RenterViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=["get", "patch"], url_path="me")
     def me(self, request):
         renter = Renter.objects.get(user=request.user)
+
         if request.method == "GET":
-            serializer = RenterProfileSerializer(renter)
-            return Response(serializer.data)
+            return Response(RenterProfileSerializer(renter).data)
 
         if request.method == "PATCH":
-            # Get the updated fields from the request data
-            email = request.data.get("email")
-            phone_number = request.data.get("phone_number")
-            full_name = request.data.get("full_name")
+            # 1. Update User-level data first
+            user = renter.user
+            email_updated = False
 
-            # If the phone_number is updated in the renter model, update it in the associated User model
-            if phone_number and phone_number != renter.phone_number:
-                # Update the phone_number in both the Renter model and User model
-                renter.phone_number = phone_number
-                renter.user.phone_number = phone_number  # Update phone_number in the User model as well
-                renter.user.save()
+            if "email" in request.data:
+                user.email = request.data["email"]
+                email_updated = True
 
-            # If email is updated, update it in both the Renter model and User model
-            if email and email != renter.user.email:
-                renter.user.email = email
-                renter.user.save()
+            if "phone_number" in request.data:
+                user.phone_number = request.data["phone_number"]
+                user.username = request.data["phone_number"]  # Keep username synced
+                email_updated = True
 
-            # If other fields like full_name are updated, update those as well
-            if full_name and full_name != renter.full_name:
-                renter.full_name = full_name
+            if email_updated:
+                user.save()
 
-            # Save the updated renter profile
+            # 2. Update Renter-level data using the Serializer
             serializer = RenterProfileSerializer(renter, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data)
 
     def perform_update(self, serializer):
+        print(serializer.validated_data)
         """
         Override perform_update to update associated User's fields if changed in Renter
         """

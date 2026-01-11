@@ -8,6 +8,7 @@ class RenterCollectionReportService(BaseReportService):
     def summarize(self):
         qs = (
             Renter.objects
+            .select_related('user') # 🚀 Optimization: Fetch user in the same query
             .annotate(
                 total_invoiced=Coalesce(
                     Sum("leases__invoices__amount"),
@@ -33,7 +34,7 @@ class RenterCollectionReportService(BaseReportService):
             rows.append({
                 "renter_id": r.id,
                 "full_name": r.full_name,
-                "email": r.email,
+                "email": r.user.email,  # ✅ Fixed: Pulling from the User model
                 "phone_number": r.phone_number,
                 "total_invoiced": r.total_invoiced or 0,
                 "total_paid": r.total_paid or 0,
@@ -44,6 +45,7 @@ class RenterCollectionReportService(BaseReportService):
     def top_dues(self, limit=20):
         qs = (
             Renter.objects
+            .select_related('user')  # 🚀 Optimization
             .annotate(
                 total_invoiced=Coalesce(
                     Sum("leases__invoices__amount"),

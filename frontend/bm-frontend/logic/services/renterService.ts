@@ -52,7 +52,7 @@ export const RenterService = {
         }),
 
     update: (id: number, data: FormData) =>
-        api.put(`/renters/${id}/`, data, {
+        api.patch(`/renters/${id}/`, data, {
             headers: {"Content-Type": "multipart/form-data"},
         }),
 

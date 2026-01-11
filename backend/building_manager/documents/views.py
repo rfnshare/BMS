@@ -39,6 +39,15 @@ class RenterDocumentViewSet(RenterAccessMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, RoleBasedPermission]
     parser_classes = [MultiPartParser, FormParser]
 
+    filter_backends = [
+        filters.SearchFilter,
+        filters.OrderingFilter,
+        DjangoFilterBackend
+    ]
+    filterset_fields = ['renter', 'doc_type']
+    search_fields = ['doc_type']
+    ordering_fields = ['id', 'uploaded_at', 'doc_type']
+
     def perform_create(self, serializer):
         # link document to renter based on request data
         renter_id = self.request.data.get("renter")

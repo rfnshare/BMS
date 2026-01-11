@@ -44,6 +44,37 @@ export const useLogin = () => {
   // --- Actions ---
 
   /**
+   * Action: Request OTP
+   * Extracted to be used by detectRole and the Resend button.
+   * Logic: Only moves to 'otp' step if the backend allows it (Status check).
+   */
+  const requestOtp = useCallback(async (usernameOverride?: string) => {
+    const targetUser = usernameOverride || user;
+    try {
+      setLoading(true);
+      setMessage("");
+
+      await axios.post(`${API_URL}/accounts/request-otp/`, {
+        phone_or_email: targetUser
+      });
+
+      // ✅ SUCCESS: Move to OTP entry
+      setStep("otp");
+      setMessage("Security code sent successfully!");
+      startTimer();
+    } catch (err: any) {
+      // ❌ FAIL: Handle Inactive Renter (403) or Not Found (404)
+      const backendError = err.response?.data?.error || err.response?.data?.detail;
+      setMessage(backendError || "Failed to send OTP. Please try again.");
+
+      // Ensure we stay on 'role' step so they can fix their input
+      setStep("role");
+    } finally {
+      setLoading(false);
+    }
+  }, [user, API_URL, startTimer]);
+
+  /**
    * Step 1: Detect User Role
    * Transition: 'role' -> 'password' (staff) OR 'otp' (renter)
    */
@@ -51,6 +82,7 @@ export const useLogin = () => {
     try {
       setLoading(true);
       setMessage("");
+
       const res = await axios.post(`${API_URL}/accounts/detect-role/`, {
         phone_or_email: username
       });
@@ -60,38 +92,21 @@ export const useLogin = () => {
       setRole(detectedRole);
 
       if (detectedRole === "renter") {
-        setStep("otp");
-        // For Renters, we trigger the OTP request immediately upon finding them
+        // If renter is found, we immediately attempt to send OTP.
+        // requestOtp handles the 'Inactive' check and step transition.
         await requestOtp(username);
-      } else {
+      } else if (detectedRole === "staff") {
         setStep("password");
+      } else {
+        setMessage("Access restricted for this account type.");
       }
     } catch (err: any) {
-      setMessage(err.response?.data?.error || "User identity not found.");
+      const backendError = err.response?.data?.error || err.response?.data?.detail;
+      setMessage(backendError || "User identity not found.");
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
-
-  /**
-   * Action: Request OTP
-   * Used for initial entry and 'Resend' button
-   */
-  const requestOtp = useCallback(async (usernameOverride?: string) => {
-    try {
-      setLoading(true);
-      setMessage("");
-      await axios.post(`${API_URL}/accounts/request-otp/`, {
-        phone_or_email: usernameOverride || user
-      });
-      setMessage("Security code sent successfully!");
-      startTimer();
-    } catch (err: any) {
-      setMessage("Failed to send OTP. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [user, API_URL, startTimer]);
+  }, [API_URL, requestOtp]);
 
   /**
    * Step 2 (Renter Path): Verify OTP
@@ -108,7 +123,8 @@ export const useLogin = () => {
       // Delegate session storage and redirection to AuthContext
       auth.login(res.data.access, res.data.refresh, "renter");
     } catch (err: any) {
-      setMessage("Invalid security code.");
+      const backendError = err.response?.data?.error || err.response?.data?.detail;
+      setMessage(backendError || "Invalid security code.");
     } finally {
       setLoading(false);
     }
@@ -126,10 +142,10 @@ export const useLogin = () => {
         password
       });
 
-      // Delegate session storage and redirection to AuthContext
       auth.login(res.data.access, res.data.refresh, "staff");
     } catch (err: any) {
-      setMessage("Invalid username or password.");
+      const backendError = err.response?.data?.error || err.response?.data?.detail;
+      setMessage(backendError || "Invalid username or password.");
     } finally {
       setLoading(false);
     }
@@ -148,14 +164,12 @@ export const useLogin = () => {
   }, []);
 
   return {
-    // States
     step,
     role,
     user,
     message,
     loading,
     resendTime,
-    // Actions
     detectRole,
     requestOtp,
     verifyOtp,

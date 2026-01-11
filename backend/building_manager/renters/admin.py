@@ -8,7 +8,7 @@ class RenterAdmin(admin.ModelAdmin):
     list_display = (
         "full_name",
         "user",
-        "email",
+        "get_email",
         "phone_number",
         "status",
         "gender",
@@ -30,7 +30,8 @@ class RenterAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {
-            'fields': ('user', 'full_name', 'email', 'phone_number', 'alternate_phone', 'date_of_birth', 'gender', 'marital_status')
+            'fields': ('user', 'full_name', 'email', 'phone_number', 'alternate_phone', 'date_of_birth', 'gender',
+                       'marital_status')
         }),
         (_('Spouse Information'), {
             'fields': ('spouse_name', 'spouse_phone')
@@ -39,10 +40,12 @@ class RenterAdmin(admin.ModelAdmin):
             'fields': ('nationality', 'status')
         }),
         (_('Address Information'), {
-            'fields': ('present_address', 'permanent_address', 'previous_address', 'from_date', 'to_date', 'landlord_name', 'landlord_phone', 'reason_for_leaving')
+            'fields': ('present_address', 'permanent_address', 'previous_address', 'from_date', 'to_date',
+                       'landlord_name', 'landlord_phone', 'reason_for_leaving')
         }),
         (_('Emergency Contact & Occupation'), {
-            'fields': ('emergency_contact_name', 'relation', 'emergency_contact_phone', 'occupation', 'company', 'office_address', 'monthly_income')
+            'fields': ('emergency_contact_name', 'relation', 'emergency_contact_phone', 'occupation', 'company',
+                       'office_address', 'monthly_income')
         }),
         (_('Document Uploads'), {
             'fields': ('profile_pic', 'nid_scan')
@@ -54,16 +57,22 @@ class RenterAdmin(admin.ModelAdmin):
 
     readonly_fields = ("user",)  # Makes the 'user' field read-only in the admin interface
 
+    @admin.display(description='Email', ordering='user__email')
+    def get_email(self, obj):
+        return obj.user.email
+
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         return queryset.select_related('user')
 
     def is_active(self, obj):
         return obj.is_active
+
     is_active.boolean = True  # Renders as a boolean (tick or cross)
 
     def is_former(self, obj):
         return obj.is_former
+
     is_former.boolean = True  # Renders as a boolean (tick or cross)
 
 

@@ -3,39 +3,44 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from celery.schedules import crontab
 from dotenv import load_dotenv
 
-# Load .env (optional, useful for local dev)
 load_dotenv()
 
-# Paths
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# Basics
+# ============================
+# CORE
+# ============================
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-change-me")
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() in ("1", "true", "yes")
 
-# Hosts
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if h.strip()
+]
 
-# Installed apps
+# ============================
+# APPLICATIONS
+# ============================
 INSTALLED_APPS = [
-    # Django contrib
+    # Django
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'rest_framework_simplejwt.token_blacklist',
 
     # Third-party
     "rest_framework",
     "corsheaders",
     "drf_spectacular",
-    "dj_database_url",
+    "rest_framework_simplejwt.token_blacklist",
+    'django_celery_beat',
 
-    # Local apps (fix paths)
+    # Local
     "accounts",
     "buildings",
     "renters",
@@ -48,10 +53,12 @@ INSTALLED_APPS = [
     "permissions",
     "scheduling",
     "complaints",
-    "expenses"
+    "expenses",
 ]
 
-# Middleware
+# ============================
+# MIDDLEWARE
+# ============================
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -62,12 +69,25 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "common.logging.APILoggingMiddleware"
+    "common.logging.APILoggingMiddleware",
+]
+
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+    "accept",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
 ]
 
 ROOT_URLCONF = "building_manager.urls"
+WSGI_APPLICATION = "building_manager.wsgi.application"
 
-# Templates
+# ============================
+# TEMPLATES
+# ============================
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -79,67 +99,68 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-            ]
+            ],
         },
     }
 ]
 
-WSGI_APPLICATION = "building_manager.wsgi.application"
-
-# Custom user model (defined in apps/accounts/models.py)
-AUTH_USER_MODEL = os.getenv("AUTH_USER_MODEL", "accounts.User")
-
-# Database (default: sqlite for quick local dev; override in dev/prod)
+# ============================
+# DATABASE
+# ============================
 DB_ENGINE = os.getenv("DB_ENGINE", "django.db.backends.sqlite3")
+
 if DB_ENGINE == "django.db.backends.sqlite3":
     DATABASES = {
         "default": {
             "ENGINE": DB_ENGINE,
-            "NAME": str(BASE_DIR / "db.sqlite3"),
+            "NAME": BASE_DIR / "db.sqlite3",
         }
     }
 else:
     DATABASES = {
         "default": {
             "ENGINE": DB_ENGINE,
-            "NAME": os.getenv("POSTGRES_DB", "building_db"),
-            "USER": os.getenv("POSTGRES_USER", "postgres"),
-            "PASSWORD": os.getenv("POSTGRES_PASSWORD", ""),
-            "HOST": os.getenv("POSTGRES_HOST", "db"),
+            "NAME": os.getenv("POSTGRES_DB"),
+            "USER": os.getenv("POSTGRES_USER"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+            "HOST": os.getenv("POSTGRES_HOST"),
             "PORT": os.getenv("POSTGRES_PORT", "5432"),
         }
     }
 
-# Password validation (sane defaults)
+# ============================
+# AUTH
+# ============================
+AUTH_USER_MODEL = os.getenv("AUTH_USER_MODEL", "accounts.User")
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# Internationalization
+# ============================
+# I18N
+# ============================
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = os.getenv("DJANGO_TIME_ZONE", "Asia/Dhaka")
+TIME_ZONE = os.getenv("TIME_ZONE", "Asia/Dhaka")
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
-# Static & media
+# ============================
+# STATIC & MEDIA
+# ============================
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
-
-# whitenoise storage for static files (works for simple deploys)
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
-
-# File storage backend (set to S3 in prod via DEFAULT_FILE_STORAGE override)
 DEFAULT_FILE_STORAGE = os.getenv("DEFAULT_FILE_STORAGE", "django.core.files.storage.FileSystemStorage")
 
-# REST Framework + JWT auth (DRF + simplejwt)
+# ============================
+# DRF / JWT
+# ============================
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -158,14 +179,13 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"
 }
 
-# Simple JWT: lifetimes configured via env
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", 15))),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", 60))),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", 7))),
-    "AUTH_HEADER_TYPES": ("Bearer",),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
 }
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Building Management API',
     'DESCRIPTION': 'API documentation for Building Management System',
@@ -193,31 +213,73 @@ SPECTACULAR_SETTINGS = {
 
     ]
 }
-# CORS
-CORS_ALLOWED_ORIGINS = [u.strip() for u in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if u.strip()]
+
+# ============================
+# CORS / CSRF
+# ============================
+CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "False") == "True"
+CORS_ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if o.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
 
-# Celery (broker & backend)
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://localhost:6379/0"))
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+CSRF_TRUSTED_ORIGINS = [
+    o.strip()
+    for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if o.strip()
+]
 
-# Email (safe default for dev)
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+# ============================
+# EMAIL
+# ============================
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@localhost")
 
-# Security defaults (can be tightened in prod.py)
+# ============================
+# SECURITY (DEFAULTS)
+# ============================
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 SECURE_SSL_REDIRECT = False
 SECURE_HSTS_SECONDS = 0
 
-# Misc
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# ============================
+# Celery Configuration
+# ============================
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Dhaka'
 
-# Email
+# This enables the database-backed scheduler
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+BILLING_DAY = int(os.getenv("BILLING_DAY_OF_MONTH", 1))
+BILLING_HR = int(os.getenv("BILLING_HOUR", 0))
+BILLING_MIN = int(os.getenv("BILLING_MINUTE", 5))
+
+CELERY_BEAT_SCHEDULE = {
+    'auto-generate-invoices-first-of-month': {
+        'task': 'generate_monthly_invoices_task', # Match the name in Step A
+        'schedule': crontab(
+            day_of_month=BILLING_DAY,
+            hour=BILLING_HR,
+            minute=BILLING_MIN
+        ),
+    },
+}
+
+# ============================
+# MISC
+# ============================
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
 FROM_EMAIL = os.environ.get("FROM_EMAIL")  # e.g., rfnshare@gmail.com
 FROM_NAME = os.environ.get("FROM_NAME", "Building Manager")
 BREVO_USE_ATTACHMENT_URL = True
-SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")
-

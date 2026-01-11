@@ -10,7 +10,7 @@ User = get_user_model()
 class RenterSerializer(serializers.ModelSerializer):
     documents = RenterDocumentSerializer(many=True, read_only=True)
     status = serializers.CharField(read_only=True)
-
+    email = serializers.EmailField(source="user.email", required=False, allow_null=True)
     class Meta:
         model = Renter
         fields = [
@@ -44,7 +44,10 @@ class RenterSerializer(serializers.ModelSerializer):
             "to_date",
             "landlord_name",
             "landlord_phone",
-            "reason_for_leaving"
+            "reason_for_leaving",
+            "spouse_name",
+            "spouse_phone",
+            "nationality",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "status"]
 
@@ -58,28 +61,59 @@ class RenterSerializer(serializers.ModelSerializer):
         return obj.is_former
 
     def create(self, validated_data):
+        # We need to pop 'email' out because it's not a field on Renter
+        # 'user__email' is how DRF handles the 'source' mapping during input
+        user_data = validated_data.pop('user', {})
+        email = user_data.get('email')
+
         phone = validated_data.get("phone_number")
-        full_name = validated_data.get("full_name")
-        email = validated_data.get("email") or f"{phone}@dummy.local"
 
-        # Check if a renter user already exists with this phone
-        if User.objects.filter(username=phone, is_renter=True).exists():
-            raise serializers.ValidationError({"phone_number": "Renter with this phone already exists."})
+        # Professional fallback for email
+        final_email = email or f"{phone}@dummy.local"
 
-        # Create the user
+        if User.objects.filter(username=phone).exists():
+            raise serializers.ValidationError({"phone_number": "User with this phone already exists."})
+
+        # 1. Create User
         user = User.objects.create(
             username=phone,
             phone_number=phone,
             is_renter=True,
-            email=email or None,
+            email=final_email,
         )
-        user.set_unusable_password()  # renter will login via OTP, no password
+        user.set_unusable_password()
         user.save()
 
+        # 2. Create Renter linked to that User
         renter = Renter.objects.create(user=user, **validated_data)
         return renter
 
+    def update(self, instance, validated_data):
+        # 1. Handle the 'dotted-source' field (user.email)
+        # DRF puts 'user' data into a nested dictionary because of 'source="user.email"'
+        user_data = validated_data.pop('user', None)
+
+        if user_data:
+            new_email = user_data.get('email')
+            user = instance.user
+            if new_email and user.email != new_email:
+                user.email = new_email
+                user.save()
+
+        # 2. Handle the 'phone_number' sync
+        # If the phone changes in Renter, we usually want it to change in User (the login ID)
+        new_phone = validated_data.get('phone_number')
+        if new_phone and instance.phone_number != new_phone:
+            user = instance.user
+            user.phone_number = new_phone
+            user.username = new_phone  # Keeping login username in sync
+            user.save()
+
+        # 3. Call the standard update for the remaining Renter fields
+        return super().update(instance, validated_data)
+
 class RenterProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email", required=False, allow_null=True)
     class Meta:
         model = Renter
         fields = ["full_name", "phone_number", "email", "profile_pic", "notification_preference"]
