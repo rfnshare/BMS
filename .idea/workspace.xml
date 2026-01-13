@@ -6,8 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="21b2ce08-0328-400e-bcd7-d2b871455a15" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Leases/LeaseManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Leases/LeaseManager.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/leases.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/leases.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Admin/AdminDashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Admin/AdminDashboard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renters/RenterManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renters/RenterManager.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/home.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/renters.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/renters.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -126,7 +128,7 @@
       <workItem from="1767936435743" duration="2143000" />
       <workItem from="1767961317546" duration="9164000" />
       <workItem from="1768235543235" duration="24000" />
-      <workItem from="1768311307656" duration="2389000" />
+      <workItem from="1768311307656" duration="3866000" />
     </task>
     <servers />
   </component>
