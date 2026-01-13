@@ -1,14 +1,11 @@
 import Layout from '../../components/layouts/Layout';
-import RenterInvoiceManager from '../../components/features/Renter/RenterInvoiceManager';
-import RenterComplaintManager from "../../components/features/Renter/RenterComplaintManager";
 import RenterExpenseManager from "../../components/features/Renter/RenterExpenseManager";
-import {RENTER_MENU_ITEMS} from "../../utils/menuConstants";
-
 
 export default function RenterExpensesPage() {
   return (
     <Layout>
-      <div className="container-fluid py-4 animate__animated animate__fadeIn">
+      <div className="container-fluid px-2 py-4 animate__animated animate__fadeIn">
+        {/* HEADER SECTION */}
         <div className="mb-4 ps-2">
           <h2 className="fw-bold mb-1 text-dark">Additional Expenses</h2>
           <p className="text-muted small">
@@ -16,7 +13,7 @@ export default function RenterExpensesPage() {
           </p>
         </div>
 
-        {/* The component that handles the API data */}
+        {/* The component that handles the API data and responsive UI */}
         <RenterExpenseManager />
       </div>
     </Layout>
