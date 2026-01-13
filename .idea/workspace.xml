@@ -4,17 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="21b2ce08-0328-400e-bcd7-d2b871455a15" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterComplaintManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterComplaintManager.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterExpenseManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterExpenseManager.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterInvoiceManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterInvoiceManager.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterPaymentManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterPaymentManager.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/complaints.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/complaints.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/expenses.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/expenses.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/invoices.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/invoices.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/payments.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/payments.tsx" afterDir="false" />
-    </list>
+    <list default="true" id="21b2ce08-0328-400e-bcd7-d2b871455a15" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
