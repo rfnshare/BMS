@@ -6,30 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="21b2ce08-0328-400e-bcd7-d2b871455a15" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterUnitManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterUnitManager.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/logic/services/leaseService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/logic/services/leaseService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/complaints.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/complaints.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/expenses.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/expenses.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/home.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/index.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/invoices.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/invoices.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Leases/LeaseManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Leases/LeaseManager.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/leases.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/leases.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/notifications.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/notifications.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/payments.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/payments.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/permissions.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/permissions.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/profile.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/profile.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/renters.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/renters.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/renters/[id].tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/renters/[id].tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/reports.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/reports.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/units.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/units.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/complaints.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/complaints.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/expenses.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/expenses.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/index.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/invoices.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/invoices.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/notifications.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/notifications.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/payments.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/payments.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/profile.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/profile.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/unit.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/renter-dashboard/unit.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -148,7 +126,7 @@
       <workItem from="1767936435743" duration="2143000" />
       <workItem from="1767961317546" duration="9164000" />
       <workItem from="1768235543235" duration="24000" />
-      <workItem from="1768311307656" duration="2300000" />
+      <workItem from="1768311307656" duration="2389000" />
     </task>
     <servers />
   </component>
