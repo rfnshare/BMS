@@ -6,7 +6,7 @@ import {RENTER_MENU_ITEMS} from "../../utils/menuConstants";
 export default function PaymentsPage() {
   return (
     // 🔥 STEP 2: Pass 'renterMenuItems' to satisfy the Sidebar's nested mapping logic
-    <Layout menuItems={RENTER_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
         {/* HEADER SECTION */}

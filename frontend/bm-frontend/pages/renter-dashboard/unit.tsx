@@ -6,7 +6,7 @@ import {RENTER_MENU_ITEMS} from "../../utils/menuConstants";
 
 export default function MyUnitPage() {
   return (
-    <Layout menuItems={RENTER_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-4">
         <div className="mb-4">
           <h2 className="fw-bold mb-1">My Unit</h2>

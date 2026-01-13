@@ -7,7 +7,7 @@ import {ADMIN_MENU_ITEMS} from "../../utils/menuConstants";
 
 export default function ProfilePage() {
   return (
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       <div className="py-4">
         <div className="mb-4 ps-2">
           <h2 className="fw-bold mb-1">My Settings</h2>

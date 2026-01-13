@@ -33,7 +33,7 @@ export default function AdminDashboardIndex() {
   );
 
   return (
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
         {/* WELCOME SECTION */}

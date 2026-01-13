@@ -4,7 +4,7 @@ import {ADMIN_MENU_ITEMS} from "../../utils/menuConstants";
 
 export default function ExpensesPage() {
   return (
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       {/* The ExpenseManager handles its own header (title, summary stats),
         so we just need a clean container with the fade-in animation.
       */}

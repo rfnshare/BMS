@@ -6,15 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="21b2ce08-0328-400e-bcd7-d2b871455a15" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/building_manager/invoices/signals.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/building_manager/invoices/signals.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/building_manager/invoices/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/building_manager/invoices/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/building_manager/notifications/api/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/building_manager/notifications/api/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/building_manager/notifications/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/building_manager/notifications/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/building_manager/notifications/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/building_manager/notifications/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/building_manager/payments/signals.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/building_manager/payments/signals.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/building_manager/scheduling/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/building_manager/scheduling/api/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/building_manager/scheduling/tasks.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/building_manager/scheduling/tasks.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Notifications/NotificationManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Notifications/NotificationManager.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Admin/AdminDashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Admin/AdminDashboard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renters/RenterManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renters/RenterManager.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/home.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/renters.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/pages/admin-dashboard/renters.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,26 +61,26 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "ai.playground.ignore.import.keys.banner.in.settings": "true",
-    "git-widget-placeholder": "feature/invoice__auto__generate",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "com.intellij.pycharm.community.ide.impl.configuration.PythonContentEntriesConfigurable",
-    "ts.external.directory.path": "C:\\Users\\rfnsh\\PycharmProjects\\BMS\\frontend\\bm-frontend\\node_modules\\typescript\\lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;ai.playground.ignore.import.keys.banner.in.settings&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/invoice__auto__generate&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.intellij.pycharm.community.ide.impl.configuration.PythonContentEntriesConfigurable&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\rfnsh\\PycharmProjects\\BMS\\frontend\\bm-frontend\\node_modules\\typescript\\lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="BMS" type="Python.DjangoServer" factoryName="Django server">
       <module name="BMS" />
@@ -132,6 +127,8 @@
       <workItem from="1767897327867" duration="3522000" />
       <workItem from="1767936435743" duration="2143000" />
       <workItem from="1767961317546" duration="9164000" />
+      <workItem from="1768235543235" duration="24000" />
+      <workItem from="1768311307656" duration="3866000" />
     </task>
     <servers />
   </component>

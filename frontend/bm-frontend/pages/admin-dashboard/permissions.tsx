@@ -4,7 +4,7 @@ import {ADMIN_MENU_ITEMS} from "../../utils/menuConstants";
 
 export default function PermissionsPage() {
   return (
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-4 animate__animated animate__fadeIn">
         <div className="mb-4">
           <h2 className="fw-bold mb-1">Access Control</h2>

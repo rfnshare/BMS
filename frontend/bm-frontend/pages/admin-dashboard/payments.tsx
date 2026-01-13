@@ -4,7 +4,7 @@ import {ADMIN_MENU_ITEMS} from "../../utils/menuConstants";
 
 export default function PaymentsPage() {
   return (
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       {/* The PaymentManager handles its own Headers, Filters, and Tables.
          We just provide the container with the fade-in animation.
       */}

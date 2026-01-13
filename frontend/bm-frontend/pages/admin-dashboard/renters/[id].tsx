@@ -10,7 +10,7 @@ export default function RenterDetailedView() {
   // Defensive SQA Check: Wait until router is ready to avoid "undefined" ID errors
   if (!router.isReady) {
     return (
-      <Layout menuItems={ADMIN_MENU_ITEMS}>
+      <Layout>
         <div className="d-flex justify-content-center align-items-center min-vh-100">
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
@@ -21,7 +21,7 @@ export default function RenterDetailedView() {
   }
 
   return (
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
         {/* BREADCRUMB NAVIGATION */}

@@ -5,7 +5,7 @@ import {RENTER_MENU_ITEMS} from "../../utils/menuConstants";
 export default function InvoicesPage() {
   return (
     // 🔥 STEP 2: Pass the grouped 'renterMenuItems' to satisfy the updated Sidebar logic
-    <Layout menuItems={RENTER_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
         {/* HEADER SECTION */}

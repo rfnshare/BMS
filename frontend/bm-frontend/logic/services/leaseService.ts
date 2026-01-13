@@ -40,9 +40,10 @@ export const LeaseService = {
 
   terminate: (id: number) =>
     api.post(`/leases/leases/${id}/terminate/`).then(r => r.data),
+
     getMyActiveLease: async () => {
     const response = await api.get("/leases/leases/", { params: { is_active: true } });
-    return response.data.results[0]; // Returns the current active lease
+    return response.data.results; // Returns the current active lease
   },
 
   // Helper to fetch unit details if not fully expanded in lease

@@ -4,7 +4,7 @@ import {ADMIN_MENU_ITEMS} from "../../utils/menuConstants";
 
 export default function ComplaintsPage() {
   return (
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout >
       <div className="container-fluid p-0 animate__animated animate__fadeIn">
         <ComplaintManager />
       </div>

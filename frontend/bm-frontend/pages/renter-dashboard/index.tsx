@@ -5,7 +5,7 @@ import {RENTER_MENU_ITEMS} from "../../utils/menuConstants";
 export default function Page() {
   return (
 
-    <Layout menuItems={RENTER_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
         {/* WELCOME HEADER */}

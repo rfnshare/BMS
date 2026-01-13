@@ -10,7 +10,7 @@ export default function UnitsPage() {
 
   return (
     // 🔥 STEP 2: Use the Grouped structure to fix the Sidebar href error
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
         {/* HEADER SECTION */}

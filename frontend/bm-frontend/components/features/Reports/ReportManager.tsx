@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
 import { ReportService } from "../../../logic/services/reportService";
-import { getErrorMessage } from "../../../logic/utils/getErrorMessage";
 import { Spinner, ProgressBar, Badge, Row, Col, Card } from "react-bootstrap";
 
 export default function ReportManager() {
-  const [activeTab, setActiveTab] = useState<'financial' | 'occupancy' | 'renters'>('financial');
+  const [activeTab, setActiveTab] =
+    useState<'financial' | 'occupancy' | 'renters'>('financial');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>({});
 
   const loadAllReports = async () => {
     setLoading(true);
     try {
-      const [finSum, finInv, occSum, occVac, renCol, renDue] = await Promise.all([
+      const [
+        finSum, finInv,
+        occSum, occVac,
+        renCol, renDue
+      ] = await Promise.all([
         ReportService.getFinancialSummary(),
         ReportService.getFinancialInvoices({ page: 1 }),
         ReportService.getOccupancySummary(),
@@ -25,8 +29,6 @@ export default function ReportManager() {
         occupancy: { summary: occSum, vacant: occVac.results },
         renters: { collection: renCol, dues: renDue }
       });
-    } catch (error) {
-      console.error("Report Fetch Error:", error);
     } finally {
       setLoading(false);
     }
@@ -34,29 +36,35 @@ export default function ReportManager() {
 
   useEffect(() => { loadAllReports(); }, []);
 
-  if (loading) return (
-    <div className="text-center py-5 min-vh-100 d-flex flex-column justify-content-center">
-      <Spinner animation="border" variant="primary" />
-      <p className="mt-3 text-muted fw-medium">Analyzing your data...</p>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="min-vh-100 d-flex flex-column justify-content-center align-items-center">
+        <Spinner animation="border" />
+        <div className="mt-3 text-muted small">Analyzing your data…</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-2 p-md-4 bg-light min-vh-100">
-      {/* 1. RESPONSIVE HEADER */}
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <div className="text-center text-md-start">
-          <h3 className="fw-bold text-dark mb-0">Analytics Dashboard</h3>
-          <p className="text-muted x-small mb-0">Live data since {data.financial?.summary?.start_date}</p>
+    <div className="bg-light min-vh-100 p-2 p-md-4">
+
+      {/* HEADER */}
+      <div className="d-flex flex-column flex-md-row justify-content-between gap-3 mb-4">
+        <div>
+          <h4 className="fw-bold mb-0">Analytics Dashboard</h4>
+          <div className="x-small text-muted">
+            Live since {data.financial?.summary?.start_date}
+          </div>
         </div>
 
-        {/* 🔥 MOBILE-FRIENDLY TAB BAR */}
-        <div className="btn-group bg-white p-1 rounded-pill shadow-sm w-100 w-md-auto overflow-auto">
-          {['financial', 'occupancy', 'renters'].map((tab: any) => (
+        <div className="btn-group w-100 w-md-auto bg-white rounded-pill p-1 shadow-sm">
+          {['financial', 'occupancy', 'renters'].map(tab => (
             <button
               key={tab}
-              className={`btn rounded-pill px-3 px-md-4 btn-sm fw-bold border-0 flex-grow-1 ${activeTab === tab ? 'btn-dark text-white shadow' : 'text-muted'}`}
-              onClick={() => setActiveTab(tab)}
+              className={`btn btn-sm rounded-pill fw-bold flex-fill ${
+                activeTab === tab ? 'btn-dark text-white' : 'text-muted'
+              }`}
+              onClick={() => setActiveTab(tab as any)}
             >
               {tab.toUpperCase()}
             </button>
@@ -64,53 +72,73 @@ export default function ReportManager() {
         </div>
       </div>
 
-      {/* 2. FINANCIAL FOCUS */}
+      {/* ================= FINANCIAL ================= */}
       {activeTab === 'financial' && (
-        <div className="animate__animated animate__fadeIn px-1">
-          {/* Executive KPI Bar - Stacked on Mobile */}
-          <Row className="g-2 g-md-3 mb-4">
+        <>
+          {/* KPI */}
+          <Row className="g-3 mb-3">
             <Col xs={12} md={4}>
-              <Card className="border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white">
-                <div className="x-small text-muted text-uppercase fw-bold mb-1">Total Invoiced</div>
-                <div className="h3 fw-bold text-dark mb-0">৳{Number(data.financial.summary.total_invoiced).toLocaleString()}</div>
-                <div className="x-small text-primary fw-bold mt-1"><i className="bi bi-receipt"></i> {data.financial.summary.invoice_count} Records</div>
+              <Card className="p-3 border-0 shadow-sm rounded-4">
+                <div className="x-small text-muted">TOTAL INVOICED</div>
+                <div className="h4 fw-bold">
+                  ৳{Number(data.financial.summary.total_invoiced).toLocaleString()}
+                </div>
               </Card>
             </Col>
             <Col xs={12} md={4}>
-              <Card className="border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white border-start border-4 border-success">
-                <div className="x-small text-muted text-uppercase fw-bold mb-1">Total Collected</div>
-                <div className="h3 fw-bold text-success mb-0">৳{Number(data.financial.summary.total_collected).toLocaleString()}</div>
-                <div className="x-small text-muted mt-1">Efficiency: {((data.financial.summary.total_collected / data.financial.summary.total_invoiced) * 100).toFixed(1)}%</div>
+              <Card className="p-3 border-0 shadow-sm rounded-4">
+                <div className="x-small text-muted">TOTAL COLLECTED</div>
+                <div className="h4 fw-bold text-success">
+                  ৳{Number(data.financial.summary.total_collected).toLocaleString()}
+                </div>
               </Card>
             </Col>
             <Col xs={12} md={4}>
-              <Card className="border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white border-start border-4 border-danger">
-                <div className="x-small text-muted text-uppercase fw-bold mb-1">Outstanding Balance</div>
-                <div className="h3 fw-bold text-danger mb-0">৳{Number(data.financial.summary.total_outstanding).toLocaleString()}</div>
-                <div className="x-small text-danger fw-bold mt-1"><i className="bi bi-exclamation-circle"></i> High Risk</div>
+              <Card className="p-3 border-0 shadow-sm rounded-4">
+                <div className="x-small text-muted">OUTSTANDING</div>
+                <div className="h4 fw-bold text-danger">
+                  ৳{Number(data.financial.summary.total_outstanding).toLocaleString()}
+                </div>
               </Card>
             </Col>
           </Row>
 
-          {/* Ledger Table - Scrollable on Mobile */}
-          <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
-            <div className="card-header bg-white p-3 fw-bold border-bottom">Latest Billing Activity</div>
-            <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0" style={{ minWidth: '500px' }}>
-                <thead className="bg-light x-small text-muted text-uppercase">
-                  <tr><th>Invoice #</th><th>Renter</th><th>Amount</th><th>Status</th></tr>
+          {/* MOBILE CARDS */}
+          <div className="d-md-none">
+            {data.financial.invoices.map((inv: any) => (
+              <Card key={inv.id} className="mb-2 p-3 border-0 shadow-sm rounded-4">
+                <div className="fw-bold text-primary">{inv.invoice_number}</div>
+                <div className="x-small text-muted">{inv.renter} • {inv.unit}</div>
+                <div className="d-flex justify-content-between mt-2">
+                  <span className="fw-bold">৳{Number(inv.amount).toLocaleString()}</span>
+                  <Badge bg={inv.status === 'paid' ? 'success' : 'danger'}>
+                    {inv.status.toUpperCase()}
+                  </Badge>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* DESKTOP TABLE */}
+          <div className="d-none d-md-block">
+            <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
+              <table className="table align-middle mb-0">
+                <thead className="bg-light small text-muted">
+                  <tr>
+                    <th>Invoice</th>
+                    <th>Renter</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {data.financial.invoices.map((inv: any) => (
                     <tr key={inv.id}>
-                      <td className="ps-3 fw-bold small text-primary">{inv.invoice_number}</td>
+                      <td className="fw-bold text-primary">{inv.invoice_number}</td>
+                      <td>{inv.renter}<br /><small className="text-muted">{inv.unit}</small></td>
+                      <td className="fw-bold">৳{Number(inv.amount).toLocaleString()}</td>
                       <td>
-                        <div className="small fw-bold">{inv.renter}</div>
-                        <div className="x-small text-muted">{inv.unit}</div>
-                      </td>
-                      <td className="small fw-bold">৳{Number(inv.amount).toLocaleString()}</td>
-                      <td>
-                        <Badge pill bg={inv.status === 'paid' ? 'success' : 'danger'} className="x-small px-2">
+                        <Badge bg={inv.status === 'paid' ? 'success' : 'danger'}>
                           {inv.status.toUpperCase()}
                         </Badge>
                       </td>
@@ -118,67 +146,72 @@ export default function ReportManager() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </div>
+        </>
       )}
 
-      {/* 3. OCCUPANCY FOCUS */}
+      {/* ================= OCCUPANCY ================= */}
       {activeTab === 'occupancy' && (
-        <div className="animate__animated animate__fadeIn px-1">
-          <Row className="g-3">
-            <Col xs={12} lg={4}>
-              <Card className="border-0 shadow-sm rounded-4 p-4 h-100 bg-white text-center">
-                <div className="small text-muted text-uppercase fw-bold mb-3">Building Occupancy</div>
-                <div className="mb-3">
-                   <h1 className="display-4 fw-bold text-primary mb-0">{data.occupancy.summary.occupancy_rate}%</h1>
-                   <div className="text-muted small">Current Capacity</div>
-                </div>
-                <ProgressBar now={data.occupancy.summary.occupancy_rate} variant="primary" className="mb-4" style={{height: '10px'}} />
-                <Row className="text-center border-top pt-3 g-0">
-                   <Col xs={4} className="border-end">
-                      <div className="fw-bold small">{data.occupancy.summary.total_units}</div>
-                      <div className="x-small text-muted">UNITS</div>
-                   </Col>
-                   <Col xs={4} className="border-end">
-                      <div className="fw-bold text-success small">{data.occupancy.summary.occupied_units}</div>
-                      <div className="x-small text-muted">LIVE</div>
-                   </Col>
-                   <Col xs={4}>
-                      <div className="fw-bold text-danger small">{data.occupancy.summary.vacant_units}</div>
-                      <div className="x-small text-muted">EMPTY</div>
-                   </Col>
-                </Row>
-              </Card>
-            </Col>
+        <Row className="g-3">
+          <Col xs={12} lg={4}>
+            <Card className="p-4 border-0 shadow-sm rounded-4 text-center">
+              <div className="x-small text-muted mb-2">OCCUPANCY</div>
+              <h1 className="fw-bold text-primary">
+                {data.occupancy.summary.occupancy_rate}%
+              </h1>
+              <ProgressBar now={data.occupancy.summary.occupancy_rate} />
+            </Card>
+          </Col>
 
-            <Col xs={12} lg={8}>
-              <Card className="border-0 shadow-sm rounded-4 overflow-hidden bg-white h-100">
-                <div className="card-header bg-white p-3 fw-bold border-bottom text-primary small text-uppercase">Vacant Units (Revenue Potential)</div>
-                <div className="table-responsive">
-                  <table className="table table-hover align-middle mb-0" style={{ minWidth: '450px' }}>
-                    <thead className="bg-light x-small text-muted">
-                      <tr><th>Unit Name</th><th>Floor</th><th>Type</th><th>Market Rent</th></tr>
-                    </thead>
-                    <tbody>
-                      {data.occupancy.vacant.map((u: any) => (
-                        <tr key={u.id}>
-                          <td className="ps-3 fw-bold small">{u.name}</td>
-                          <td className="small">{u.floor_name}</td>
-                          <td><span className="badge bg-light text-dark border x-small">{u.unit_type.toUpperCase()}</span></td>
-                          <td className="fw-bold text-success small">৳{Number(u.monthly_rent).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+          <Col xs={12} lg={8}>
+            {/* MOBILE */}
+            <div className="d-md-none">
+              {data.occupancy.vacant.map((u: any) => (
+                <Card key={u.id} className="mb-2 p-3 border-0 shadow-sm rounded-4">
+                  <div className="fw-bold">{u.name}</div>
+                  <div className="x-small text-muted">
+                    Floor {u.floor_name} • {u.unit_type}
+                  </div>
+                  <div className="fw-bold text-success mt-2">
+                    ৳{Number(u.monthly_rent).toLocaleString()}
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {/* DESKTOP */}
+            <div className="d-none d-md-block">
+              <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
+                <table className="table align-middle mb-0">
+                  <thead className="bg-light small text-muted">
+                    <tr>
+                      <th>Unit</th>
+                      <th>Floor</th>
+                      <th>Type</th>
+                      <th>Rent</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.occupancy.vacant.map((u: any) => (
+                      <tr key={u.id}>
+                        <td className="fw-bold">{u.name}</td>
+                        <td>{u.floor_name}</td>
+                        <td>{u.unit_type}</td>
+                        <td className="fw-bold text-success">
+                          ৳{Number(u.monthly_rent).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </Card>
-            </Col>
-          </Row>
-        </div>
+            </div>
+          </Col>
+        </Row>
       )}
 
-      {/* 4. RENTER FOCUS */}
+     {/* 4. RENTER FOCUS */}
       {activeTab === 'renters' && (
         <div className="animate__animated animate__fadeIn px-1">
           <Row className="g-3">

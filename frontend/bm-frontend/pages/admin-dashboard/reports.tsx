@@ -5,7 +5,7 @@ import {ADMIN_MENU_ITEMS} from "../../utils/menuConstants";
 
 export default function ReportsPage() {
   return (
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid p-0 animate__animated animate__fadeIn">
         <ReportManager />
       </div>
