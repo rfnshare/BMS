@@ -8,7 +8,7 @@ export default function Page() {
 
   return (
     // 🔥 STEP 2: Pass the new 'adminMenuItems' instead of the old flat list
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
         {/* HEADER SECTION */}

@@ -38,7 +38,7 @@ export default function RentersPage() {
   }, []);
 
   return (
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
         {/* 1. PAGE HEADER */}

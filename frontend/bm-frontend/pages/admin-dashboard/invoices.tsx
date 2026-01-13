@@ -6,7 +6,7 @@ import {ADMIN_MENU_ITEMS} from "../../utils/menuConstants";
 
 export default function InvoicesPage() {
   return (
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-2 animate__animated animate__fadeIn">
 
         <div className="d-flex justify-content-between align-items-center mb-4">

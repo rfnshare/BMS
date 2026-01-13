@@ -72,7 +72,7 @@ export default function LeasesPage() {
 
   if (viewingLease) {
     return (
-      <Layout menuItems={ADMIN_MENU_ITEMS}>
+      <Layout>
         <LeaseDetails
           lease={viewingLease}
           renter={renterMap.get(viewingLease.renter)}
@@ -87,7 +87,7 @@ export default function LeasesPage() {
   }
 
   return (
-    <Layout menuItems={ADMIN_MENU_ITEMS}>
+    <Layout>
       <div className="container-fluid py-4 animate__animated animate__fadeIn">
 
         {/* 1. HEADER SECTION - No Change */}
