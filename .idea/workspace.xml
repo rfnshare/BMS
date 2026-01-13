@@ -6,7 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="21b2ce08-0328-400e-bcd7-d2b871455a15" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterDashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bm-frontend/components/features/Renter/RenterDashboard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/building_manager/accounts/services.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/building_manager/accounts/services.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/building_manager/building_manager/settings/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/building_manager/building_manager/settings/base.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/building_manager/notifications/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/building_manager/notifications/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

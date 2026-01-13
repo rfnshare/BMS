@@ -45,6 +45,12 @@ class NotificationService:
 
         try:
             if channel == "email":
+                if not settings.EMAIL_ENABLED:
+                    print(f"DEBUG: Email to {recipient} skipped (EMAIL_ENABLED=off)")
+                    notification.status = "sent"  # Keeping this for UI compatibility
+                    notification.message = f"[MOCKED] {message}"  # Prefix the message for logs
+                    notification.save()
+                    return notification
                 attachment_path = None
                 if invoice and getattr(invoice, "invoice_pdf", None):
                     attachment_path = invoice.invoice_pdf.path

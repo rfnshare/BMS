@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
+EMAIL_ENABLED = os.getenv("EMAIL_ENABLED", "on").lower() == "on"
 # ============================
 # CORE
 # ============================

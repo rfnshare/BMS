@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.mail import send_mail
 from dotenv import load_dotenv
 from twilio.rest import Client
@@ -44,6 +45,9 @@ def send_otp_email(email, code):
     """
     try:
         # Call the _send_email method from NotificationService
+        if not settings.EMAIL_ENABLED:
+            print(f"[MOCK Email] OTP {code} sent to {email} successfully.")
+            return
         NotificationService._send_email(
             to_email=email,
             subject=subject,
