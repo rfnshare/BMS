@@ -8,9 +8,20 @@ import {
   RENTER_MENU_ITEMS,
 } from "../../utils/menuConstants";
 
+// Interfaces for Type Safety
+export interface MenuItem {
+  name: string;
+  path: string;
+  icon: string;
+}
+
+export interface MenuGroup {
+  group: string;
+  items: MenuItem[];
+}
+
 interface LayoutProps {
-  children: React.ReactNode;
-  menuItems: MenuGroup[];
+  children: ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
@@ -18,20 +29,39 @@ export default function Layout({ children }: LayoutProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const router = useRouter();
 
-  // 🔑 Role-based menu selection
-  const menuItems = isRenter ? RENTER_MENU_ITEMS : ADMIN_MENU_ITEMS;
+  const menuItems: MenuGroup[] = isRenter ? RENTER_MENU_ITEMS : ADMIN_MENU_ITEMS;
 
-  // Close mobile menu on route change
   useEffect(() => {
     setShowMobileMenu(false);
   }, [router.pathname]);
 
-  // Handle unauthenticated access
+  // 🛡️ SECURITY LAYER: Role-Based Authorization Guard
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.replace("/login");
+    if (!loading) {
+      // Layer 1: Check if logged in
+      if (!isAuthenticated) {
+        router.replace("/login");
+        return;
+      }
+
+      const path = router.pathname;
+
+      // Layer 2: Renter trying to access Admin pages
+      if (isRenter && path.startsWith("/admin-dashboard")) {
+        console.error("Access Denied: Renters cannot access Admin Dashboard.");
+        router.replace("/renter-dashboard");
+        return;
+      }
+
+      // Layer 3: Admin trying to access Renter pages
+      // (Admins usually view renter info via the Admin UI, not the Renter's personal dashboard)
+      if (!isRenter && path.startsWith("/renter-dashboard")) {
+        console.error("Redirecting: Admins should use the Admin Dashboard.");
+        router.replace("/admin-dashboard/home");
+        return;
+      }
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, loading, isRenter, router.pathname]);
 
   if (loading) {
     return (
@@ -40,6 +70,16 @@ export default function Layout({ children }: LayoutProps) {
       </div>
     );
   }
+
+  // Final Guard: If a redirect is happening, don't flash the unauthorized content
+  const isAuthorized = () => {
+    const path = router.pathname;
+    if (isRenter && path.startsWith("/admin-dashboard")) return false;
+    if (!isRenter && path.startsWith("/renter-dashboard")) return false;
+    return true;
+  };
+
+  if (!isAuthorized()) return null;
 
   return (
     <div className="d-flex w-100 vh-100 overflow-hidden bg-body-tertiary">
