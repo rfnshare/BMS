@@ -19,7 +19,7 @@ def generate_monthly_invoices_task(executed_by_id=None):
     """
     Automated version of the manual-invoice logic.
     """
-    today = timezone.now().date()
+    today = timezone.localtime().date()
     target_month_name = today.strftime('%B %Y')
     target_description = f"Monthly rent for {target_month_name}"
     current_month_start = today.replace(day=1)
